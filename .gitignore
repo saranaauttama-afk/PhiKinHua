@@ -1,15 +1,52 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
+# --- Node / Expo
 node_modules/
-
-# Expo
 .expo/
 dist/
 web-build/
 expo-env.d.ts
 
-# Native
+# (ถ้าใช้ SDK เก่าที่มี .expo-shared และคุณไม่อยากคอมมิต)
+# .expo-shared/
+
+# --- Test / Coverage
+coverage/
+
+# --- Logs
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# --- OS / Editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/settings.json
+
+# --- Env / Secrets
+.env
+.env.*
+!.env.example
+
+# --- TypeScript
+*.tsbuildinfo
+
+# --- Android/iOS (เลือกอย่างใดอย่างหนึ่งตาม workflow)
+# 1) Managed workflow (แนะนำสำหรับ Expo ปกติ) — ไม่คอมมิต native:
+ios/
+android/
+
+# 2) Bare / กรณี customize native (ให้คอมมิต ios/android):
+# (ถ้าจะคอมมิต ให้ลบบรรทัด ios/ และ android/ ด้านบนออก แล้ว ignore เฉพาะ build/ ทับไป)
+# ios/build/
+# ios/Pods/
+# android/.gradle/
+# **/build/
+# android/app/release/
+# android/local.properties
+
+# --- Native key material (อย่าเข้ากับ git)
 .kotlin/
 *.orig.*
 *.jks
@@ -17,21 +54,7 @@ expo-env.d.ts
 *.p12
 *.key
 *.mobileprovision
-
-# Metro
-.metro-health-check*
-
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
-# macOS
-.DS_Store
 *.pem
 
-# local env files
-.env*.local
-
-# typescript
-*.tsbuildinfo
+# --- Metro
+.metro-health-check*
