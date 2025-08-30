@@ -2,6 +2,7 @@ import type { Command, GameState } from './types';
 import { ENEMY_SLIME, START_ENERGY } from './balance';
 import { applyCardEffect, baseNewState, buildAndShuffleDeck, drawUpTo, endEnemyTurn, isDefeat, isVictory, startPlayerTurn } from './commands';
 import type { RNG } from './rng';
+import { rollRewardOptions } from './reward';
 
 export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state: GameState; rng: RNG } {
   // Always work on a copy to keep call-site expectations pure
@@ -42,8 +43,12 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
         }
       }
       if (isVictory(s)) {
-        s.phase = 'victory';
-        s.log.push('Victory!');
+        // ไปหน้ารางวัล (M1 step 1)
+        s.phase = 'reward';
+        const rolled = rollRewardOptions(r, 3);
+        r = rolled.rng;
+        s.rewardOptions = rolled.options;
+        s.log.push('Victory! Choose a card.');
       }
       return { state: s, rng: r };
     }
@@ -61,6 +66,27 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       ({ state: s, rng: r } = startPlayerTurn(s, r));
       return { state: s, rng: r };
     }
+    case 'TakeReward': {
+      if (s.phase !== 'reward' || !s.rewardOptions) return { state: s, rng: r };
+      const idx = cmd.index;
+      const chosen = s.rewardOptions[idx];
+      if (!chosen) return { state: s, rng: r };
+      // ใส่การ์ดที่เลือกเข้ากองทิ้ง (จะเข้ามือรอบถัดไปตามปกติ)
+      s.piles.discard.push(JSON.parse(JSON.stringify(chosen)));
+      s.log.push(`Took reward: ${chosen.name}`);
+      // ปิดตัวเลือก (ให้กด CompleteNode เพื่อปิด modal)
+      s.rewardOptions = undefined;
+      return { state: s, rng: r };
+    }
+    case 'CompleteNode': {
+      // ปิด modal/event ทั้งหมด แล้ว “กลับเมนู” ชั่วคราว (ก่อนมี map)
+      s.rewardOptions = undefined;
+      s.enemy = undefined;
+      s.phase = 'menu';
+      s.turn = 0;
+      s.log.push('Node completed.');
+      return { state: s, rng: r };
+    }    
     default:
       return { state: s, rng: r };
   }

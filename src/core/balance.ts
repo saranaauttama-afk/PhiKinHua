@@ -14,6 +14,12 @@ export const CARD_DEFEND: CardData = {
 export const CARD_FOCUS: CardData = {
   id: 'focus', name: 'Focus', type: 'skill', cost: 0, draw: 1, energyGain: 1,
 };
+export const CARD_BASH: CardData = {
+  id: 'bash', name: 'Bash', type: 'attack', cost: 2, dmg: 10,
+};
+export const CARD_GUARD: CardData = {
+  id: 'guard', name: 'Guard', type: 'skill', cost: 1, block: 8,
+};
 
 export const START_DECK: CardData[] = [
   CARD_STRIKE, CARD_STRIKE, CARD_STRIKE, CARD_DEFEND, CARD_FOCUS,

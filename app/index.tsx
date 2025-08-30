@@ -58,6 +58,7 @@ export default function Home() {
   const { state, dispatch, newRun } = useGame();
   const [seed, setSeed] = useState('demo-001');
   const inCombat = state.phase === 'combat';
+  const inReward = state.phase === 'reward';
   const canStartCombat = state.phase === 'menu';
 
   const energy = state.player.energy;
@@ -141,6 +142,37 @@ export default function Home() {
           })}
           {hand.length === 0 && <Text className="text-white/60">Empty</Text>}
         </View>
+
+        {/* === Reward Modal (simple) === */}
+        {inReward && (
+          <View className="mt-6 rounded-2xl p-4 bg-zinc-800/80 border border-white/10">
+            <Text className="text-white text-lg font-semibold mb-2">Choose a reward</Text>
+            <View className="flex-row gap-2 flex-wrap">
+              {(state.rewardOptions ?? []).map((c, i) => (
+                <Pressable
+                  key={i}
+                  onPress={() => dispatch({ type: 'TakeReward', index: i })}
+                  className="px-3 py-2 rounded-2xl border bg-zinc-900 border-white/10 active:opacity-70"
+                >
+                  <Text className="text-white font-semibold">{c.name}</Text>
+                  <Text className="text-white/70">Cost {c.cost}</Text>
+                  {c.dmg ? <Text className="text-red-300">DMG {c.dmg}</Text> : null}
+                  {c.block ? <Text className="text-sky-300">Block {c.block}</Text> : null}
+                  {c.energyGain ? <Text className="text-amber-300">+Energy {c.energyGain}</Text> : null}
+                  {c.draw ? <Text className="text-emerald-300">Draw {c.draw}</Text> : null}
+                </Pressable>
+              ))}
+            </View>
+            <View className="flex-row gap-2 mt-3">
+              <Pressable
+                onPress={() => dispatch({ type: 'CompleteNode' })}
+                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"
+              >
+                <Text className="text-white font-semibold">CompleteNode</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
 
         {/* Log */}
         <Text className="text-white font-semibold mt-6 mb-2">Log</Text>

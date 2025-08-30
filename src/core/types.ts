@@ -28,7 +28,7 @@ export type DeckPiles = {
   exhaust: CardData[];
 };
 
-export type Phase = 'menu' | 'combat' | 'victory' | 'defeat';
+export type Phase = 'menu' | 'combat' | 'reward' | 'victory' | 'defeat';
 
 export type PlayerState = {
   hp: number;
@@ -45,10 +45,13 @@ export type GameState = {
   enemy?: EnemyState;
   piles: DeckPiles;
   log: string[];
+  rewardOptions?: CardData[]; // ตัวเลือกการ์ดตอนชนะคอมแบต
 };
 
 export type Command =
   | { type: 'NewRun'; seed: string }
   | { type: 'StartCombat' }
   | { type: 'PlayCard'; index: number }
-  | { type: 'EndTurn' };
+  | { type: 'EndTurn' }
+  | { type: 'TakeReward'; index: number }
+  | { type: 'CompleteNode' }; // ปิด modal/event แล้วไปต่อ (ตอนนี้กลับเมนูชั่วคราว)
