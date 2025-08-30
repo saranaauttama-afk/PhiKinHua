@@ -7,7 +7,7 @@ export const START_GOLD = 80; // ✅ ทองเริ่มต้น
 
 // === Base cards (deck of 5) ===
 export const CARD_STRIKE: CardData = {
-  id: 'strike', name: 'Strike', type: 'attack', cost: 1, dmg: 6, rarity: 'Common',
+  id: 'strike', name: 'Strike', type: 'attack', cost: 1, dmg: 6, rarity: 'Rare',
 };
 export const CARD_DEFEND: CardData = {
   id: 'defend', name: 'Defend', type: 'skill', cost: 1, block: 5, rarity: 'Common',

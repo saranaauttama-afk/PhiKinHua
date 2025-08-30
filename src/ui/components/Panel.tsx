@@ -2,6 +2,7 @@
 import React from 'react';
 import { View, Text, ViewStyle } from 'react-native';
 import type { ThemeTokens } from '../theme';
+import { shadowStyle } from '../theme';
 
 type Props = {
   theme: ThemeTokens;
@@ -21,6 +22,7 @@ export default function Panel({ theme, title, style, children }: Props) {
           borderWidth: 1,
           borderColor: theme.colors.border,
         },
+        shadowStyle(1, theme.colors.vignetteEdge ?? '#000'),
         style,
       ]}
     >

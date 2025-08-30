@@ -17,6 +17,12 @@ export type ThemeTokens = {
   radius: { xl: number; card: number };
   durations: { fast: number; normal: number };
   fonts?: { title?: string; body?: string };
+  elevation: {
+    0: number;
+    1: number;
+    2: number;
+    3: number;
+  };  
 };
 
 export function getTheme(id: SkinId): ThemeTokens {
@@ -36,6 +42,7 @@ export function getTheme(id: SkinId): ThemeTokens {
       },
       radius: { xl: 18, card: 16 },
       durations: { fast: 120, normal: 240 },
+      elevation: { 0: 0, 1: 2, 2: 6, 3: 12 },
     };
   }
   // default: wireframe
@@ -54,5 +61,19 @@ export function getTheme(id: SkinId): ThemeTokens {
     },
     radius: { xl: 16, card: 14 },
     durations: { fast: 120, normal: 220 },
+    elevation: { 0: 0, 1: 2, 2: 6, 3: 12 },
   };
+}
+
+// Helper: เงา cross-platform ตามระดับ
+export function shadowStyle(level: 0 | 1 | 2 | 3, color = '#000') {
+  if (level === 0) return {};
+  const ios = {
+    shadowColor: color,
+    shadowOpacity: 0.18 + 0.06 * (level - 1),
+    shadowRadius: 2 + 3 * (level - 1),
+    shadowOffset: { width: 0, height: 1 + level },
+  } as const;
+  const android = { elevation: [0, 2, 6, 12][level] } as const;
+  return { ...ios, ...android };
 }
