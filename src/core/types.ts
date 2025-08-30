@@ -52,6 +52,14 @@ export type PlayerState = {
   gold: number;        // ✅ ทอง
 };
 
+// ===== Events =====
+export type EventState =
+  | { type: 'bonfire'; healed?: boolean }
+  | { type: 'shrine'; options: BlessingDef[]; chosenId?: string }          // เลือกพร (no-dup)
+  | { type: 'remove'; capPerRun: number }                                   // ลบการ์ด (จำกัดต่อ run)
+  | { type: 'gamble'; resolved?: { outcome: 'win' | 'lose'; gold?: number; hpLoss?: number } }
+  | { type: 'treasure'; amount?: number };                                  // กล่องสมบัติ (สุ่มช่วง)
+
 export type ShopItem = { card: CardData; price: number }; // ✅ รายการขายในร้าน
 
 export type GameState = {
@@ -65,12 +73,13 @@ export type GameState = {
   rewardOptions?: CardData[]; // ตัวเลือกการ์ดตอนชนะคอมแบต
   map?: MapState;
   shopStock?: ShopItem[];     // ✅ สต็อกร้าน (มีราคา)
-  event?: { type: 'bonfire'; healed?: boolean }; // เหตุการณ์แบบง่าย
+  event?: EventState;
   blessings: BlessingDef[];   // ✅ รายการพรที่ถืออยู่
   // ธงต่อเทิร์น (กัน once-per-turn และ re-entrancy win)
   turnFlags: {
     blessingOnce: Record<string, boolean>;
   };
+  runCounters?: { removed: number };        // นับ remove ต่อ run
   combatVictoryLock?: boolean; // ✅ กัน re-entrancy “ชนะคอมแบต”  
 };
 
@@ -85,11 +94,19 @@ export type Command =
   | { type: 'TakeShop'; index: number }
   | { type: 'ShopReroll' }                 // ✅ รีโรลสต็อก (เสียทอง)  
   | { type: 'DoBonfireHeal' }
+  | { type: 'EventChooseBlessing'; index: number }
+  | { type: 'EventRemoveCard'; pile: keyof DeckPiles; index: number }
+  | { type: 'EventGambleRoll' }
+  | { type: 'EventTreasureOpen' }  
   // QA/Debug (ผ่าน commands เท่านั้น)
   | { type: 'QA_KillEnemy' }
   | { type: 'QA_Draw'; count: number }
   | { type: 'QA_SetEnergy'; value: number }
   | { type: 'QA_AddBlessingDemo' }
-  | { type: 'QA_OpenShopHere' }; 
+  | { type: 'QA_OpenShopHere' }
+  | { type: 'QA_OpenShrine' }
+  | { type: 'QA_OpenRemove' }
+  | { type: 'QA_OpenGamble' }
+  | { type: 'QA_OpenTreasure' };
 
   export type TurnCtx = { state: GameState };

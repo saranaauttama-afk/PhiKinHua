@@ -1,7 +1,7 @@
 import type { RNG } from './rng';
 import { int } from './rng';
 
-export type NodeKind = 'monster' | 'elite' | 'shop' | 'bonfire' | 'boss';
+export type NodeKind = 'monster' | 'elite' | 'shop' | 'bonfire' | 'event' | 'boss';
 
 export type MapNode = {
   id: string;
@@ -27,13 +27,15 @@ export function generateMap(rng: RNG, cols = 5): { rng: RNG; map: MapState } {
     const n = count.value;
     const nodes: MapNode[] = [];
     for (let i = 0; i < n; i++) {
+      // Bias (ง่าย): monster 50, elite 25, shop 10, bonfire 5, event 10
       const roll = int(r, 1, 100); r = roll.rng;
       let kind: NodeKind = 'monster';
       const v = roll.value;
-      if (v <= 60) kind = 'monster';
-      else if (v <= 85) kind = 'elite';
-      else if (v <= 95) kind = 'shop';
-      else kind = 'bonfire';
+      if (v <= 50) kind = 'monster';
+      else if (v <= 75) kind = 'elite';
+      else if (v <= 85) kind = 'shop';
+      else if (v <= 90) kind = 'bonfire';
+      else kind = 'event';
       nodes.push({ id: `N${c}_${i}`, col: c, row: i, kind });
     }
     out.push(nodes);

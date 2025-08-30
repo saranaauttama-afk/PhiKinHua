@@ -36,6 +36,13 @@ export const PRICE_UNCOMMON = 65;
 export const PRICE_RARE = 120;
 export const SHOP_REROLL_COST = 20;
 
+// ===== Events balance (Act 1 ชั่วคราว)
+export const REMOVE_CAP_PER_RUN = 2;            // ลบการ์ดได้ไม่เกิน 2 ครั้ง/หนึ่ง run
+export const GAMBLE_WIN_GOLD = 40;
+export const GAMBLE_LOSE_HP = 10;
+export const TREASURE_MIN = 30;
+export const TREASURE_MAX = 80;
+
 // === Example enemy ===
 export const ENEMY_SLIME: EnemyState = {
   id: 'slime', name: 'Slime',

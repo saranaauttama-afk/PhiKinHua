@@ -17,6 +17,7 @@ export function baseNewState(seed: string): GameState {
     // ✅ ฟิลด์ที่เพิ่มใน M2
     blessings: [],
     turnFlags: { blessingOnce: {} },
+    runCounters: { removed: 0 },
     rewardOptions: undefined,
     map: undefined,
     shopStock: undefined,

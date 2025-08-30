@@ -4,14 +4,15 @@ import { applyCardEffect, baseNewState, buildAndShuffleDeck, drawUpTo, endEnemyT
 import type { RNG } from './rng';
 import { rollRewardOptionsByTier } from './reward';
 import { rollShopStock } from './shop';
-import { availableNodes, completeAndAdvance, generateMap,findNode  } from './map';
+import { availableNodes, completeAndAdvance, generateMap, findNode } from './map';
 import { getCardPlayedFns, resetBlessingTurnFlags, runBlessingsTurnHook } from './blessingRuntime';
+import { openRemoveEvent, pickEventKind, rollGamble, rollShrine, rollTreasure, applyRemoveCard } from './events';
 
 export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state: GameState; rng: RNG } {
   // Always work on a copy to keep call-site expectations pure
   let s: GameState = JSON.parse(JSON.stringify(state));
   let r = rng;
-   // ✅ กัน state รูปร่างไม่ครบ (เช่นมาจาก save เก่า/entry ทางลัด)
+  // ✅ กัน state รูปร่างไม่ครบ (เช่นมาจาก save เก่า/entry ทางลัด)
   s.blessings = s.blessings ?? [];
   s.turnFlags = s.turnFlags ?? { blessingOnce: {} };
 
@@ -21,6 +22,7 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       // init blessing storage
       s.blessings = s.blessings ?? [];
       s.turnFlags = s.turnFlags ?? { blessingOnce: {} };
+      s.runCounters = { removed: 0 };
       // สร้างแผนที่สำหรับ Act (deterministic ด้วย RNG)
       const g = generateMap(r);
       r = g.rng;
@@ -56,7 +58,7 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
         }
       } catch (e: any) {
         s.log.push(`Blessing error: ${e?.message ?? String(e)}`);
-      }    
+      }
       // move to discard
       const [c] = s.piles.hand.splice(idx, 1);
       s.piles.discard.push(c);
@@ -102,7 +104,29 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
         s.event = { type: 'bonfire', healed: false };
         s.phase = 'event';
         s.log.push(`Enter node ${cmd.nodeId} -> Bonfire`);
-      } else {
+      } else if (ok.kind === 'event') {
+        // pick event kind
+        const pk = pickEventKind(r); r = pk.rng;
+        if (pk.kind === 'shrine') {
+          const sh = rollShrine(r, s, 3); r = sh.rng;
+          s.event = sh.event;
+          s.phase = 'event';
+          s.log.push(`Enter node ${cmd.nodeId} -> Shrine`);
+        } else if (pk.kind === 'remove') {
+          s.event = openRemoveEvent();
+          s.phase = 'event';
+          s.log.push(`Enter node ${cmd.nodeId} -> Remove`);
+        } else if (pk.kind === 'gamble') {
+          s.event = { type: 'gamble' };
+          s.phase = 'event';
+          s.log.push(`Enter node ${cmd.nodeId} -> Gamble`);
+        } else {
+          s.event = { type: 'treasure' };
+          s.phase = 'event';
+          s.log.push(`Enter node ${cmd.nodeId} -> Treasure`);
+        }
+      }
+      else {
         // combat: monster/elite/boss
         s.phase = 'combat';
         s.turn = 1;
@@ -115,11 +139,11 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
         s.log.push(`Enter node ${cmd.nodeId} -> Combat vs ${s.enemy?.name ?? 'Enemy'}`);
       }
       return { state: s, rng: r };
-    }    
+    }
     case 'EndTurn': {
       if (s.phase !== 'combat') return { state: s, rng: r };
       // ✅ on_turn_end
-      runBlessingsTurnHook(s, 'on_turn_end');      
+      runBlessingsTurnHook(s, 'on_turn_end');
       // Enemy turn
       endEnemyTurn(s);
       if (isDefeat(s)) {
@@ -183,6 +207,53 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       }
       return { state: s, rng: r };
     }
+    case 'EventChooseBlessing': {
+      if (s.phase !== 'event' || !s.event || s.event.type !== 'shrine') return { state: s, rng: r };
+      const idx = cmd.index;
+      const pick = s.event.options[idx];
+      if (!pick) return { state: s, rng: r };
+      // no-dup: กันซ้ำอีกชั้น
+      if (!s.blessings.find(b => b.id === pick.id)) {
+        s.blessings.push(pick);
+        s.event.chosenId = pick.id;
+        s.log.push(`Shrine: took ${pick.name}`);
+      } else {
+        s.log.push('Shrine: already owned');
+      }
+      return { state: s, rng: r };
+    }
+    case 'EventRemoveCard': {
+      if (s.phase !== 'event' || !s.event || s.event.type !== 'remove') return { state: s, rng: r };
+      const ok = applyRemoveCard(s, cmd.pile, cmd.index);
+      if (!ok) s.log.push('Remove: failed or cap reached');
+      return { state: s, rng: r };
+    }
+    case 'EventGambleRoll': {
+      if (s.phase !== 'event' || !s.event || s.event.type !== 'gamble') return { state: s, rng: r };
+      if (!s.event.resolved) {
+        const g = rollGamble(r); r = g.rng;
+        s.event.resolved = g.resolved;
+        if (g.resolved.outcome === 'win') {
+          s.player.gold += g.resolved.gold ?? 0;
+          s.log.push(`Gamble: WIN +${g.resolved.gold}g`);
+        } else {
+          s.player.hp = Math.max(0, s.player.hp - (g.resolved.hpLoss ?? 0));
+          s.log.push(`Gamble: LOSE -${g.resolved.hpLoss} HP`);
+          if (s.player.hp === 0) { s.phase = 'defeat'; }
+        }
+      }
+      return { state: s, rng: r };
+    }
+    case 'EventTreasureOpen': {
+      if (s.phase !== 'event' || !s.event || s.event.type !== 'treasure') return { state: s, rng: r };
+      if (s.event.amount == null) {
+        const t = rollTreasure(r); r = t.rng;
+        s.event.amount = t.amount;
+        s.player.gold += t.amount;
+        s.log.push(`Treasure: +${t.amount}g`);
+      }
+      return { state: s, rng: r };
+    }    
     case 'CompleteNode': {
       // ปิด modal/event ทั้งหมด แล้ว “กลับเมนู” ชั่วคราว (ก่อนมี map)
       // ปิด modal แล้วกลับแผนที่ + เลื่อนไปคอลัมน์ถัดไป
@@ -190,7 +261,7 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       s.rewardOptions = undefined;
       s.enemy = undefined;
       s.shopStock = undefined;
-      s.event = undefined;     
+      s.event = undefined;
       s.combatVictoryLock = false; // ✅ พร้อมคอมแบตใหม่       
       if (s.map) {
         const node = findNode(s.map, s.map.currentNodeId);
@@ -209,7 +280,7 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       s.phase = 'map';
       s.turn = 0;
       return { state: s, rng: r };
-    }    
+    }
     // ===== QA Commands (debug only) =====
     case 'QA_KillEnemy': {
       if (s.phase !== 'combat' || !s.enemy) return { state: s, rng: r };
@@ -260,7 +331,7 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       if (!s.blessings.find(b => b.id === demo.id)) s.blessings.push(demo);
       s.log.push('QA: added blessing "Battle Rhythm"');
       return { state: s, rng: r };
-    }   
+    }
     case 'QA_OpenShopHere': {
       // เปิดร้าน ณ จุดนี้ (สำหรับเทส UI/shop flow)
       const stock = rollShopStock(r, 6, 1); r = stock.rng;
@@ -268,7 +339,32 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       s.phase = 'shop';
       s.log.push('QA: opened Shop here');
       return { state: s, rng: r };
-    } 
+    }
+    case 'QA_OpenShrine': {
+      const sh = rollShrine(r, s, 3); r = sh.rng;
+      s.event = sh.event;
+      s.phase = 'event';
+      s.log.push('QA: opened Shrine');
+      return { state: s, rng: r };
+    }
+    case 'QA_OpenRemove': {
+      s.event = openRemoveEvent();
+      s.phase = 'event';
+      s.log.push('QA: opened Remove');
+      return { state: s, rng: r };
+    }
+    case 'QA_OpenGamble': {
+      s.event = { type: 'gamble' };
+      s.phase = 'event';
+      s.log.push('QA: opened Gamble');
+      return { state: s, rng: r };
+    }
+    case 'QA_OpenTreasure': {
+      s.event = { type: 'treasure' };
+      s.phase = 'event';
+      s.log.push('QA: opened Treasure');
+      return { state: s, rng: r };
+    }    
     default:
       return { state: s, rng: r };
   }

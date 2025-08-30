@@ -22,7 +22,7 @@ const makeEmptyState = (): GameState => ({
   seed: '',
   phase: 'menu',
   turn: 0,
-  player: { hp: 50, maxHp: 50, block: 0, energy: 3, gold: START_GOLD  },
+  player: { hp: 50, maxHp: 50, block: 0, energy: 3, gold: START_GOLD },
   enemy: undefined,
   piles: { draw: [], hand: [], discard: [], exhaust: [] },
   log: [],
@@ -124,7 +124,7 @@ export default function Home() {
         {/* HUD: Gold */}
         <View className="rounded-2xl p-4 bg-zinc-800/70 border border-white/10 mb-4">
           <Text className="text-white">Gold: {state.player.gold}g</Text>
-        </View>        
+        </View>
 
         {/* Controls */}
         <View className="rounded-2xl p-4 bg-zinc-800/50 border border-white/10 mb-4">
@@ -147,8 +147,12 @@ export default function Home() {
             <Button title="QA: Draw 1" onPress={() => dispatch({ type: 'QA_Draw', count: 1 })} disabled={!inCombat} />
             <Button title="QA: Energy=3" onPress={() => dispatch({ type: 'QA_SetEnergy', value: 3 })} disabled={!inCombat} />
             <Button title="QA: Blessing Demo" onPress={() => dispatch({ type: 'QA_AddBlessingDemo' })} />
-              <Button title="QA: Open Shop" onPress={() => dispatch({ type: 'QA_OpenShopHere' })} />
-          </View>          
+            <Button title="QA: Open Shop" onPress={() => dispatch({ type: 'QA_OpenShopHere' })} />
+            <Button title="QA: Shrine" onPress={() => dispatch({ type: 'QA_OpenShrine' })} />
+            <Button title="QA: Remove" onPress={() => dispatch({ type: 'QA_OpenRemove' })} />
+            <Button title="QA: Gamble" onPress={() => dispatch({ type: 'QA_OpenGamble' })} />
+            <Button title="QA: Treasure" onPress={() => dispatch({ type: 'QA_OpenTreasure' })} />
+          </View>
         </View>
 
         {/* === Map View (เลือกโหนด) === */}
@@ -166,9 +170,9 @@ export default function Home() {
                   <Text className="text-white font-semibold">
                     {n.kind === 'boss' ? '👑 Boss'
                       : n.kind === 'elite' ? '💀 Elite'
-                      : n.kind === 'shop' ? '🛒 Shop'
-                      : n.kind === 'bonfire' ? '🔥 Bonfire'
-                      : '👾 Monster'} {n.col}.{n.row}
+                        : n.kind === 'shop' ? '🛒 Shop'
+                          : n.kind === 'bonfire' ? '🔥 Bonfire'
+                            : '👾 Monster'} {n.col}.{n.row}
                   </Text>
                 </Pressable>
               ))}
@@ -262,7 +266,7 @@ export default function Home() {
                 className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"
               >
                 <Text className="text-white font-semibold">Reroll (-20g)</Text>
-              </Pressable>              
+              </Pressable>
               <Pressable
                 onPress={() => dispatch({ type: 'CompleteNode' })}
                 className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"
@@ -274,7 +278,7 @@ export default function Home() {
         )}
 
         {/* === Bonfire Event === */}
-        {inEvent && (
+        {inEvent && state.event?.type === 'bonfire' && (
           <View className="mt-6 rounded-2xl p-4 bg-zinc-800/80 border border-white/10">
             <Text className="text-white text-lg font-semibold mb-2">Bonfire 🔥</Text>
             <Text className="text-white/80">HP {state.player.hp}/{state.player.maxHp}</Text>
@@ -289,6 +293,115 @@ export default function Home() {
                 onPress={() => dispatch({ type: 'CompleteNode' })}
                 className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"
               >
+                <Text className="text-white font-semibold">CompleteNode</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {/* Shrine */}
+        {inEvent && state.event?.type === 'shrine' && (
+          <View className="mt-6 rounded-2xl p-4 bg-zinc-800/80 border border-white/10">
+            <Text className="text-white text-lg font-semibold mb-2">Shrine ✨ — Choose a blessing</Text>
+            <View className="flex-row gap-2 flex-wrap">
+              {(state.event.options ?? []).map((b, i) => (
+                <Pressable key={b.id} onPress={() => dispatch({ type: 'EventChooseBlessing', index: i })}
+                  className="px-3 py-2 rounded-2xl border bg-zinc-900 border-white/10 active:opacity-70">
+                  <Text className="text-white font-semibold">{b.name} {b.rarity ? `(${b.rarity})` : ''}</Text>
+                  {b.desc ? <Text className="text-white/70">{b.desc}</Text> : null}
+                </Pressable>
+              ))}
+            </View>
+            <View className="flex-row gap-2 mt-3">
+              <Pressable onPress={() => dispatch({ type: 'CompleteNode' })}
+                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70">
+                <Text className="text-white font-semibold">CompleteNode</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {/* Remove+ */}
+        {inEvent && state.event?.type === 'remove' && (
+          <View className="mt-6 rounded-2xl p-4 bg-zinc-800/80 border border-white/10">
+            <Text className="text-white text-lg font-semibold mb-2">Remove Card 🗑️</Text>
+            <Text className="text-white/70 mb-2">Removed this run: {state.runCounters?.removed ?? 0}/{state.event.capPerRun}</Text>
+            <Text className="text-white/80">Hand</Text>
+            <View className="flex-row gap-2 flex-wrap mb-2">
+              {state.piles.hand.map((c, i) => (
+                <Pressable key={`h${i}`} onPress={() => dispatch({ type: 'EventRemoveCard', pile: 'hand', index: i })}
+                  className="px-3 py-2 rounded-2xl border bg-zinc-900 border-white/10 active:opacity-70">
+                  <Text className="text-white">{c.name}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <Text className="text-white/80">Draw</Text>
+            <View className="flex-row gap-2 flex-wrap mb-2">
+              {state.piles.draw.map((c, i) => (
+                <Pressable key={`d${i}`} onPress={() => dispatch({ type: 'EventRemoveCard', pile: 'draw', index: i })}
+                  className="px-3 py-2 rounded-2xl border bg-zinc-900 border-white/10 active:opacity-70">
+                  <Text className="text-white">{c.name}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <Text className="text-white/80">Discard</Text>
+            <View className="flex-row gap-2 flex-wrap">
+              {state.piles.discard.map((c, i) => (
+                <Pressable key={`x${i}`} onPress={() => dispatch({ type: 'EventRemoveCard', pile: 'discard', index: i })}
+                  className="px-3 py-2 rounded-2xl border bg-zinc-900 border-white/10 active:opacity-70">
+                  <Text className="text-white">{c.name}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <View className="flex-row gap-2 mt-3">
+              <Pressable onPress={() => dispatch({ type: 'CompleteNode' })}
+                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70">
+                <Text className="text-white font-semibold">CompleteNode</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {/* Gamble */}
+        {inEvent && state.event?.type === 'gamble' && (
+          <View className="mt-6 rounded-2xl p-4 bg-zinc-800/80 border border-white/10">
+            <Text className="text-white text-lg font-semibold mb-2">Gamble 🎲</Text>
+            {state.event.resolved ? (
+              <Text className="text-white/80">
+                {state.event.resolved.outcome === 'win'
+                  ? `You WIN +${state.event.resolved.gold}g`
+                  : `You LOSE -${state.event.resolved.hpLoss} HP`}
+              </Text>
+            ) : (
+              <Pressable onPress={() => dispatch({ type: 'EventGambleRoll' })}
+                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70 mt-1">
+                <Text className="text-white font-semibold">Roll</Text>
+              </Pressable>
+            )}
+            <View className="flex-row gap-2 mt-3">
+              <Pressable onPress={() => dispatch({ type: 'CompleteNode' })}
+                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70">
+                <Text className="text-white font-semibold">CompleteNode</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {/* Treasure */}
+        {inEvent && state.event?.type === 'treasure' && (
+          <View className="mt-6 rounded-2xl p-4 bg-zinc-800/80 border border-white/10">
+            <Text className="text-white text-lg font-semibold mb-2">Treasure 💰</Text>
+            {state.event.amount != null ? (
+              <Text className="text-white/80">You found {state.event.amount}g</Text>
+            ) : (
+              <Pressable onPress={() => dispatch({ type: 'EventTreasureOpen' })}
+                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70 mt-1">
+                <Text className="text-white font-semibold">Open</Text>
+              </Pressable>
+            )}
+            <View className="flex-row gap-2 mt-3">
+              <Pressable onPress={() => dispatch({ type: 'CompleteNode' })}
+                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70">
                 <Text className="text-white font-semibold">CompleteNode</Text>
               </Pressable>
             </View>
