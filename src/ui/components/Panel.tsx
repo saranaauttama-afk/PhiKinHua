@@ -25,7 +25,10 @@ export default function Panel({ theme, title, style, children }: Props) {
       ]}
     >
       {title ? (
-        <Text style={{ color: theme.colors.text, fontSize: 18, fontWeight: '600', marginBottom: 8 }}>
+        <Text style={{
+          color: theme.colors.text, fontSize: 18, fontWeight: '600', marginBottom: 8,
+          fontFamily: theme.fonts?.title,
+        }}>
           {title}
         </Text>
       ) : null}

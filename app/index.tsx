@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFonts, NotoSerifThai_400Regular, NotoSerifThai_700Bold } from '@expo-google-fonts/noto-serif-thai';
 import { Animated } from 'react-native';
 import { getTheme, type SkinId } from '../src/ui/theme';
 import MapView from '../src/ui/components/MapView/MapView';
@@ -12,6 +13,7 @@ import ShopModal from '../src/ui/components/Modals/ShopModal';
 import HUD from '../src/ui/components/HUD';
 import BattleView from '../src/ui/components/BattleView/BattleView';
 import EventModal from '../src/ui/components/Modals/EventModal';
+import Background from '../src/ui/components/Background';
 import { create } from 'zustand';
 import type { Command, GameState } from '../src/core/types';
 import { applyCommand } from '../src/core/reducer';
@@ -92,7 +94,17 @@ export default function Home() {
   const { state, dispatch, newRun } = useGame();
   const [seed, setSeed] = useState('demo-001');
   const [skin, setSkin] = useState<SkinId>('wire');
-  const theme = getTheme(skin);
+  const baseTheme = getTheme(skin);
+  const [fontsLoaded] = useFonts({ NotoSerifThai_400Regular, NotoSerifThai_700Bold });
+  const theme = React.useMemo(() => {
+    if (skin === 'thai_fairytale' && fontsLoaded) {
+      return {
+        ...baseTheme,
+        fonts: { title: 'NotoSerifThai_700Bold', body: 'NotoSerifThai_400Regular' },
+      };
+    }
+    return baseTheme;
+  }, [skin, fontsLoaded]);
   const inCombat = state.phase === 'combat';
   const inReward = state.phase === 'reward';
   const inMap = state.phase === 'map';
@@ -112,6 +124,8 @@ export default function Home() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }}>
+      {/* พื้นหลัง Vignette */}
+      <Background theme={theme} />
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         {/* Header / Skin toggle */}
         <View style={{
@@ -132,14 +146,14 @@ export default function Home() {
                 borderRadius: theme.radius.card, borderWidth: 1, borderColor: theme.colors.border,
                 backgroundColor: 'rgba(255,255,255,0.05)'
               }}>
-              <Text style={{ color: theme.colors.text, fontWeight: '600' }}>Toggle Skin</Text>
+              <Text style={{ color: theme.colors.text, fontWeight: '600', fontFamily: theme.fonts?.title }}>Toggle Skin</Text>
             </Pressable>
           </View>
         </View>
-        <Text className="text-white/60 mb-2">Phase: {state.phase}</Text>
-        <Text className="text-white/60 mb-4">Log: {state.log.slice(-3).join(' | ')}</Text>
+        {/* <Text className="text-white/60 mb-2">Phase: {state.phase}</Text>
+        <Text className="text-white/60 mb-4">Log: {state.log.slice(-3).join(' | ')}</Text> */}
         {/* Header / HUD */}
-        <Text className="text-white text-xl font-bold mb-2">{header}</Text>
+        {/* <Text className="text-white text-xl font-bold mb-2">{header}</Text>
         <View className="flex-row gap-3 mb-3">
           <View className="px-3 py-2 rounded-xl bg-emerald-700/40">
             <Text className="text-white">HP {state.player.hp}/{state.player.maxHp}</Text>
@@ -153,7 +167,7 @@ export default function Home() {
           <View className="px-3 py-2 rounded-xl bg-fuchsia-700/40">
             <Text className="text-white">Hand {hand.length}/{HAND_SIZE}</Text>
           </View>
-        </View>
+        </View> */}
 
         {/* Enemy panel — แสดงเฉพาะตอนคอมแบต */}
         {/* Combat */}
@@ -174,7 +188,7 @@ export default function Home() {
           borderRadius: theme.radius.xl, padding: 16, marginBottom: 16,
           backgroundColor: theme.colors.panel, borderWidth: 1, borderColor: theme.colors.border
         }}>
-          <Text style={{ color: theme.colors.textMuted, marginBottom: 8 }}>Seed</Text>
+          <Text style={{ color: theme.colors.textMuted, marginBottom: 8, fontFamily: theme.fonts?.body }}>Seed</Text>
           <TextInput
             value={seed}
             onChangeText={setSeed}
@@ -217,7 +231,7 @@ export default function Home() {
         )}        
 
         {/* Hand */}
-        <Text className="text-white font-semibold mb-2">Hand</Text>
+        {/* <Text className="text-white font-semibold mb-2">Hand</Text>
         <View className="flex-row gap-2 flex-wrap">
           {hand.map((c, i) => {
             const disabled = !inCombat || state.player.energy < c.cost;
@@ -237,7 +251,7 @@ export default function Home() {
             );
           })}
           {hand.length === 0 && <Text className="text-white/60">Empty</Text>}
-        </View>
+        </View> */}
 
         {/* === Reward Modal (simple) === */}
         {inReward && (

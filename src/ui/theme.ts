@@ -11,9 +11,12 @@ export type ThemeTokens = {
     textMuted: string;
     accent: string;
     good: string;
+    vignetteEdge?: string;   // สีขอบมืด
+    vignetteCenter?: string; // ไฮไลท์กลาง
   };
   radius: { xl: number; card: number };
   durations: { fast: number; normal: number };
+  fonts?: { title?: string; body?: string };
 };
 
 export function getTheme(id: SkinId): ThemeTokens {
@@ -28,6 +31,8 @@ export function getTheme(id: SkinId): ThemeTokens {
         textMuted: 'rgba(247,240,217,0.7)',
         accent: '#d4af37',      // ทองคำ
         good: '#9ae6b4',
+        vignetteEdge: '#000000',
+        vignetteCenter: '#d4af37',
       },
       radius: { xl: 18, card: 16 },
       durations: { fast: 120, normal: 240 },
@@ -44,6 +49,8 @@ export function getTheme(id: SkinId): ThemeTokens {
       textMuted: 'rgba(255,255,255,0.7)',
       accent: '#60a5fa',       // blue-400
       good: '#34d399',         // emerald-400
+      vignetteEdge: '#000000',
+      vignetteCenter: '#60a5fa',
     },
     radius: { xl: 16, card: 14 },
     durations: { fast: 120, normal: 220 },

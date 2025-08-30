@@ -3,7 +3,14 @@
     "name": "PhiKinHua",
     "slug": "PhiKinHua",
     "scheme": "phikinhua",
-    "plugins": ["expo-router"],
-    "extra": { "router": { "origin": false } }
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      }
+    }
   }
 }
