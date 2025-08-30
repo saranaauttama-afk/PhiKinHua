@@ -4,6 +4,14 @@ import { Stack } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Animated } from 'react-native';
+import { getTheme, type SkinId } from '../src/ui/theme';
+import MapView from '../src/ui/components/MapView/MapView';
+import RewardModal from '../src/ui/components/Modals/RewardModal';
+import ShopModal from '../src/ui/components/Modals/ShopModal';
+import HUD from '../src/ui/components/HUD';
+import BattleView from '../src/ui/components/BattleView/BattleView';
+import EventModal from '../src/ui/components/Modals/EventModal';
 import { create } from 'zustand';
 import type { Command, GameState } from '../src/core/types';
 import { applyCommand } from '../src/core/reducer';
@@ -64,9 +72,27 @@ function Button({ title, onPress, disabled }: { title: string; onPress: () => vo
   );
 }
 
+// Lightweight press animation (แทน MotiPressable)
+function ScalePressable({
+  onPress, disabled, style, children,
+}: { onPress: () => void; disabled?: boolean; style?: any; children: React.ReactNode }) {
+  const scale = React.useRef(new Animated.Value(1)).current;
+  const pressIn = () => Animated.timing(scale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start();
+  const pressOut = () => Animated.timing(scale, { toValue: 1, duration: 100, useNativeDriver: true }).start();
+  return (
+    <Animated.View style={[{ transform: [{ scale }] }, style]}>
+      <Pressable onPress={onPress} disabled={disabled} onPressIn={pressIn} onPressOut={pressOut} style={{ padding: 0 }}>
+        {children}
+      </Pressable>
+    </Animated.View>
+  );
+}
+
 export default function Home() {
   const { state, dispatch, newRun } = useGame();
   const [seed, setSeed] = useState('demo-001');
+  const [skin, setSkin] = useState<SkinId>('wire');
+  const theme = getTheme(skin);
   const inCombat = state.phase === 'combat';
   const inReward = state.phase === 'reward';
   const inMap = state.phase === 'map';
@@ -85,8 +111,31 @@ export default function Home() {
   }, [state.phase, state.turn]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' /* zinc-900 */ }}>
-      <ScrollView contentContainerStyle={{ padding: 16, rowGap: 16 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }}>
+      <ScrollView contentContainerStyle={{ padding: 16 }}>
+        {/* Header / Skin toggle */}
+        <View style={{
+          marginBottom: 12,
+          padding: 12,
+          borderRadius: theme.radius.xl,
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          backgroundColor: theme.colors.panel
+        }}>
+          <Text style={{ color: theme.colors.textMuted, marginBottom: 6 }}>
+            Skin: {skin === 'wire' ? 'wire' : 'thai_fairytale'}
+          </Text>
+          <View className="flex-row gap-2">
+            <Pressable onPress={() => setSkin(skin === 'wire' ? 'thai_fairytale' : 'wire')}
+              style={{
+                paddingVertical: 8, paddingHorizontal: 12,
+                borderRadius: theme.radius.card, borderWidth: 1, borderColor: theme.colors.border,
+                backgroundColor: 'rgba(255,255,255,0.05)'
+              }}>
+              <Text style={{ color: theme.colors.text, fontWeight: '600' }}>Toggle Skin</Text>
+            </Pressable>
+          </View>
+        </View>
         <Text className="text-white/60 mb-2">Phase: {state.phase}</Text>
         <Text className="text-white/60 mb-4">Log: {state.log.slice(-3).join(' | ')}</Text>
         {/* Header / HUD */}
@@ -107,34 +156,37 @@ export default function Home() {
         </View>
 
         {/* Enemy panel — แสดงเฉพาะตอนคอมแบต */}
+        {/* Combat */}
         {inCombat && (
-          <View className="rounded-2xl p-4 bg-zinc-800/70 border border-white/10 mb-4">
-            {enemy ? (
-              <>
-                <Text className="text-white text-lg font-semibold">{enemy.name}</Text>
-                <Text className="text-white/80 mt-1">HP {enemy.hp}/{enemy.maxHp}</Text>
-                <Text className="text-white/70 mt-1">Intent: Attack {enemy.dmg}</Text>
-              </>
-            ) : (
-              <Text className="text-white/60">No enemy</Text>
-            )}
-          </View>
+          <BattleView
+            state={state}
+            theme={theme}
+            onPlayCard={(index) => dispatch({ type: 'PlayCard', index })}
+            onEndTurn={() => dispatch({ type: 'EndTurn' })}
+          />
         )}
 
         {/* HUD: Gold */}
-        <View className="rounded-2xl p-4 bg-zinc-800/70 border border-white/10 mb-4">
-          <Text className="text-white">Gold: {state.player.gold}g</Text>
-        </View>
+        <HUD state={state} theme={theme} />
 
         {/* Controls */}
-        <View className="rounded-2xl p-4 bg-zinc-800/50 border border-white/10 mb-4">
-          <Text className="text-white/80 mb-2">Seed</Text>
+        <View style={{
+          borderRadius: theme.radius.xl, padding: 16, marginBottom: 16,
+          backgroundColor: theme.colors.panel, borderWidth: 1, borderColor: theme.colors.border
+        }}>
+          <Text style={{ color: theme.colors.textMuted, marginBottom: 8 }}>Seed</Text>
           <TextInput
             value={seed}
             onChangeText={setSeed}
             placeholder="seed"
             placeholderTextColor="#aaa"
-            className="px-3 py-2 rounded-xl bg-zinc-900 text-white border border-white/10"
+            style={{
+              paddingHorizontal: 12, paddingVertical: 8,
+              borderRadius: theme.radius.card,
+              backgroundColor: 'rgba(0,0,0,0.35)',
+              color: theme.colors.text,
+              borderWidth: 1, borderColor: theme.colors.border
+            }}
           />
           <View className="flex-row gap-2 mt-3 flex-wrap">
             <Button title="New Run" onPress={() => newRun(seed)} />
@@ -157,31 +209,12 @@ export default function Home() {
 
         {/* === Map View (เลือกโหนด) === */}
         {inMap && (
-          <View className="rounded-2xl p-4 bg-zinc-800/70 border border-white/10 mb-4">
-            <Text className="text-white text-lg font-semibold">Map</Text>
-            <Text className="text-white/60 mb-2">Depth {state.map?.depth ?? 0}/{state.map?.totalCols ?? 0}</Text>
-            <View className="flex-row gap-4 flex-wrap">
-              {(state.map?.cols[state.map?.depth ?? 0] ?? []).map((n, i) => (
-                <Pressable
-                  key={n.id}
-                  onPress={() => dispatch({ type: 'EnterNode', nodeId: n.id })}
-                  className="px-3 py-2 rounded-2xl border bg-zinc-900 border-white/10 active:opacity-70"
-                >
-                  <Text className="text-white font-semibold">
-                    {n.kind === 'boss' ? '👑 Boss'
-                      : n.kind === 'elite' ? '💀 Elite'
-                        : n.kind === 'shop' ? '🛒 Shop'
-                          : n.kind === 'bonfire' ? '🔥 Bonfire'
-                            : '👾 Monster'} {n.col}.{n.row}
-                  </Text>
-                </Pressable>
-              ))}
-              {((state.map?.cols[state.map?.depth ?? 0] ?? []).length === 0) && (
-                <Text className="text-white/60">Act complete — (จะต่อยอดใน M1.2)</Text>
-              )}
-            </View>
-          </View>
-        )}
+          <MapView
+            state={state}
+            theme={theme}
+            onEnterNode={(nodeId) => dispatch({ type: 'EnterNode', nodeId })}
+          />
+        )}        
 
         {/* Hand */}
         <Text className="text-white font-semibold mb-2">Hand</Text>
@@ -208,215 +241,55 @@ export default function Home() {
 
         {/* === Reward Modal (simple) === */}
         {inReward && (
-          <View className="mt-6 rounded-2xl p-4 bg-zinc-800/80 border border-white/10">
-            <Text className="text-white text-lg font-semibold mb-2">Choose a reward</Text>
-            <View className="flex-row gap-2 flex-wrap">
-              {(state.rewardOptions ?? []).map((c, i) => (
-                <Pressable
-                  key={i}
-                  onPress={() => dispatch({ type: 'TakeReward', index: i })}
-                  className="px-3 py-2 rounded-2xl border bg-zinc-900 border-white/10 active:opacity-70"
-                >
-                  <Text className="text-white font-semibold">{c.name}</Text>
-                  <Text className="text-white/70">Cost {c.cost}</Text>
-                  {c.dmg ? <Text className="text-red-300">DMG {c.dmg}</Text> : null}
-                  {c.block ? <Text className="text-sky-300">Block {c.block}</Text> : null}
-                  {c.energyGain ? <Text className="text-amber-300">+Energy {c.energyGain}</Text> : null}
-                  {c.draw ? <Text className="text-emerald-300">Draw {c.draw}</Text> : null}
-                </Pressable>
-              ))}
-            </View>
-            <View className="flex-row gap-2 mt-3">
-              <Pressable
-                onPress={() => dispatch({ type: 'CompleteNode' })}
-                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"
-              >
-                <Text className="text-white font-semibold">CompleteNode</Text>
-              </Pressable>
-            </View>
-          </View>
+          <RewardModal
+            state={state}
+            theme={theme}
+            onTake={(index) => dispatch({ type: 'TakeReward', index })}
+            onComplete={() => dispatch({ type: 'CompleteNode' })}
+          />
         )}
 
         {/* === Shop Modal (ซื้อได้หลายใบ + รีโรล) === */}
         {inShop && (
-          <View className="mt-6 rounded-2xl p-4 bg-zinc-800/80 border border-white/10">
-            <Text className="text-white text-lg font-semibold mb-2">Shop 🛒</Text>
-            <Text className="text-white/80 mb-2">Gold: {state.player.gold}g</Text>
-            <View className="flex-row gap-2 flex-wrap">
-              {(state.shopStock ?? []).map((item, i) => (
-                <Pressable
-                  key={i}
-                  onPress={() => dispatch({ type: 'TakeShop', index: i })}
-                  className="px-3 py-2 rounded-2xl border bg-zinc-900 border-white/10 active:opacity-70 disabled:opacity-40"
-                  disabled={state.player.gold < item.price}
-                >
-                  <Text className="text-white font-semibold">
-                    {item.card.name} {item.card.rarity ? `(${item.card.rarity})` : ''}
-                  </Text>
-                  <Text className="text-white/70">Price: {item.price}g</Text>
-                  <Text className="text-white/70">Card Cost: {item.card.cost}</Text>
-                  {item.card.dmg ? <Text className="text-red-300">DMG {item.card.dmg}</Text> : null}
-                  {item.card.block ? <Text className="text-sky-300">Block {item.card.block}</Text> : null}
-                </Pressable>
-              ))}
-            </View>
-            <View className="flex-row gap-2 mt-3">
-              <Pressable
-                onPress={() => dispatch({ type: 'ShopReroll' })}
-                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"
-              >
-                <Text className="text-white font-semibold">Reroll (-20g)</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => dispatch({ type: 'CompleteNode' })}
-                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"
-              >
-                <Text className="text-white font-semibold">CompleteNode</Text>
-              </Pressable>
-            </View>
-          </View>
-        )}
+          <ShopModal
+            state={state}
+            theme={theme}
+            onTake={(index) => dispatch({ type: 'TakeShop', index })}
+            onReroll={() => dispatch({ type: 'ShopReroll' })}
+            onComplete={() => dispatch({ type: 'CompleteNode' })}
+          />
+        )}        
 
-        {/* === Bonfire Event === */}
-        {inEvent && state.event?.type === 'bonfire' && (
-          <View className="mt-6 rounded-2xl p-4 bg-zinc-800/80 border border-white/10">
-            <Text className="text-white text-lg font-semibold mb-2">Bonfire 🔥</Text>
-            <Text className="text-white/80">HP {state.player.hp}/{state.player.maxHp}</Text>
-            <View className="flex-row gap-2 mt-3">
-              <Pressable
-                onPress={() => dispatch({ type: 'DoBonfireHeal' })}
-                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"
-              >
-                <Text className="text-white font-semibold">Heal +10</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => dispatch({ type: 'CompleteNode' })}
-                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"
-              >
-                <Text className="text-white font-semibold">CompleteNode</Text>
-              </Pressable>
-            </View>
-          </View>
-        )}
-
-        {/* Shrine */}
-        {inEvent && state.event?.type === 'shrine' && (
-          <View className="mt-6 rounded-2xl p-4 bg-zinc-800/80 border border-white/10">
-            <Text className="text-white text-lg font-semibold mb-2">Shrine ✨ — Choose a blessing</Text>
-            <View className="flex-row gap-2 flex-wrap">
-              {(state.event.options ?? []).map((b, i) => (
-                <Pressable key={b.id} onPress={() => dispatch({ type: 'EventChooseBlessing', index: i })}
-                  className="px-3 py-2 rounded-2xl border bg-zinc-900 border-white/10 active:opacity-70">
-                  <Text className="text-white font-semibold">{b.name} {b.rarity ? `(${b.rarity})` : ''}</Text>
-                  {b.desc ? <Text className="text-white/70">{b.desc}</Text> : null}
-                </Pressable>
-              ))}
-            </View>
-            <View className="flex-row gap-2 mt-3">
-              <Pressable onPress={() => dispatch({ type: 'CompleteNode' })}
-                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70">
-                <Text className="text-white font-semibold">CompleteNode</Text>
-              </Pressable>
-            </View>
-          </View>
-        )}
-
-        {/* Remove+ */}
-        {inEvent && state.event?.type === 'remove' && (
-          <View className="mt-6 rounded-2xl p-4 bg-zinc-800/80 border border-white/10">
-            <Text className="text-white text-lg font-semibold mb-2">Remove Card 🗑️</Text>
-            <Text className="text-white/70 mb-2">Removed this run: {state.runCounters?.removed ?? 0}/{state.event.capPerRun}</Text>
-            <Text className="text-white/80">Hand</Text>
-            <View className="flex-row gap-2 flex-wrap mb-2">
-              {state.piles.hand.map((c, i) => (
-                <Pressable key={`h${i}`} onPress={() => dispatch({ type: 'EventRemoveCard', pile: 'hand', index: i })}
-                  className="px-3 py-2 rounded-2xl border bg-zinc-900 border-white/10 active:opacity-70">
-                  <Text className="text-white">{c.name}</Text>
-                </Pressable>
-              ))}
-            </View>
-            <Text className="text-white/80">Draw</Text>
-            <View className="flex-row gap-2 flex-wrap mb-2">
-              {state.piles.draw.map((c, i) => (
-                <Pressable key={`d${i}`} onPress={() => dispatch({ type: 'EventRemoveCard', pile: 'draw', index: i })}
-                  className="px-3 py-2 rounded-2xl border bg-zinc-900 border-white/10 active:opacity-70">
-                  <Text className="text-white">{c.name}</Text>
-                </Pressable>
-              ))}
-            </View>
-            <Text className="text-white/80">Discard</Text>
-            <View className="flex-row gap-2 flex-wrap">
-              {state.piles.discard.map((c, i) => (
-                <Pressable key={`x${i}`} onPress={() => dispatch({ type: 'EventRemoveCard', pile: 'discard', index: i })}
-                  className="px-3 py-2 rounded-2xl border bg-zinc-900 border-white/10 active:opacity-70">
-                  <Text className="text-white">{c.name}</Text>
-                </Pressable>
-              ))}
-            </View>
-            <View className="flex-row gap-2 mt-3">
-              <Pressable onPress={() => dispatch({ type: 'CompleteNode' })}
-                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70">
-                <Text className="text-white font-semibold">CompleteNode</Text>
-              </Pressable>
-            </View>
-          </View>
-        )}
-
-        {/* Gamble */}
-        {inEvent && state.event?.type === 'gamble' && (
-          <View className="mt-6 rounded-2xl p-4 bg-zinc-800/80 border border-white/10">
-            <Text className="text-white text-lg font-semibold mb-2">Gamble 🎲</Text>
-            {state.event.resolved ? (
-              <Text className="text-white/80">
-                {state.event.resolved.outcome === 'win'
-                  ? `You WIN +${state.event.resolved.gold}g`
-                  : `You LOSE -${state.event.resolved.hpLoss} HP`}
-              </Text>
-            ) : (
-              <Pressable onPress={() => dispatch({ type: 'EventGambleRoll' })}
-                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70 mt-1">
-                <Text className="text-white font-semibold">Roll</Text>
-              </Pressable>
-            )}
-            <View className="flex-row gap-2 mt-3">
-              <Pressable onPress={() => dispatch({ type: 'CompleteNode' })}
-                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70">
-                <Text className="text-white font-semibold">CompleteNode</Text>
-              </Pressable>
-            </View>
-          </View>
-        )}
-
-        {/* Treasure */}
-        {inEvent && state.event?.type === 'treasure' && (
-          <View className="mt-6 rounded-2xl p-4 bg-zinc-800/80 border border-white/10">
-            <Text className="text-white text-lg font-semibold mb-2">Treasure 💰</Text>
-            {state.event.amount != null ? (
-              <Text className="text-white/80">You found {state.event.amount}g</Text>
-            ) : (
-              <Pressable onPress={() => dispatch({ type: 'EventTreasureOpen' })}
-                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70 mt-1">
-                <Text className="text-white font-semibold">Open</Text>
-              </Pressable>
-            )}
-            <View className="flex-row gap-2 mt-3">
-              <Pressable onPress={() => dispatch({ type: 'CompleteNode' })}
-                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70">
-                <Text className="text-white font-semibold">CompleteNode</Text>
-              </Pressable>
-            </View>
-          </View>
-        )}
+        {/* === Event Modal (รวมทุกชนิด) === */}
+        {inEvent && (
+          <EventModal
+            state={state}
+            theme={theme}
+            onBonfireHeal={() => dispatch({ type: 'DoBonfireHeal' })}
+            onChooseBlessing={(index) => dispatch({ type: 'EventChooseBlessing', index })}
+            onRemoveCard={(pile, index) => dispatch({ type: 'EventRemoveCard', pile, index })}
+            onGambleRoll={() => dispatch({ type: 'EventGambleRoll' })}
+            onTreasureOpen={() => dispatch({ type: 'EventTreasureOpen' })}
+            onComplete={() => dispatch({ type: 'CompleteNode' })}
+          />
+        )}        
 
         {/* === Victory screen (จบวิ่ง) === */}
         {inVictory && (
-          <View className="mt-6 rounded-2xl p-4 bg-emerald-900/40 border border-emerald-400/30">
+          <View style={{
+            marginTop: 24, borderRadius: theme.radius.xl, padding: 16,
+            backgroundColor: 'rgba(16,185,129,0.15)', borderWidth: 1, borderColor: 'rgba(52,211,153,0.3)'
+          }}>
             <Text className="text-white text-lg font-semibold">Act Cleared! 🎉</Text>
             <Text className="text-white/70 mt-1">You defeated the boss. Start a new run to play again.</Text>
             <View className="flex-row gap-2 mt-3">
               <Pressable
                 onPress={() => /* เริ่มใหม่ด้วย seed เดิม */ newRun(state.seed)}
-                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"
+                style={{
+                  paddingVertical: 8, paddingHorizontal: 16,
+                  borderRadius: theme.radius.card, borderWidth: 1, borderColor: theme.colors.border,
+                  backgroundColor: 'rgba(255,255,255,0.05)'
+                }}
               >
                 <Text className="text-white font-semibold">New Run (same seed)</Text>
               </Pressable>
