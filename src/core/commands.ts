@@ -1,5 +1,5 @@
 import type { CardData, GameState } from './types';
-import { HAND_SIZE, START_ENERGY, START_DECK } from './balance';
+import { HAND_SIZE, START_ENERGY, START_DECK,START_GOLD  } from './balance';
 import { shuffle, type RNG } from './rng';
 
 // NOTE: We keep state updates pure by working on shallow copies of containers.
@@ -10,7 +10,7 @@ export function baseNewState(seed: string): GameState {
     seed,
     phase: 'menu',
     turn: 0,
-    player: { hp: 50, maxHp: 50, block: 0, energy: START_ENERGY },
+    player: { hp: 50, maxHp: 50, block: 0, energy: START_ENERGY, gold: START_GOLD },
     enemy: undefined,
     piles: { draw: [], hand: [], discard: [], exhaust: [] },
     log: [],
@@ -19,7 +19,7 @@ export function baseNewState(seed: string): GameState {
     turnFlags: { blessingOnce: {} },
     rewardOptions: undefined,
     map: undefined,
-    shopOptions: undefined,
+    shopStock: undefined,
     event: undefined,
     combatVictoryLock: false,    
   };

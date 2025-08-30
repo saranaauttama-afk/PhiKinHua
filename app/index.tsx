@@ -9,6 +9,7 @@ import type { Command, GameState } from '../src/core/types';
 import { applyCommand } from '../src/core/reducer';
 import { HAND_SIZE } from '../src/core/balance';
 import { makeRng, seedFromString, type RNG } from '../src/core/rng';
+import { START_GOLD } from '../src/core/balance'; // path ตามโปรเจกต์คุณ
 
 type Store = {
   state: GameState;
@@ -21,7 +22,7 @@ const makeEmptyState = (): GameState => ({
   seed: '',
   phase: 'menu',
   turn: 0,
-  player: { hp: 50, maxHp: 50, block: 0, energy: 3 },
+  player: { hp: 50, maxHp: 50, block: 0, energy: 3, gold: START_GOLD  },
   enemy: undefined,
   piles: { draw: [], hand: [], discard: [], exhaust: [] },
   log: [],
@@ -31,7 +32,7 @@ const makeEmptyState = (): GameState => ({
   // optionals (explicit for clarity)
   rewardOptions: undefined,
   map: undefined,
-  shopOptions: undefined,
+  shopStock: undefined,
   event: undefined,
   combatVictoryLock: false,
 });
@@ -86,6 +87,8 @@ export default function Home() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' /* zinc-900 */ }}>
       <ScrollView contentContainerStyle={{ padding: 16, rowGap: 16 }}>
+        <Text className="text-white/60 mb-2">Phase: {state.phase}</Text>
+        <Text className="text-white/60 mb-4">Log: {state.log.slice(-3).join(' | ')}</Text>
         {/* Header / HUD */}
         <Text className="text-white text-xl font-bold mb-2">{header}</Text>
         <View className="flex-row gap-3 mb-3">
@@ -118,6 +121,11 @@ export default function Home() {
           </View>
         )}
 
+        {/* HUD: Gold */}
+        <View className="rounded-2xl p-4 bg-zinc-800/70 border border-white/10 mb-4">
+          <Text className="text-white">Gold: {state.player.gold}g</Text>
+        </View>        
+
         {/* Controls */}
         <View className="rounded-2xl p-4 bg-zinc-800/50 border border-white/10 mb-4">
           <Text className="text-white/80 mb-2">Seed</Text>
@@ -139,6 +147,7 @@ export default function Home() {
             <Button title="QA: Draw 1" onPress={() => dispatch({ type: 'QA_Draw', count: 1 })} disabled={!inCombat} />
             <Button title="QA: Energy=3" onPress={() => dispatch({ type: 'QA_SetEnergy', value: 3 })} disabled={!inCombat} />
             <Button title="QA: Blessing Demo" onPress={() => dispatch({ type: 'QA_AddBlessingDemo' })} />
+              <Button title="QA: Open Shop" onPress={() => dispatch({ type: 'QA_OpenShopHere' })} />
           </View>          
         </View>
 
@@ -224,25 +233,36 @@ export default function Home() {
           </View>
         )}
 
-        {/* === Shop Modal (เลือกฟรี 1 ใบ) === */}
+        {/* === Shop Modal (ซื้อได้หลายใบ + รีโรล) === */}
         {inShop && (
           <View className="mt-6 rounded-2xl p-4 bg-zinc-800/80 border border-white/10">
-            <Text className="text-white text-lg font-semibold mb-2">Shop — take 1 card (free)</Text>
+            <Text className="text-white text-lg font-semibold mb-2">Shop 🛒</Text>
+            <Text className="text-white/80 mb-2">Gold: {state.player.gold}g</Text>
             <View className="flex-row gap-2 flex-wrap">
-              {(state.shopOptions ?? []).map((c, i) => (
+              {(state.shopStock ?? []).map((item, i) => (
                 <Pressable
                   key={i}
                   onPress={() => dispatch({ type: 'TakeShop', index: i })}
-                  className="px-3 py-2 rounded-2xl border bg-zinc-900 border-white/10 active:opacity-70"
+                  className="px-3 py-2 rounded-2xl border bg-zinc-900 border-white/10 active:opacity-70 disabled:opacity-40"
+                  disabled={state.player.gold < item.price}
                 >
-                  <Text className="text-white font-semibold">{c.name} {c.rarity ? `(${c.rarity})` : ''}</Text>
-                  <Text className="text-white/70">Cost {c.cost}</Text>
-                  {c.dmg ? <Text className="text-red-300">DMG {c.dmg}</Text> : null}
-                  {c.block ? <Text className="text-sky-300">Block {c.block}</Text> : null}
+                  <Text className="text-white font-semibold">
+                    {item.card.name} {item.card.rarity ? `(${item.card.rarity})` : ''}
+                  </Text>
+                  <Text className="text-white/70">Price: {item.price}g</Text>
+                  <Text className="text-white/70">Card Cost: {item.card.cost}</Text>
+                  {item.card.dmg ? <Text className="text-red-300">DMG {item.card.dmg}</Text> : null}
+                  {item.card.block ? <Text className="text-sky-300">Block {item.card.block}</Text> : null}
                 </Pressable>
               ))}
             </View>
             <View className="flex-row gap-2 mt-3">
+              <Pressable
+                onPress={() => dispatch({ type: 'ShopReroll' })}
+                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"
+              >
+                <Text className="text-white font-semibold">Reroll (-20g)</Text>
+              </Pressable>              
               <Pressable
                 onPress={() => dispatch({ type: 'CompleteNode' })}
                 className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"

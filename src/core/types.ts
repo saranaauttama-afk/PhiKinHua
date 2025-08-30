@@ -49,7 +49,10 @@ export type PlayerState = {
   maxHp: number;
   block: number;
   energy: number;
+  gold: number;        // ✅ ทอง
 };
+
+export type ShopItem = { card: CardData; price: number }; // ✅ รายการขายในร้าน
 
 export type GameState = {
   seed: string;
@@ -61,7 +64,7 @@ export type GameState = {
   log: string[];
   rewardOptions?: CardData[]; // ตัวเลือกการ์ดตอนชนะคอมแบต
   map?: MapState;
-  shopOptions?: CardData[];   // ตัวเลือกใน shop (เวอร์ชันง่าย: รับฟรี 1 ใบ)
+  shopStock?: ShopItem[];     // ✅ สต็อกร้าน (มีราคา)
   event?: { type: 'bonfire'; healed?: boolean }; // เหตุการณ์แบบง่าย
   blessings: BlessingDef[];   // ✅ รายการพรที่ถืออยู่
   // ธงต่อเทิร์น (กัน once-per-turn และ re-entrancy win)
@@ -80,11 +83,13 @@ export type Command =
   | { type: 'CompleteNode' }
   | { type: 'EnterNode'; nodeId: string }
   | { type: 'TakeShop'; index: number }
+  | { type: 'ShopReroll' }                 // ✅ รีโรลสต็อก (เสียทอง)  
   | { type: 'DoBonfireHeal' }
   // QA/Debug (ผ่าน commands เท่านั้น)
   | { type: 'QA_KillEnemy' }
   | { type: 'QA_Draw'; count: number }
   | { type: 'QA_SetEnergy'; value: number }
-  | { type: 'QA_AddBlessingDemo' }; 
+  | { type: 'QA_AddBlessingDemo' }
+  | { type: 'QA_OpenShopHere' }; 
 
   export type TurnCtx = { state: GameState };

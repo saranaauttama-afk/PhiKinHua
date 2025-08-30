@@ -2,7 +2,8 @@ import type { Command, GameState } from './types';
 import { ENEMY_SLIME, START_ENERGY } from './balance';
 import { applyCardEffect, baseNewState, buildAndShuffleDeck, drawUpTo, endEnemyTurn, isDefeat, isVictory, startPlayerTurn } from './commands';
 import type { RNG } from './rng';
-import { rollRewardOptionsByTier, rollShopStock } from './reward';
+import { rollRewardOptionsByTier } from './reward';
+import { rollShopStock } from './shop';
 import { availableNodes, completeAndAdvance, generateMap,findNode  } from './map';
 import { getCardPlayedFns, resetBlessingTurnFlags, runBlessingsTurnHook } from './blessingRuntime';
 
@@ -93,8 +94,8 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       // เริ่มคอมแบต (ตอนนี้มีแต่ monster/boss ตัวอย่างเดียว)
       // แตกตามชนิดโหนด
       if (ok.kind === 'shop') {
-        const stock = rollShopStock(r, 5); r = stock.rng;
-        s.shopOptions = stock.options;
+        const stock = rollShopStock(r, 6, 1); r = stock.rng;
+        s.shopStock = stock.items;
         s.phase = 'shop';
         s.log.push(`Enter node ${cmd.nodeId} -> Shop`);
       } else if (ok.kind === 'bonfire') {
@@ -146,15 +147,31 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       return { state: s, rng: r };
     }
     case 'TakeShop': {
-      if (s.phase !== 'shop' || !s.shopOptions) return { state: s, rng: r };
-      const idx = cmd.index;
-      const chosen = s.shopOptions[idx];
-      if (!chosen) return { state: s, rng: r };
-      // เวอร์ชันง่าย: รับฟรี 1 ใบ → ใส่กองทิ้ง
-      s.piles.discard.push(JSON.parse(JSON.stringify(chosen)));
-      s.log.push(`Shop: took ${chosen.name}`);
-      // ปิดสต็อก รอ CompleteNode
-      s.shopOptions = undefined;
+      if (s.phase !== 'shop' || !s.shopStock) return { state: s, rng: r };
+      const i = cmd.index;
+      const item = s.shopStock[i];
+      if (!item) return { state: s, rng: r };
+      if (s.player.gold < item.price) {
+        s.log.push('Shop: Not enough gold');
+        return { state: s, rng: r };
+      }
+      s.player.gold -= item.price;
+      s.piles.discard.push(JSON.parse(JSON.stringify(item.card)));
+      s.shopStock.splice(i, 1);
+      s.log.push(`Shop: bought ${item.card.name} for ${item.price}g`);
+      return { state: s, rng: r };
+    }
+    case 'ShopReroll': {
+      if (s.phase !== 'shop') return { state: s, rng: r };
+      const { SHOP_REROLL_COST } = require('./balance');
+      if (s.player.gold < SHOP_REROLL_COST) {
+        s.log.push('Shop: Not enough gold to reroll');
+        return { state: s, rng: r };
+      }
+      s.player.gold -= SHOP_REROLL_COST;
+      const stock = rollShopStock(r, 6, 1); r = stock.rng;
+      s.shopStock = stock.items;
+      s.log.push(`Shop: rerolled (-${SHOP_REROLL_COST}g)`);
       return { state: s, rng: r };
     }
     case 'DoBonfireHeal': {
@@ -172,7 +189,7 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       // ปิด modal หลังคอมแบต และตัดสินว่าจะ "ชัยชนะจบ Act" หรือ "กลับแผนที่"
       s.rewardOptions = undefined;
       s.enemy = undefined;
-      s.shopOptions = undefined;
+      s.shopStock = undefined;
       s.event = undefined;     
       s.combatVictoryLock = false; // ✅ พร้อมคอมแบตใหม่       
       if (s.map) {
@@ -243,7 +260,15 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       if (!s.blessings.find(b => b.id === demo.id)) s.blessings.push(demo);
       s.log.push('QA: added blessing "Battle Rhythm"');
       return { state: s, rng: r };
-    }    
+    }   
+    case 'QA_OpenShopHere': {
+      // เปิดร้าน ณ จุดนี้ (สำหรับเทส UI/shop flow)
+      const stock = rollShopStock(r, 6, 1); r = stock.rng;
+      s.shopStock = stock.items;
+      s.phase = 'shop';
+      s.log.push('QA: opened Shop here');
+      return { state: s, rng: r };
+    } 
     default:
       return { state: s, rng: r };
   }

@@ -3,6 +3,7 @@ import type { CardData, EnemyState } from './types';
 export const START_HP = 50;
 export const START_ENERGY = 3;
 export const HAND_SIZE = 5;
+export const START_GOLD = 80; // ✅ ทองเริ่มต้น
 
 // === Base cards (deck of 5) ===
 export const CARD_STRIKE: CardData = {
@@ -28,6 +29,12 @@ export const START_DECK: CardData[] = [
 export const POOL_COMMON: CardData[] = [CARD_STRIKE, CARD_DEFEND];
 export const POOL_UNCOMMON: CardData[] = [CARD_FOCUS, CARD_GUARD];
 export const POOL_RARE: CardData[] = [CARD_BASH];
+
+// ✅ ราคาอ้างอิงร้าน (Act 1)
+export const PRICE_COMMON = 35;
+export const PRICE_UNCOMMON = 65;
+export const PRICE_RARE = 120;
+export const SHOP_REROLL_COST = 20;
 
 // === Example enemy ===
 export const ENEMY_SLIME: EnemyState = {
