@@ -14,6 +14,14 @@ export function baseNewState(seed: string): GameState {
     enemy: undefined,
     piles: { draw: [], hand: [], discard: [], exhaust: [] },
     log: [],
+    // ✅ ฟิลด์ที่เพิ่มใน M2
+    blessings: [],
+    turnFlags: { blessingOnce: {} },
+    rewardOptions: undefined,
+    map: undefined,
+    shopOptions: undefined,
+    event: undefined,
+    combatVictoryLock: false,    
   };
 }
 
@@ -32,26 +40,34 @@ function maybeRefillDraw(state: GameState, rng: RNG): { state: GameState; rng: R
   return { state, rng };
 }
 
-export function drawOne(_state: GameState, _rng: RNG): { state: GameState; rng: RNG } {
-  let state = _state;
-  let rng = _rng;
-  ({ state, rng } = maybeRefillDraw(state, rng));
-  if (state.piles.draw.length > 0) {
-    const card = state.piles.draw.shift()!;
-    state.piles.hand.push(card);
+// จั่ว 1 ใบแบบปลอดภัย (ไม่มีไพ่ให้จั่ว -> คืน drew=false)
+function drawOne(s: GameState, rng: RNG): { state: GameState; rng: RNG; drew: boolean } {
+  let r = rng;
+  if (s.piles.draw.length === 0) {
+    if (s.piles.discard.length === 0) {
+      return { state: s, rng: r, drew: false };
+    }
+    const sh = shuffle(r, s.piles.discard);
+    r = sh.rng;
+    s.piles.draw = sh.array;
+    s.piles.discard = [];
   }
-  return { state, rng };
+  const c = s.piles.draw.shift();
+  if (!c) return { state: s, rng: r, drew: false };
+  s.piles.hand.push(c);
+  return { state: s, rng: r, drew: true };
 }
 
-export function drawUpTo(_state: GameState, _rng: RNG, handSize = HAND_SIZE): { state: GameState; rng: RNG } {
-  let state = _state;
-  let rng = _rng;
-  while (state.piles.hand.length < handSize) {
-    const before = state.piles.hand.length;
-    ({ state, rng } = drawOne(state, rng));
-    if (state.piles.hand.length === before) break; // cannot draw more
+export function drawUpTo(s: GameState, rng: RNG, targetHandSize = HAND_SIZE): { state: GameState; rng: RNG } {
+  let r = rng;
+  let guard = 0;              // ฝากันลูปผิดพลาด
+  const GUARD_MAX = 200;
+  while (s.piles.hand.length < targetHandSize && guard++ < GUARD_MAX) {
+    const res = drawOne(s, r);
+    r = res.rng;
+    if (!res.drew) break;     // ไม่มีไพ่ให้จั่ว -> ออกทันที
   }
-  return { state, rng };
+  return { state: s, rng: r };
 }
 
 export function buildAndShuffleDeck(_state: GameState, _rng: RNG): { state: GameState; rng: RNG } {
@@ -83,8 +99,10 @@ export function applyCardEffect(state: GameState, idxInHand: number) {
   if (card.block) {
     state.player.block = card.block;
   }
-  if (card.energyGain) {
-    state.player.energy = card.energyGain;
+  // ✅ รองรับการ์ดที่ให้พลังงาน (เช่น Focus: energyGain = 1)
+  if (card.energyGain && card.energyGain > 0) {
+    state.player.energy += card.energyGain;
+    state.log.push(`Gained +${card.energyGain} energy`);
   }
   // draw will be handled by reducer after moving the card
 }

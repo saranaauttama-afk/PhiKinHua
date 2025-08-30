@@ -25,6 +25,15 @@ const makeEmptyState = (): GameState => ({
   enemy: undefined,
   piles: { draw: [], hand: [], discard: [], exhaust: [] },
   log: [],
+  // M2 fields (required)
+  blessings: [],
+  turnFlags: { blessingOnce: {} },
+  // optionals (explicit for clarity)
+  rewardOptions: undefined,
+  map: undefined,
+  shopOptions: undefined,
+  event: undefined,
+  combatVictoryLock: false,
 });
 
 const useGame = create<Store>((set, get) => ({
@@ -76,7 +85,7 @@ export default function Home() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' /* zinc-900 */ }}>
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, rowGap: 16 }}>
         {/* Header / HUD */}
         <Text className="text-white text-xl font-bold mb-2">{header}</Text>
         <View className="flex-row gap-3 mb-3">
@@ -124,6 +133,13 @@ export default function Home() {
             <Button title="Start Combat" onPress={() => dispatch({ type: 'StartCombat' })} disabled={!canStartCombat} />
             <Button title="End Turn" onPress={() => dispatch({ type: 'EndTurn' })} disabled={!inCombat} />
           </View>
+          {/* QA row (debug ผ่าน commands เท่านั้น) */}
+          <View className="flex-row gap-2 mt-3 flex-wrap">
+            <Button title="QA: Kill Enemy" onPress={() => dispatch({ type: 'QA_KillEnemy' })} disabled={!inCombat} />
+            <Button title="QA: Draw 1" onPress={() => dispatch({ type: 'QA_Draw', count: 1 })} disabled={!inCombat} />
+            <Button title="QA: Energy=3" onPress={() => dispatch({ type: 'QA_SetEnergy', value: 3 })} disabled={!inCombat} />
+            <Button title="QA: Blessing Demo" onPress={() => dispatch({ type: 'QA_AddBlessingDemo' })} />
+          </View>          
         </View>
 
         {/* === Map View (เลือกโหนด) === */}

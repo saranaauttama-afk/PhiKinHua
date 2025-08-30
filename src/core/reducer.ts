@@ -4,14 +4,22 @@ import { applyCardEffect, baseNewState, buildAndShuffleDeck, drawUpTo, endEnemyT
 import type { RNG } from './rng';
 import { rollRewardOptionsByTier, rollShopStock } from './reward';
 import { availableNodes, completeAndAdvance, generateMap,findNode  } from './map';
+import { getCardPlayedFns, resetBlessingTurnFlags, runBlessingsTurnHook } from './blessingRuntime';
 
 export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state: GameState; rng: RNG } {
   // Always work on a copy to keep call-site expectations pure
   let s: GameState = JSON.parse(JSON.stringify(state));
   let r = rng;
+   // ✅ กัน state รูปร่างไม่ครบ (เช่นมาจาก save เก่า/entry ทางลัด)
+  s.blessings = s.blessings ?? [];
+  s.turnFlags = s.turnFlags ?? { blessingOnce: {} };
 
   switch (cmd.type) {
     case 'NewRun': {
+      s = baseNewState(cmd.seed);
+      // init blessing storage
+      s.blessings = s.blessings ?? [];
+      s.turnFlags = s.turnFlags ?? { blessingOnce: {} };
       // สร้างแผนที่สำหรับ Act (deterministic ด้วย RNG)
       const g = generateMap(r);
       r = g.rng;
@@ -32,24 +40,35 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       return { state: s, rng: r };
     }
     case 'PlayCard': {
-      if (s.phase !== 'combat') return { state: s, rng: r };
+      if (s.phase !== 'combat' || s.combatVictoryLock) return { state: s, rng: r }; // ✅ กัน re-entrancy หลังชนะ
       const idx = cmd.index;
       if (idx < 0 || idx >= s.piles.hand.length) return { state: s, rng: r };
       const played = s.piles.hand[idx];
       // Apply effect & move card to discard
       applyCardEffect(s, idx);
+      // ✅ Blessings: on_card_played ผ่านตัวกลาง (safe-guard)
+      try {
+        for (const b of (s.blessings ?? [])) {
+          const fns = getCardPlayedFns(b, played);
+          const tc = { state: s };
+          for (const f of fns) f(tc, played);
+        }
+      } catch (e: any) {
+        s.log.push(`Blessing error: ${e?.message ?? String(e)}`);
+      }    
       // move to discard
       const [c] = s.piles.hand.splice(idx, 1);
       s.piles.discard.push(c);
       s.log.push(`Played ${played.name}`);
       // On-play draw (for cards that set draw)
+      // On-play draw (คำนวณเป้าหมายครั้งเดียว → drawUpTo ครั้งเดียว)
       if (played.draw && played.draw > 0) {
-        for (let i = 0; i < played.draw; i) {
-          ({ state: s, rng: r } = drawUpTo(s, r, s.piles.hand.length + 1)); // draw exactly 1 each loop
-        }
+        const target = s.piles.hand.length + played.draw; // หลังเอาใบที่เล่นออกจากมือแล้ว
+        ({ state: s, rng: r } = drawUpTo(s, r, target));
       }
       if (isVictory(s)) {
         // ไปหน้ารางวัล (ขึ้นกับชนิดโหนด: normal/elite/boss)
+        s.combatVictoryLock = true; // ✅ ล็อกไม่ให้ PlayCard ยิงซ้ำ        
         s.phase = 'reward';
         let tier: 'normal' | 'elite' | 'boss' = 'normal';
         if (s.map) {
@@ -90,12 +109,16 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
         s.player.energy = START_ENERGY;
         ({ state: s, rng: r } = buildAndShuffleDeck(s, r));
         ({ state: s, rng: r } = drawUpTo(s, r));
+        resetBlessingTurnFlags(s);
+        runBlessingsTurnHook(s, 'on_turn_start'); // ✅ เรียก on_turn_start ของพร        
         s.log.push(`Enter node ${cmd.nodeId} -> Combat vs ${s.enemy?.name ?? 'Enemy'}`);
       }
       return { state: s, rng: r };
     }    
     case 'EndTurn': {
       if (s.phase !== 'combat') return { state: s, rng: r };
+      // ✅ on_turn_end
+      runBlessingsTurnHook(s, 'on_turn_end');      
       // Enemy turn
       endEnemyTurn(s);
       if (isDefeat(s)) {
@@ -106,6 +129,8 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       // Next player turn
       s.turn = 1;
       ({ state: s, rng: r } = startPlayerTurn(s, r));
+      resetBlessingTurnFlags(s);
+      runBlessingsTurnHook(s, 'on_turn_start'); // ✅ เทิร์นใหม่      
       return { state: s, rng: r };
     }
     case 'TakeReward': {
@@ -148,7 +173,8 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       s.rewardOptions = undefined;
       s.enemy = undefined;
       s.shopOptions = undefined;
-      s.event = undefined;      
+      s.event = undefined;     
+      s.combatVictoryLock = false; // ✅ พร้อมคอมแบตใหม่       
       if (s.map) {
         const node = findNode(s.map, s.map.currentNodeId);
         // ตีความ: ถ้าเป็น boss => จบวิ่ง (victory)
@@ -165,6 +191,57 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       }
       s.phase = 'map';
       s.turn = 0;
+      return { state: s, rng: r };
+    }    
+    // ===== QA Commands (debug only) =====
+    case 'QA_KillEnemy': {
+      if (s.phase !== 'combat' || !s.enemy) return { state: s, rng: r };
+      s.enemy.hp = 0;
+      s.log.push('QA: kill enemy');
+      // รีไช้ logic เดิมแบบไม่เรียกซ้อน
+      if (isVictory(s)) {
+        s.combatVictoryLock = true;
+        s.phase = 'reward';
+        let tier: 'normal' | 'elite' | 'boss' = 'normal';
+        if (s.map) {
+          const node = findNode(s.map, s.map.currentNodeId);
+          if (node?.kind === 'elite') tier = 'elite';
+          if (node?.kind === 'boss') tier = 'boss';
+        }
+        const rolled = rollRewardOptionsByTier(r, tier);
+        r = rolled.rng;
+        s.rewardOptions = rolled.options;
+        s.log.push(`Victory! Choose a card (${tier}).`);
+      }
+      return { state: s, rng: r };
+    }
+    case 'QA_Draw': {
+      if (s.phase !== 'combat') return { state: s, rng: r };
+      // draw N แบบง่าย
+      for (let i = 0; i < (cmd.count ?? 1); i++) {
+        ({ state: s, rng: r } = drawUpTo(s, r, s.piles.hand.length + 1));
+      }
+      s.log.push(`QA: draw ${cmd.count}`);
+      return { state: s, rng: r };
+    }
+    case 'QA_SetEnergy': {
+      if (s.phase !== 'combat') return { state: s, rng: r };
+      s.player.energy = cmd.value;
+      s.log.push(`QA: set energy ${cmd.value}`);
+      return { state: s, rng: r };
+    }
+    case 'QA_AddBlessingDemo': {
+      // เติมพรตัวอย่าง: "First Play +1 Energy" (ทำงานครั้งเดียวต่อเทิร์น)
+      const demo = {
+        id: 'bl_energy_first',
+        name: 'Battle Rhythm',
+        desc: 'First card each turn grants +1 energy.',
+        oncePerTurn: true,
+        on_card_played: (tc: any) => { tc.state.player.energy += 1; },
+      };
+      // อย่าเพิ่มซ้ำ
+      if (!s.blessings.find(b => b.id === demo.id)) s.blessings.push(demo);
+      s.log.push('QA: added blessing "Battle Rhythm"');
       return { state: s, rng: r };
     }    
     default:
