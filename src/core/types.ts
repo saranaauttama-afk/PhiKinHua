@@ -1,3 +1,5 @@
+import type { MapState } from './map';
+
 export type Rarity = 'Common' | 'Uncommon' | 'Rare';
 export type CardType = 'attack' | 'skill';
 
@@ -10,6 +12,7 @@ export type CardData = {
   block?: number;  // for skills
   draw?: number;   // draw N
   energyGain?: number; // gain N energy
+  rarity?: Rarity; // ✅ ใช้สำหรับ bias rewards/shop
 };
 
 export type EnemyState = {
@@ -28,7 +31,7 @@ export type DeckPiles = {
   exhaust: CardData[];
 };
 
-export type Phase = 'menu' | 'combat' | 'reward' | 'victory' | 'defeat';
+export type Phase = 'menu' | 'map' | 'combat' | 'reward' | 'shop' | 'event' | 'victory' | 'defeat';
 
 export type PlayerState = {
   hp: number;
@@ -46,6 +49,9 @@ export type GameState = {
   piles: DeckPiles;
   log: string[];
   rewardOptions?: CardData[]; // ตัวเลือกการ์ดตอนชนะคอมแบต
+  map?: MapState;
+  shopOptions?: CardData[];   // ตัวเลือกใน shop (เวอร์ชันง่าย: รับฟรี 1 ใบ)
+  event?: { type: 'bonfire'; healed?: boolean }; // เหตุการณ์แบบง่าย
 };
 
 export type Command =
@@ -54,4 +60,7 @@ export type Command =
   | { type: 'PlayCard'; index: number }
   | { type: 'EndTurn' }
   | { type: 'TakeReward'; index: number }
-  | { type: 'CompleteNode' }; // ปิด modal/event แล้วไปต่อ (ตอนนี้กลับเมนูชั่วคราว)
+  | { type: 'CompleteNode' }
+  | { type: 'EnterNode'; nodeId: string }
+  | { type: 'TakeShop'; index: number }
+  | { type: 'DoBonfireHeal' };

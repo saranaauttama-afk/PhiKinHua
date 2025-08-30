@@ -59,6 +59,10 @@ export default function Home() {
   const [seed, setSeed] = useState('demo-001');
   const inCombat = state.phase === 'combat';
   const inReward = state.phase === 'reward';
+  const inMap = state.phase === 'map';
+  const inVictory = state.phase === 'victory';
+  const inShop = state.phase === 'shop';
+  const inEvent = state.phase === 'event';
   const canStartCombat = state.phase === 'menu';
 
   const energy = state.player.energy;
@@ -71,7 +75,7 @@ export default function Home() {
   }, [state.phase, state.turn]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#18181b' /* zinc-900 */ }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' /* zinc-900 */ }}>
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         {/* Header / HUD */}
         <Text className="text-white text-xl font-bold mb-2">{header}</Text>
@@ -90,18 +94,20 @@ export default function Home() {
           </View>
         </View>
 
-        {/* Enemy panel */}
-        <View className="rounded-2xl p-4 bg-zinc-800/70 border border-white/10 mb-4">
-          {enemy ? (
-            <>
-              <Text className="text-white text-lg font-semibold">{enemy.name}</Text>
-              <Text className="text-white/80 mt-1">HP {enemy.hp}/{enemy.maxHp}</Text>
-              <Text className="text-white/70 mt-1">Intent: Attack {enemy.dmg}</Text>
-            </>
-          ) : (
-            <Text className="text-white/60">No enemy</Text>
-          )}
-        </View>
+        {/* Enemy panel — แสดงเฉพาะตอนคอมแบต */}
+        {inCombat && (
+          <View className="rounded-2xl p-4 bg-zinc-800/70 border border-white/10 mb-4">
+            {enemy ? (
+              <>
+                <Text className="text-white text-lg font-semibold">{enemy.name}</Text>
+                <Text className="text-white/80 mt-1">HP {enemy.hp}/{enemy.maxHp}</Text>
+                <Text className="text-white/70 mt-1">Intent: Attack {enemy.dmg}</Text>
+              </>
+            ) : (
+              <Text className="text-white/60">No enemy</Text>
+            )}
+          </View>
+        )}
 
         {/* Controls */}
         <View className="rounded-2xl p-4 bg-zinc-800/50 border border-white/10 mb-4">
@@ -119,6 +125,34 @@ export default function Home() {
             <Button title="End Turn" onPress={() => dispatch({ type: 'EndTurn' })} disabled={!inCombat} />
           </View>
         </View>
+
+        {/* === Map View (เลือกโหนด) === */}
+        {inMap && (
+          <View className="rounded-2xl p-4 bg-zinc-800/70 border border-white/10 mb-4">
+            <Text className="text-white text-lg font-semibold">Map</Text>
+            <Text className="text-white/60 mb-2">Depth {state.map?.depth ?? 0}/{state.map?.totalCols ?? 0}</Text>
+            <View className="flex-row gap-4 flex-wrap">
+              {(state.map?.cols[state.map?.depth ?? 0] ?? []).map((n, i) => (
+                <Pressable
+                  key={n.id}
+                  onPress={() => dispatch({ type: 'EnterNode', nodeId: n.id })}
+                  className="px-3 py-2 rounded-2xl border bg-zinc-900 border-white/10 active:opacity-70"
+                >
+                  <Text className="text-white font-semibold">
+                    {n.kind === 'boss' ? '👑 Boss'
+                      : n.kind === 'elite' ? '💀 Elite'
+                      : n.kind === 'shop' ? '🛒 Shop'
+                      : n.kind === 'bonfire' ? '🔥 Bonfire'
+                      : '👾 Monster'} {n.col}.{n.row}
+                  </Text>
+                </Pressable>
+              ))}
+              {((state.map?.cols[state.map?.depth ?? 0] ?? []).length === 0) && (
+                <Text className="text-white/60">Act complete — (จะต่อยอดใน M1.2)</Text>
+              )}
+            </View>
+          </View>
+        )}
 
         {/* Hand */}
         <Text className="text-white font-semibold mb-2">Hand</Text>
@@ -169,6 +203,73 @@ export default function Home() {
                 className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"
               >
                 <Text className="text-white font-semibold">CompleteNode</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {/* === Shop Modal (เลือกฟรี 1 ใบ) === */}
+        {inShop && (
+          <View className="mt-6 rounded-2xl p-4 bg-zinc-800/80 border border-white/10">
+            <Text className="text-white text-lg font-semibold mb-2">Shop — take 1 card (free)</Text>
+            <View className="flex-row gap-2 flex-wrap">
+              {(state.shopOptions ?? []).map((c, i) => (
+                <Pressable
+                  key={i}
+                  onPress={() => dispatch({ type: 'TakeShop', index: i })}
+                  className="px-3 py-2 rounded-2xl border bg-zinc-900 border-white/10 active:opacity-70"
+                >
+                  <Text className="text-white font-semibold">{c.name} {c.rarity ? `(${c.rarity})` : ''}</Text>
+                  <Text className="text-white/70">Cost {c.cost}</Text>
+                  {c.dmg ? <Text className="text-red-300">DMG {c.dmg}</Text> : null}
+                  {c.block ? <Text className="text-sky-300">Block {c.block}</Text> : null}
+                </Pressable>
+              ))}
+            </View>
+            <View className="flex-row gap-2 mt-3">
+              <Pressable
+                onPress={() => dispatch({ type: 'CompleteNode' })}
+                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"
+              >
+                <Text className="text-white font-semibold">CompleteNode</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {/* === Bonfire Event === */}
+        {inEvent && (
+          <View className="mt-6 rounded-2xl p-4 bg-zinc-800/80 border border-white/10">
+            <Text className="text-white text-lg font-semibold mb-2">Bonfire 🔥</Text>
+            <Text className="text-white/80">HP {state.player.hp}/{state.player.maxHp}</Text>
+            <View className="flex-row gap-2 mt-3">
+              <Pressable
+                onPress={() => dispatch({ type: 'DoBonfireHeal' })}
+                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"
+              >
+                <Text className="text-white font-semibold">Heal +10</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => dispatch({ type: 'CompleteNode' })}
+                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"
+              >
+                <Text className="text-white font-semibold">CompleteNode</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {/* === Victory screen (จบวิ่ง) === */}
+        {inVictory && (
+          <View className="mt-6 rounded-2xl p-4 bg-emerald-900/40 border border-emerald-400/30">
+            <Text className="text-white text-lg font-semibold">Act Cleared! 🎉</Text>
+            <Text className="text-white/70 mt-1">You defeated the boss. Start a new run to play again.</Text>
+            <View className="flex-row gap-2 mt-3">
+              <Pressable
+                onPress={() => /* เริ่มใหม่ด้วย seed เดิม */ newRun(state.seed)}
+                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"
+              >
+                <Text className="text-white font-semibold">New Run (same seed)</Text>
               </Pressable>
             </View>
           </View>
