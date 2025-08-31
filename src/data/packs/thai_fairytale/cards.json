@@ -1,0 +1,16 @@
+[
+  { "id": "strike",  "name": "ฟาดวิญญาณ",      "type": "attack", "cost": 1, "dmg": 6,  "rarity": "Common" },
+  { "id": "defend",  "name": "เกราะวิญญาณ",    "type": "skill",  "cost": 1, "block": 5, "rarity": "Common" },
+  { "id": "focus",   "name": "รวมสมาธิปราณ",   "type": "skill",  "cost": 0, "draw": 1, "energyGain": 1, "rarity": "Uncommon" },
+
+  { "id": "incense", "name": "ควันธูป",         "type": "skill",  "cost": 1, "block": 7,  "rarity": "Common" },
+  { "id": "chant",   "name": "สวดมนต์ศักดิ์สิทธิ์", "type": "skill", "cost": 1, "heal": 4,  "rarity": "Uncommon" },
+  { "id": "fang",    "name": "เขี้ยวกระสือ",    "type": "attack", "cost": 1, "dmg": 8,  "rarity": "Uncommon" },
+  { "id": "spike",   "name": "หนามกล้วย",       "type": "attack", "cost": 0, "dmg": 3,  "draw": 1, "rarity": "Common" },
+  { "id": "veil",    "name": "ม่านหมอก",        "type": "skill",  "cost": 2, "block": 12, "rarity": "Uncommon" },
+
+  { "id": "talisman","name": "เครื่องรางศักดิ์สิทธิ์", "type": "skill", "cost": 0, "energyGain": 2, "rarity": "Rare" },
+  { "id": "smite",   "name": "อาญาสงฆ์",         "type": "attack", "cost": 2, "dmg": 14, "rarity": "Rare" },
+  { "id": "howl",    "name": "เสียงหอนวิญญาณ",  "type": "attack", "cost": 2, "dmg": 10, "draw": 1, "rarity": "Rare" },
+  { "id": "insight", "name": "ตาที่สาม",         "type": "skill",  "cost": 0, "draw": 2, "rarity": "Rare" }
+]

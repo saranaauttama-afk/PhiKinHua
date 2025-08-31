@@ -1,8 +1,8 @@
 import type { Command, GameState } from './types';
-import { ENEMY_SLIME, START_ENERGY } from './balance';
 import { applyCardEffect, baseNewState, buildAndShuffleDeck, drawUpTo, endEnemyTurn, isDefeat, isVictory, startPlayerTurn } from './commands';
 import type { RNG } from './rng';
 import { rollRewardOptionsByTier } from './reward';
+import { START_ENERGY, rollEnemyId, makeEnemy, SHOP_REROLL_COST } from './balance';
 import { rollShopStock } from './shop';
 import { availableNodes, completeAndAdvance, generateMap, findNode } from './map';
 import { getCardPlayedFns, resetBlessingTurnFlags, runBlessingsTurnHook } from './blessingRuntime';
@@ -35,7 +35,10 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       if (s.phase === 'combat') return { state: s, rng: r };
       s.phase = 'combat';
       s.turn = 1;
-      s.enemy = JSON.parse(JSON.stringify(ENEMY_SLIME));
+      // เลือกศัตรูจาก pack แบบ deterministic
+      const pick = rollEnemyId(r);
+      r = pick.rng;
+      s.enemy = makeEnemy(pick.id);
       s.player.energy = START_ENERGY;
       ({ state: s, rng: r } = buildAndShuffleDeck(s, r));
       ({ state: s, rng: r } = drawUpTo(s, r));
@@ -130,7 +133,10 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
         // combat: monster/elite/boss
         s.phase = 'combat';
         s.turn = 1;
-        s.enemy = JSON.parse(JSON.stringify(ENEMY_SLIME));
+        // เลือกศัตรูจาก pack แบบ deterministic
+        const pick2 = rollEnemyId(r);
+        r = pick2.rng;
+        s.enemy = makeEnemy(pick2.id);
         s.player.energy = START_ENERGY;
         ({ state: s, rng: r } = buildAndShuffleDeck(s, r));
         ({ state: s, rng: r } = drawUpTo(s, r));
@@ -187,15 +193,21 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
     }
     case 'ShopReroll': {
       if (s.phase !== 'shop') return { state: s, rng: r };
-      const { SHOP_REROLL_COST } = require('./balance');
-      if (s.player.gold < SHOP_REROLL_COST) {
-        s.log.push('Shop: Not enough gold to reroll');
-        return { state: s, rng: r };
-      }
+      // const { SHOP_REROLL_COST } = require('./balance');
+      // if (s.player.gold < SHOP_REROLL_COST) {
+      //   s.log.push('Shop: Not enough gold to reroll');
+      //   return { state: s, rng: r };
+      // }
+      // s.player.gold -= SHOP_REROLL_COST;
+      // const stock = rollShopStock(r, 6, 1); r = stock.rng;
+      // s.shopStock = stock.items;
+      // s.log.push(`Shop: rerolled (-${SHOP_REROLL_COST}g)`);
+      if (s.player.gold < SHOP_REROLL_COST) return { state: s, rng: r };
       s.player.gold -= SHOP_REROLL_COST;
-      const stock = rollShopStock(r, 6, 1); r = stock.rng;
-      s.shopStock = stock.items;
-      s.log.push(`Shop: rerolled (-${SHOP_REROLL_COST}g)`);
+      // ใช้จำนวนเท่าเดิมของสต็อกร้าน (fallback = 5 ถ้ายังไม่มี)
+      const count = (s.shopStock?.length ?? 5);
+      const res = rollShopStock(r, count /* , s.act ถ้า signature ของคุณรองรับ */);
+      s.shopStock = res.items; r = res.rng;
       return { state: s, rng: r };
     }
     case 'DoBonfireHeal': {
@@ -253,7 +265,7 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
         s.log.push(`Treasure: +${t.amount}g`);
       }
       return { state: s, rng: r };
-    }    
+    }
     case 'CompleteNode': {
       // ปิด modal/event ทั้งหมด แล้ว “กลับเมนู” ชั่วคราว (ก่อนมี map)
       // ปิด modal แล้วกลับแผนที่ + เลื่อนไปคอลัมน์ถัดไป
@@ -364,7 +376,7 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       s.phase = 'event';
       s.log.push('QA: opened Treasure');
       return { state: s, rng: r };
-    }    
+    }
     default:
       return { state: s, rng: r };
   }

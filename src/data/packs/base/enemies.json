@@ -1,0 +1,8 @@
+[
+  { "id": "slime",     "name": "Slime",     "maxHp": 35, "dmg": 6 },
+  { "id": "bat",       "name": "Bat",       "maxHp": 28, "dmg": 8 },
+  { "id": "skeleton",  "name": "Skeleton",  "maxHp": 32, "dmg": 7 },
+  { "id": "ghost",     "name": "Ghost",     "maxHp": 24, "dmg": 10 },
+  { "id": "brute",     "name": "Brute",     "maxHp": 45, "dmg": 9 },
+  { "id": "mage",      "name": "Mage",      "maxHp": 30, "dmg": 5 }
+]

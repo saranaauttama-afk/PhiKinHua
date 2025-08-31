@@ -1,13 +1,14 @@
 import type { CardData, Rarity } from './types';
 import { int, shuffle, type RNG } from './rng';
-import { POOL_COMMON, POOL_UNCOMMON, POOL_RARE } from './balance';
+import { getCardsByRarity } from './balance';
 
 type Tier = 'normal' | 'elite' | 'boss';
 
+const BY = getCardsByRarity();
 const BY_RARITY: Record<Rarity, CardData[]> = {
-  Common: POOL_COMMON,
-  Uncommon: POOL_UNCOMMON,
-  Rare: POOL_RARE,
+  Common: BY.Common,
+  Uncommon: BY.Uncommon,
+  Rare: BY.Rare,
 };
 
 function chooseRarity(rng: RNG, weights: Record<Rarity, number>): { rng: RNG; rarity: Rarity } {
@@ -50,7 +51,7 @@ export function rollRewardOptionsByTier(rng: RNG, tier: Tier): { rng: RNG; optio
     if (d.card) out.push(d.card);
   }
   // การันตีอย่างน้อย 1 Rare ใน boss ถ้ายังไม่มีและมี rare ให้เลือก
-  if (tier === 'boss' && !out.some(c => c.rarity === 'Rare') && POOL_RARE.length > 0) {
+  if (tier === 'boss' && !out.some(c => c.rarity === 'Rare') && BY.Rare.length > 0) {
     const d = drawUniqueFrom(r, 'Rare', taken); r = d.rng;
     if (d.card) {
       // แทนตัวแรก
@@ -58,19 +59,4 @@ export function rollRewardOptionsByTier(rng: RNG, tier: Tier): { rng: RNG; optio
     }
   }
   return { rng: r, options: out };
-}
-
-// เวอร์ชัน shop (เลือกรับฟรี 1 ใบ): ใช้ bias คล้าย elite แต่จำนวน 5
-export function rollShopStock(rng: RNG, count = 5): { rng: RNG; options: CardData[] } {
-  let r = rng;
-  const taken = new Set<string>();
-  const out: CardData[] = [];
-  for (let i = 0; i < count; i++) {
-    const w = chooseRarity(r, { Common: 60, Uncommon: 30, Rare: 10 }); r = w.rng;
-    const d = drawUniqueFrom(r, w.rarity, taken); r = d.rng;
-    if (d.card) out.push(d.card);
-  }
-  // สับเล็กน้อยเพื่อความกระจาย
-  const sh = shuffle(r, out); r = sh.rng;
-  return { rng: r, options: sh.array };
 }

@@ -1,5 +1,5 @@
 import type { CardData, GameState } from './types';
-import { HAND_SIZE, START_ENERGY, START_DECK,START_GOLD  } from './balance';
+import { HAND_SIZE, START_ENERGY, START_DECK_IDS, START_GOLD, CARD_BY_ID } from './balance';
 import { shuffle, type RNG } from './rng';
 
 // NOTE: We keep state updates pure by working on shallow copies of containers.
@@ -74,7 +74,9 @@ export function drawUpTo(s: GameState, rng: RNG, targetHandSize = HAND_SIZE): { 
 export function buildAndShuffleDeck(_state: GameState, _rng: RNG): { state: GameState; rng: RNG } {
   let state = _state;
   let rng = _rng;
-  const out = shuffle(rng, START_DECK);
+  // สร้างเด็คจาก id → clone อ็อบเจ็กต์การ์ด ป้องกันอ้างอิงร่วม
+  const deck = START_DECK_IDS.map(id => JSON.parse(JSON.stringify(CARD_BY_ID[id])) as CardData);
+  const out = shuffle(rng, deck);
   state.piles = { draw: out.array.slice(), hand: [], discard: [], exhaust: [] };
   rng = out.rng;
   return { state, rng };

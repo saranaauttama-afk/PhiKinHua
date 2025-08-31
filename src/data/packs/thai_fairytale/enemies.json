@@ -1,0 +1,8 @@
+[
+  { "id": "slime",     "name": "เมือกวิญญาณ",      "maxHp": 33, "dmg": 6 },
+  { "id": "bat",       "name": "ค้างคาววัด",        "maxHp": 26, "dmg": 8 },
+  { "id": "skeleton",  "name": "โครงกระดูกเก่า",    "maxHp": 34, "dmg": 7 },
+  { "id": "ghost",     "name": "ผีซอกซอย",          "maxHp": 24, "dmg": 10 },
+  { "id": "brute",     "name": "อันธพาลสุสาน",      "maxHp": 46, "dmg": 9 },
+  { "id": "mage",      "name": "นักพรตศาลเจ้า",     "maxHp": 30, "dmg": 5 }
+]

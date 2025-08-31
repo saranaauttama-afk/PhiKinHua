@@ -24,6 +24,7 @@ export type CardData = {
   energyGain?: number; // gain N energy
   tags?: string[]; // สำหรับ match blessing hook (เช่น tag: 'attack')
   rarity?: Rarity; // ✅ ใช้สำหรับ bias rewards/shop
+  heal?: number;
 };
 
 export type EnemyState = {

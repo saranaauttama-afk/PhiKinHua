@@ -1,13 +1,13 @@
-//*** NEW: src/core/shop.ts
 import type { CardData, Rarity, ShopItem } from './types';
 import type { RNG } from './rng';
 import { int, shuffle } from './rng';
-import { POOL_COMMON, POOL_UNCOMMON, POOL_RARE, PRICE_COMMON, PRICE_UNCOMMON, PRICE_RARE } from './balance';
+import { getCardsByRarity, PRICE_COMMON, PRICE_UNCOMMON, PRICE_RARE } from './balance';
 
+const BY = getCardsByRarity();
 const BY_RARITY: Record<Rarity, CardData[]> = {
-  Common: POOL_COMMON,
-  Uncommon: POOL_UNCOMMON,
-  Rare: POOL_RARE,
+  Common: BY.Common,
+  Uncommon: BY.Uncommon,
+  Rare: BY.Rare,
 };
 
 function priceFor(r: Rarity, act = 1): number {

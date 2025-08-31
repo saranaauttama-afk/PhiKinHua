@@ -5,6 +5,7 @@ import Panel from './Panel';
 import { haptics } from '../haptics';
 import { sfx } from '../sfx';
 import { getAnimSpeedScale, setAnimSpeedScale } from '../anim';
+import { ACTIVE_PACK, setActivePack, type PackId } from '../../core/balance'; // ← ปรับ path ให้ตรงของจริง
 
 type Props = {
   theme: ThemeTokens;
@@ -39,6 +40,8 @@ export default function QAOverlay({
   const [sOn, setSOn] = React.useState(sfx.isEnabled());
   const [vol, setVol] = React.useState(sfx.getVolume());  
   const [animScale, setAnimScale] = React.useState(getAnimSpeedScale());
+  const [pack, setPack] = React.useState<PackId>(ACTIVE_PACK);
+
 
   const scale = React.useRef(new Animated.Value(0)).current;
   React.useEffect(() => {
@@ -220,7 +223,26 @@ export default function QAOverlay({
                   <Text style={{ color: theme.colors.text }}>{label}</Text>
                 </Pressable>
               ))}
-            </View>                
+            </View>  
+
+              {/* Pack selector */}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 }}>
+                <Text style={{ color: theme.colors.textMuted, marginRight: 8 }}>Pack</Text>
+                <Pressable
+                  onPress={() => {
+                    const next: PackId = pack === 'base' ? 'thai_fairytale' : 'base';
+                    setActivePack(next);
+                    setPack(next);
+                    // เริ่ม run ใหม่เพื่อโหลดการ์ด/ศัตรูตามแพ็ก
+                    onNewRun(currentSeed);
+                  }}
+                  style={{ paddingVertical: 6, paddingHorizontal: 10, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.radius.card, backgroundColor: 'rgba(255,255,255,0.05)' }}
+                >
+                  <Text style={{ color: theme.colors.text }}>
+                    {pack === 'base' ? 'base → thai_fairytale' : 'thai_fairytale → base'}
+                  </Text>
+                </Pressable>
+              </View>              
           </Panel>
         </Animated.View>
       )}
