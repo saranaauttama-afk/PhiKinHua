@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import type { GameState } from '../../../core/types';
 import type { ThemeTokens } from '../../theme';
+import { haptics } from '../../haptics';
 
 type Props = {
   state: GameState;
@@ -27,7 +28,8 @@ export default function MapView({ state, theme, onEnterNode }: Props) {
         {nodes.map((n) => (
           <Pressable
             key={n.id}
-            onPress={() => onEnterNode(n.id)}
+            onPressIn={() => haptics.tapSoft()}
+            onPress={() => { haptics.confirm(); onEnterNode(n.id); }}
             style={{
               paddingHorizontal: 12, paddingVertical: 8,
               borderRadius: theme.radius.card,

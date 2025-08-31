@@ -4,6 +4,7 @@ import type { CardData } from '../../core/types';
 import type { ThemeTokens } from '../theme';
 import { shadowStyle } from '../theme';
 import CardFrame from './CardFrame';
+import { haptics } from '../haptics';
 
 type Props = {
     hand: CardData[];
@@ -23,7 +24,11 @@ function CardButton({
     children: React.ReactNode;
 }) {
     const scale = React.useRef(new Animated.Value(1)).current;
-    const pressIn = () => Animated.timing(scale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start();
+    
+  const pressIn = () => {
+    haptics.tapSoft(); // ✅ ฟีลสัมผัสเบา ๆ ตอนกด
+    Animated.timing(scale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start();
+  };
     const pressOut = () => Animated.timing(scale, { toValue: 1, duration: 100, useNativeDriver: true }).start();
     return (
         <Animated.View style={[
@@ -31,7 +36,7 @@ function CardButton({
             shadowStyle(2, theme.colors.vignetteEdge ?? '#000'),
         ]}>
             <Pressable
-                onPress={onPress}
+                onPress={() => { haptics.playCard(); onPress(); }}  // ✅ เล่นไพ่สำเร็จ: ฟีดแบ็ก Medium
                 disabled={disabled}
                 onPressIn={pressIn}
                 onPressOut={pressOut}

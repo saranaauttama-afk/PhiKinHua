@@ -3,6 +3,7 @@ import { View, Text, Pressable } from 'react-native';
 import type { GameState, DeckPiles } from '../../../core/types';
 import type { ThemeTokens } from '../../theme';
 import Panel from '../Panel';
+import { haptics } from '../../haptics';
 
 type Props = {
   state: GameState;
@@ -44,7 +45,7 @@ export default function EventModal({
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
           <Btn title="Heal 10" onPress={onBonfireHeal} />
-          <Btn title="CompleteNode" onPress={onComplete} />
+          <Btn title="CompleteNode" onPress={() => { haptics.confirm(); onComplete(); }} />
         </View>
       </Panel>
     );
@@ -72,7 +73,7 @@ export default function EventModal({
             </Pressable>
           ))}
         </View>
-        <Btn title="CompleteNode" onPress={onComplete} />
+        <Btn title="CompleteNode" onPress={() => { haptics.confirm(); onComplete(); }} />
       </Panel>
     );
   }
@@ -89,7 +90,7 @@ export default function EventModal({
         <RowCards theme={theme} cards={state.piles.draw} onPick={(i) => onRemoveCard('draw', i)} />
         <Text style={{ color: theme.colors.textMuted, marginTop: 8 }}>Discard</Text>
         <RowCards theme={theme} cards={state.piles.discard} onPick={(i) => onRemoveCard('discard', i)} />
-        <Btn title="CompleteNode" onPress={onComplete} />
+        <Btn title="CompleteNode" onPress={() => { haptics.confirm(); onComplete(); }} />
       </Panel>
     );
   }
@@ -106,7 +107,7 @@ export default function EventModal({
         ) : (
           <Btn title="Roll" onPress={onGambleRoll} />
         )}
-        <Btn title="CompleteNode" onPress={onComplete} />
+        <Btn title="CompleteNode" onPress={() => { haptics.confirm(); onComplete(); }} />
       </Panel>
     );
   }
@@ -119,7 +120,7 @@ export default function EventModal({
         ) : (
           <Btn title="Open" onPress={onTreasureOpen} />
         )}
-        <Btn title="CompleteNode" onPress={onComplete} />
+        <Btn title="CompleteNode" onPress={() => { haptics.confirm(); onComplete(); }} />
       </Panel>
     );
   }

@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import type { GameState } from '../../../core/types';
 import type { ThemeTokens } from '../../theme';
+import { haptics } from '../../haptics';
 
 type Props = {
   state: GameState;
@@ -25,7 +26,7 @@ export default function RewardModal({ state, theme, onTake, onComplete }: Props)
         {options.map((c, i) => (
           <Pressable
             key={`${c.id}-${i}`}
-            onPress={() => onTake(i)}
+            onPress={() => { haptics.confirm(); onTake(i); }}
             style={{
               paddingHorizontal: 12, paddingVertical: 8,
               borderRadius: theme.radius.card,
@@ -44,7 +45,7 @@ export default function RewardModal({ state, theme, onTake, onComplete }: Props)
       </View>
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
         <Pressable
-          onPress={onComplete}
+          onPress={() => { haptics.confirm(); onComplete(); }}
           style={{
             paddingVertical: 8, paddingHorizontal: 16,
             borderRadius: theme.radius.card, borderWidth: 1, borderColor: theme.colors.border,

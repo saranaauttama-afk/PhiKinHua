@@ -20,6 +20,11 @@ import { applyCommand } from '../src/core/reducer';
 import { HAND_SIZE } from '../src/core/balance';
 import { makeRng, seedFromString, type RNG } from '../src/core/rng';
 import { START_GOLD } from '../src/core/balance'; // path ตามโปรเจกต์คุณ
+import { haptics } from '../src/ui/haptics';
+import QAOverlay from '../src/ui/components/QAOverlay';
+import Panel from '../src/ui/components/Panel';
+import VictoryBanner from '../src/ui/components/VictoryBanner';
+import DefeatBanner from '../src/ui/components/DefeatBanner';
 
 type Store = {
   state: GameState;
@@ -94,6 +99,16 @@ export default function Home() {
   const { state, dispatch, newRun } = useGame();
   const [seed, setSeed] = useState('demo-001');
   const [skin, setSkin] = useState<SkinId>('wire');
+  // Haptics: trigger เมื่อชนะ/แพ้ (phase transition)
+  const prevPhaseRef = React.useRef(state.phase);
+  React.useEffect(() => {
+    if (prevPhaseRef.current !== state.phase) {
+      if (state.phase === 'victory') haptics.confirm();
+      else if (state.phase === 'defeat') haptics.warn();
+    }
+    prevPhaseRef.current = state.phase;
+  }, [state.phase]);
+
   const baseTheme = getTheme(skin);
   const [fontsLoaded] = useFonts({ NotoSerifThai_400Regular, NotoSerifThai_700Bold });
   const theme = React.useMemo(() => {
@@ -184,11 +199,11 @@ export default function Home() {
         <HUD state={state} theme={theme} />
 
         {/* Controls */}
-        <View style={{
+        {/* <View style={{
           borderRadius: theme.radius.xl, padding: 16, marginBottom: 16,
           backgroundColor: theme.colors.panel, borderWidth: 1, borderColor: theme.colors.border
-        }}>
-          <Text style={{ color: theme.colors.textMuted, marginBottom: 8, fontFamily: theme.fonts?.body }}>Seed</Text>
+        }}> */}
+        {/* <Text style={{ color: theme.colors.textMuted, marginBottom: 8, fontFamily: theme.fonts?.body }}>Seed</Text>
           <TextInput
             value={seed}
             onChangeText={setSeed}
@@ -201,14 +216,14 @@ export default function Home() {
               color: theme.colors.text,
               borderWidth: 1, borderColor: theme.colors.border
             }}
-          />
-          <View className="flex-row gap-2 mt-3 flex-wrap">
+          /> */}
+        {/* <View className="flex-row gap-2 mt-3 flex-wrap">
             <Button title="New Run" onPress={() => newRun(seed)} />
             <Button title="Start Combat" onPress={() => dispatch({ type: 'StartCombat' })} disabled={!canStartCombat} />
             <Button title="End Turn" onPress={() => dispatch({ type: 'EndTurn' })} disabled={!inCombat} />
-          </View>
-          {/* QA row (debug ผ่าน commands เท่านั้น) */}
-          <View className="flex-row gap-2 mt-3 flex-wrap">
+          </View> */}
+        {/* QA row (debug ผ่าน commands เท่านั้น) */}
+        {/* <View className="flex-row gap-2 mt-3 flex-wrap">
             <Button title="QA: Kill Enemy" onPress={() => dispatch({ type: 'QA_KillEnemy' })} disabled={!inCombat} />
             <Button title="QA: Draw 1" onPress={() => dispatch({ type: 'QA_Draw', count: 1 })} disabled={!inCombat} />
             <Button title="QA: Energy=3" onPress={() => dispatch({ type: 'QA_SetEnergy', value: 3 })} disabled={!inCombat} />
@@ -218,8 +233,8 @@ export default function Home() {
             <Button title="QA: Remove" onPress={() => dispatch({ type: 'QA_OpenRemove' })} />
             <Button title="QA: Gamble" onPress={() => dispatch({ type: 'QA_OpenGamble' })} />
             <Button title="QA: Treasure" onPress={() => dispatch({ type: 'QA_OpenTreasure' })} />
-          </View>
-        </View>
+          </View> */}
+        {/* </View> */}
 
         {/* === Map View (เลือกโหนด) === */}
         {inMap && (
@@ -228,7 +243,7 @@ export default function Home() {
             theme={theme}
             onEnterNode={(nodeId) => dispatch({ type: 'EnterNode', nodeId })}
           />
-        )}        
+        )}
 
         {/* Hand */}
         {/* <Text className="text-white font-semibold mb-2">Hand</Text>
@@ -272,7 +287,7 @@ export default function Home() {
             onReroll={() => dispatch({ type: 'ShopReroll' })}
             onComplete={() => dispatch({ type: 'CompleteNode' })}
           />
-        )}        
+        )}
 
         {/* === Event Modal (รวมทุกชนิด) === */}
         {inEvent && (
@@ -286,7 +301,7 @@ export default function Home() {
             onTreasureOpen={() => dispatch({ type: 'EventTreasureOpen' })}
             onComplete={() => dispatch({ type: 'CompleteNode' })}
           />
-        )}        
+        )}
 
         {/* === Victory screen (จบวิ่ง) === */}
         {inVictory && (
@@ -312,12 +327,65 @@ export default function Home() {
         )}
 
         {/* Log */}
-        <Text className="text-white font-semibold mt-6 mb-2">Log</Text>
-        {state.log.slice(-8).map((l, i) => (
-          <Text key={i} className="text-white/60">{l}</Text>
-        ))}
-        <View className="h-16" />
+        {/* {state.log?.length ? (
+          <Panel theme={theme} title="Log">
+            {state.log.map((line, i) => (
+              <Text key={i} style={{ color: theme.colors.textMuted }}>
+                {String(line)}
+              </Text>
+            ))}
+          </Panel>
+        ) : null} */}
+        {/* <View className="h-16" /> */}
       </ScrollView>
+       {/* Victory overlay — โผล่เมื่อ phase === 'victory' */}
+      <VictoryBanner
+        theme={theme}
+        active={state.phase === 'victory'}
+        onContinue={() => {
+          // ✅ คอนแทรกต์ของเรา: ปิด flow ด้วย CompleteNode เท่านั้น
+          haptics.confirm();
+          dispatch({ type: 'CompleteNode' });
+        }}
+      />
+      {/* Defeat overlay — โผล่เมื่อ phase === 'defeat' */}
+      <DefeatBanner
+        theme={theme}
+        active={state.phase === 'defeat'}
+        onContinue={() => {
+          // ✅ ปิด flow ด้วย CompleteNode ตามคอนแทรกต์
+          haptics.confirm();
+          dispatch({ type: 'CompleteNode' });
+        }}
+      />
+      {/* QA Overlay */}
+      <QAOverlay
+        theme={theme}
+        currentSeed={state.seed}
+        onNewRun={(seed) => dispatch({ type: 'NewRun', seed })}
+        onStartCombat={() => {
+          const canStart = state.phase === 'menu' || state.phase === 'map';
+          if (!canStart) { haptics.warn(); return; }
+          haptics.confirm();
+          dispatch({ type: 'StartCombat' });
+        }}
+        canStartCombat={state.phase === 'menu' || state.phase === 'map'}
+        onEndTurn={() => {
+          const canEnd = state.phase === 'combat' && !!state.enemy;
+          if (!canEnd) { haptics.warn(); return; }
+          haptics.confirm();
+          dispatch({ type: 'EndTurn' });
+        }}
+        onQAKillEnemy={() => dispatch({ type: 'QA_KillEnemy' })}
+        onQADraw={(count) => dispatch({ type: 'QA_Draw', count })}
+        onQASetEnergy={(value) => dispatch({ type: 'QA_SetEnergy', value })}
+        onQAAddBlessingDemo={() => dispatch({ type: 'QA_AddBlessingDemo' })}
+        onQAOpenShopHere={() => dispatch({ type: 'QA_OpenShopHere' })}
+        onQAOpenShrine={() => dispatch({ type: 'QA_OpenShrine' })}
+        onQAOpenRemove={() => dispatch({ type: 'QA_OpenRemove' })}
+        onQAOpenGamble={() => dispatch({ type: 'QA_OpenGamble' })}
+        onQAOpenTreasure={() => dispatch({ type: 'QA_OpenTreasure' })}
+      />
     </SafeAreaView>
   );
 }

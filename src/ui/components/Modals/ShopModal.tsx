@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import type { GameState } from '../../../core/types';
 import type { ThemeTokens } from '../../theme';
+import { haptics } from '../../haptics';
 
 type Props = {
   state: GameState;
@@ -27,8 +28,11 @@ export default function ShopModal({ state, theme, onTake, onReroll, onComplete }
           return (
             <Pressable
               key={`${item.card.id}-${i}`}
-              onPress={() => onTake(i)}
-              disabled={!canBuy}
+              onPress={() => {
+              if (!canBuy) { haptics.warn(); return; }
+              haptics.confirm();
+              onTake(i);
+              }}
               style={{
                 paddingHorizontal: 12, paddingVertical: 8,
                 borderRadius: theme.radius.card,
@@ -50,7 +54,11 @@ export default function ShopModal({ state, theme, onTake, onReroll, onComplete }
       </View>
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
         <Pressable
-          onPress={onReroll}
+          onPress={() => {
+            if (state.player.gold < 20) { haptics.warn(); return; }
+            haptics.confirm();
+            onReroll();
+          }}
           style={{
             paddingVertical: 8, paddingHorizontal: 16,
             borderRadius: theme.radius.card, borderWidth: 1, borderColor: theme.colors.border,
@@ -60,7 +68,7 @@ export default function ShopModal({ state, theme, onTake, onReroll, onComplete }
           <Text style={{ color: theme.colors.text, fontWeight: '600' }}>Reroll (-20g)</Text>
         </Pressable>
         <Pressable
-          onPress={onComplete}
+          onPress={() => { haptics.confirm(); onComplete(); }}
           style={{
             paddingVertical: 8, paddingHorizontal: 16,
             borderRadius: theme.radius.card, borderWidth: 1, borderColor: theme.colors.border,
