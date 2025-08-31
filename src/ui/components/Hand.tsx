@@ -5,6 +5,7 @@ import type { ThemeTokens } from '../theme';
 import { shadowStyle } from '../theme';
 import CardFrame from './CardFrame';
 import { haptics } from '../haptics';
+import { sfx } from '../sfx';
 
 type Props = {
     hand: CardData[];
@@ -14,7 +15,7 @@ type Props = {
 };
 
 function CardButton({
-    disabled, onPress, theme, borderColor, borderWidth, children,
+    disabled, onPress, theme, borderColor, borderWidth, children, tooltipContent,
 }: {
     disabled?: boolean;
     onPress: () => void;
@@ -22,14 +23,27 @@ function CardButton({
     borderColor?: string;            // ✅ สีขอบที่ส่งเข้ามา
     borderWidth?: number;            // ✅ ความหนาขอบที่ส่งเข้ามา
     children: React.ReactNode;
+    tooltipContent?: React.ReactNode; // ✅ เนื้อหา tooltip (กดค้าง)
 }) {
     const scale = React.useRef(new Animated.Value(1)).current;
-    
-  const pressIn = () => {
-    haptics.tapSoft(); // ✅ ฟีลสัมผัสเบา ๆ ตอนกด
-    Animated.timing(scale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start();
-  };
+
+    const pressIn = () => {
+        haptics.tapSoft(); // ✅ ฟีลสัมผัสเบา ๆ ตอนกด
+        Animated.timing(scale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start();
+    };
     const pressOut = () => Animated.timing(scale, { toValue: 1, duration: 100, useNativeDriver: true }).start();
+    // Tooltip
+    const [tip, setTip] = React.useState(false);
+    const tipFade = React.useRef(new Animated.Value(0)).current;
+    const showTip = React.useCallback(() => {
+        setTip(true);
+        tipFade.setValue(0);
+        Animated.timing(tipFade, { toValue: 1, duration: 140, useNativeDriver: true }).start();
+    }, []);
+    const hideTip = React.useCallback(() => {
+        Animated.timing(tipFade, { toValue: 0, duration: 120, useNativeDriver: true })
+            .start(() => setTip(false));
+    }, []);
     return (
         <Animated.View style={[
             { transform: [{ scale }], opacity: disabled ? 0.6 : 1 },
@@ -39,7 +53,9 @@ function CardButton({
                 onPress={() => { haptics.playCard(); onPress(); }}  // ✅ เล่นไพ่สำเร็จ: ฟีดแบ็ก Medium
                 disabled={disabled}
                 onPressIn={pressIn}
-                onPressOut={pressOut}
+                onPressOut={() => { hideTip(); pressOut(); }}
+                onLongPress={() => { if (tooltipContent) showTip(); }}
+                delayLongPress={250}
                 style={{
                     paddingHorizontal: 12, paddingVertical: 8,
                     borderRadius: theme.radius.card,
@@ -50,6 +66,32 @@ function CardButton({
                 }}
             >
                 {children}
+                {/* Tooltip bubble */}
+                {tip && tooltipContent ? (
+                    <Animated.View
+                        pointerEvents="none"
+                        style={{
+                            position: 'absolute',
+                            bottom: '100%',
+                            left: 0,
+                            transform: [{ translateY: -6 }],
+                            opacity: tipFade,
+                        }}
+                    >
+                        <View style={{
+                            borderRadius: theme.radius.card,
+                            borderWidth: 1, borderColor: theme.colors.border,
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            paddingHorizontal: 10, paddingVertical: 8,
+                            maxWidth: 240,
+                        }}>
+                            {typeof tooltipContent === 'string'
+                                ? <Text style={{ color: theme.colors.text }}>{tooltipContent}</Text>
+                                : tooltipContent
+                            }
+                        </View>
+                    </Animated.View>
+                ) : null}
             </Pressable>
         </Animated.View>
     );
@@ -95,6 +137,14 @@ export default function Hand({ hand, energy, theme, onPlay }: Props) {
                         c.rarity === 'Uncommon' ? theme.colors.textMuted :
                             theme.colors.border;
                 const borderWidth = c.rarity === 'Rare' ? 2 : 1;
+                // ✅ Tooltip text (fallback จากฟิลด์การ์ด)
+                const parts: string[] = [];
+                if (c.dmg) parts.push(`Deal ${c.dmg} damage`);
+                if (c.block) parts.push(`Gain ${c.block} Block`);
+                if (c.energyGain) parts.push(`+${c.energyGain} Energy`);
+                if (c.draw) parts.push(`Draw ${c.draw}`);
+                const tipText = parts.length ? parts.join(' • ') : 'Play to trigger effects';
+
                 const isRareFoil = theme.id === 'thai_fairytale' && c.rarity === 'Rare';
                 return (
                     <Animated.View
@@ -111,10 +161,30 @@ export default function Hand({ hand, energy, theme, onPlay }: Props) {
                         >
                             <CardButton
                                 disabled={!canPlay}
-                                onPress={() => onPlay(i)}
+                                onPress={() => {
+                                    // ✅ เล่นเสียงตามชนิดการ์ด
+                                    if (c.dmg) sfx.attack();
+                                    else if (c.block) sfx.block();
+                                    onPlay(i);
+                                }}
                                 theme={theme}
                                 borderColor={isRareFoil ? 'transparent' : borderColor}  // ❗️ซ่อนขอบเดิมเมื่อใช้ฟอยล์
                                 borderWidth={isRareFoil ? 0 : borderWidth}               // ❗️ไม่ให้หนาซ้อน
+                                tooltipContent={
+                                    <View>
+                                        <Text style={{ color: theme.colors.text, fontWeight: '700' }}>
+                                            {c.name} {c.rarity ? `(${c.rarity})` : ''}
+                                        </Text>
+                                        {tipText ? (
+                                            <Text style={{ color: theme.colors.textMuted, marginTop: 2 }}>
+                                                {tipText}
+                                            </Text>
+                                        ) : null}
+                                        <Text style={{ color: theme.colors.textMuted, marginTop: 4 }}>
+                                            Cost: {c.cost}
+                                        </Text>
+                                    </View>
+                                }
                             >
                                 {/* Header: ชื่อการ์ด */}
                                 <Text style={{ color: theme.colors.text, fontWeight: '600', paddingRight: 36 }}>
