@@ -6,6 +6,7 @@ import { shadowStyle } from '../theme';
 import CardFrame from './CardFrame';
 import { haptics } from '../haptics';
 import { sfx } from '../sfx';
+import { dur } from '../anim';
 
 type Props = {
     hand: CardData[];
@@ -15,9 +16,10 @@ type Props = {
 };
 
 function CardButton({
-    disabled, onPress, theme, borderColor, borderWidth, children, tooltipContent,
+    disabled, canPlay, onPress, theme, borderColor, borderWidth, children, tooltipContent,
 }: {
     disabled?: boolean;
+    canPlay?: boolean;                 // ✅ ใช้ guard ภายในปุ่ม
     onPress: () => void;
     theme: ThemeTokens;
     borderColor?: string;            // ✅ สีขอบที่ส่งเข้ามา
@@ -26,12 +28,21 @@ function CardButton({
     tooltipContent?: React.ReactNode; // ✅ เนื้อหา tooltip (กดค้าง)
 }) {
     const scale = React.useRef(new Animated.Value(1)).current;
+    const shake = React.useRef(new Animated.Value(0)).current; // -1..1 → translateX
 
     const pressIn = () => {
-        haptics.tapSoft(); // ✅ ฟีลสัมผัสเบา ๆ ตอนกด
-        Animated.timing(scale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start();
+        if (canPlay !== false) haptics.tapSoft(); // ✅ แตะเบา เฉพาะเมื่อเล่นได้
+        Animated.timing(scale, { toValue: 0.97, duration: dur(100), useNativeDriver: true }).start();
     };
-    const pressOut = () => Animated.timing(scale, { toValue: 1, duration: 100, useNativeDriver: true }).start();
+    const pressOut = () => Animated.timing(scale, { toValue: 1, duration: dur(100), useNativeDriver: true }).start();
+    const doShake = () => {
+        shake.setValue(0);
+        Animated.sequence([
+            Animated.timing(shake, { toValue: 1, duration: dur(60), useNativeDriver: true }),
+            Animated.timing(shake, { toValue: -1, duration: dur(90), useNativeDriver: true }),
+            Animated.timing(shake, { toValue: 0, duration: dur(70), useNativeDriver: true }),
+        ]).start();
+    };
     // Tooltip
     const [tip, setTip] = React.useState(false);
     const tipFade = React.useRef(new Animated.Value(0)).current;
@@ -44,14 +55,30 @@ function CardButton({
         Animated.timing(tipFade, { toValue: 0, duration: 120, useNativeDriver: true })
             .start(() => setTip(false));
     }, []);
+    const outerTransform = [
+        { translateX: shake.interpolate({ inputRange: [-1, 1], outputRange: [-6, 6] }) },
+        { scale },
+    ];
+    const isDim = (disabled ?? false) || canPlay === false;
+
     return (
         <Animated.View style={[
-            { transform: [{ scale }], opacity: disabled ? 0.6 : 1 },
+            { transform: outerTransform, opacity: isDim ? 0.6 : 1 },
             shadowStyle(2, theme.colors.vignetteEdge ?? '#000'),
         ]}>
             <Pressable
-                onPress={() => { haptics.playCard(); onPress(); }}  // ✅ เล่นไพ่สำเร็จ: ฟีดแบ็ก Medium
-                disabled={disabled}
+        onPress={() => {
+          if (canPlay === false) { haptics.warn(); doShake(); return; } // ❗️Guard: พลังงานไม่พอ
+          // ✅ Success micro-anim: pop → spring กลับ แล้วค่อย commit เล่นไพ่
+          haptics.playCard();
+          Animated.sequence([
+            Animated.timing(scale, { toValue: 1.08, duration: dur(80), useNativeDriver: true }),
+            Animated.spring(scale, { toValue: 1, useNativeDriver: true, friction: 5, tension: 160 }),
+          ]).start();
+          // commit หลังเด้งเล็กน้อย เพื่อให้ผู้เล่น "เห็น" แอนิเมชันก่อนที่ไพ่จะถูกถอนไปจากมือ
+          setTimeout(() => { onPress(); }, dur(70));
+        }}
+                disabled={false} // เปิดรับอีเวนต์เสมอ เพื่อให้ guard ทำงานได้
                 onPressIn={pressIn}
                 onPressOut={() => { hideTip(); pressOut(); }}
                 onLongPress={() => { if (tooltipContent) showTip(); }}
@@ -115,7 +142,7 @@ export default function Hand({ hand, energy, theme, onPlay }: Props) {
                 const v = new Animated.Value(0);
                 animsRef.current[i] = v;
                 created = true;
-                Animated.timing(v, { toValue: 1, duration: 240, useNativeDriver: true }).start();
+                Animated.timing(v, { toValue: 1, duration: dur(240), useNativeDriver: true }).start();
             }
         }
         // ถ้ามีการ์ดใหม่ สั่ง re-render หนึ่งครั้งเพื่อให้ style ผูกกับ Animated.Value ที่เพิ่งสร้าง
@@ -160,7 +187,7 @@ export default function Hand({ hand, energy, theme, onPlay }: Props) {
                             enabled={isRareFoil}
                         >
                             <CardButton
-                                disabled={!canPlay}
+                                canPlay={canPlay}
                                 onPress={() => {
                                     // ✅ เล่นเสียงตามชนิดการ์ด
                                     if (c.dmg) sfx.attack();

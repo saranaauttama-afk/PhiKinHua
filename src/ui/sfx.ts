@@ -8,6 +8,9 @@ const SOURCES = {
 type SfxKey = keyof typeof SOURCES;
 
 let inited = false;
+let ENABLED = true;
+let VOLUME = 0.9;
+
 async function ensureInit() {
   if (inited) return;
   try {
@@ -28,7 +31,7 @@ async function getSound(key: SfxKey): Promise<Audio.Sound | null> {
   try {
     await ensureInit();
     if (cache[key]) return cache[key]!;
-    const { sound } = await Audio.Sound.createAsync(SOURCES[key], { volume: 0.9 });
+    const { sound } = await Audio.Sound.createAsync(SOURCES[key], { volume: VOLUME  });
     cache[key] = sound;
     return sound;
   } catch {
@@ -37,6 +40,7 @@ async function getSound(key: SfxKey): Promise<Audio.Sound | null> {
 }
 
 async function play(key: SfxKey) {
+    if (!ENABLED) return;
   const snd = await getSound(key);
   if (!snd) return;
   try {
@@ -50,4 +54,12 @@ async function play(key: SfxKey) {
 export const sfx = {
   attack() { void play('attack'); },
   block()  { void play('block');  },
+  setEnabled(v: boolean) { ENABLED = v; },
+  isEnabled() { return ENABLED; },
+  async setVolume(vol: number) {
+    VOLUME = Math.max(0, Math.min(1, vol));
+    // อัปเดตเสียงที่แคชอยู่
+    await Promise.all(Object.values(cache).map(s => s?.setVolumeAsync?.(VOLUME)));
+  },
+  getVolume() { return VOLUME; },  
 };

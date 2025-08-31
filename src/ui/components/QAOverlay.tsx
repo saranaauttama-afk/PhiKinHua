@@ -3,6 +3,8 @@ import { View, Text, Pressable, TextInput, Animated } from 'react-native';
 import type { ThemeTokens } from '../theme';
 import Panel from './Panel';
 import { haptics } from '../haptics';
+import { sfx } from '../sfx';
+import { getAnimSpeedScale, setAnimSpeedScale } from '../anim';
 
 type Props = {
   theme: ThemeTokens;
@@ -32,6 +34,11 @@ export default function QAOverlay({
   React.useEffect(() => { setSeed(currentSeed || 'demo-001'); }, [currentSeed]);
   const [drawN, setDrawN] = React.useState('1');
   const [energyVal, setEnergyVal] = React.useState('3');  
+  // Settings
+  const [hOn, setHOn] = React.useState(haptics.isEnabled());
+  const [sOn, setSOn] = React.useState(sfx.isEnabled());
+  const [vol, setVol] = React.useState(sfx.getVolume());  
+  const [animScale, setAnimScale] = React.useState(getAnimSpeedScale());
 
   const scale = React.useRef(new Animated.Value(0)).current;
   React.useEffect(() => {
@@ -143,7 +150,77 @@ export default function QAOverlay({
                   theme={theme}
                 />
               </View>
-            </View>            
+            </View>    
+
+            {/* ===== Settings: Haptics / SFX ===== */}
+            <Text style={{ color: theme.colors.textMuted, marginTop: 14, marginBottom: 6 }}>Settings</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+              <Toggle
+                theme={theme}
+                label={`Haptics: ${hOn ? 'On' : 'Off'}`}
+                onPress={() => {
+                  const next = !hOn;
+                  haptics.setEnabled(next);
+                  setHOn(next);
+                  if (next) haptics.tapSoft();
+                }}
+              />
+              <Toggle
+                theme={theme}
+                label={`SFX: ${sOn ? 'On' : 'Off'}`}
+                onPress={() => {
+                  const next = !sOn;
+                  sfx.setEnabled(next);
+                  setSOn(next);
+                  if (next) sfx.attack();
+                }}
+              />
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+              <Text style={{ color: theme.colors.textMuted, marginRight: 8 }}>Volume</Text>
+              <Pressable
+                onPress={async () => { const v = Math.max(0, Math.round((vol - 0.1) * 10) / 10); setVol(v); await sfx.setVolume(v); }}
+                style={{ paddingVertical: 6, paddingHorizontal: 10, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.radius.card, marginRight: 8, backgroundColor: 'rgba(255,255,255,0.05)' }}
+              >
+                <Text style={{ color: theme.colors.text }}>-</Text>
+              </Pressable>
+              <Text style={{ color: theme.colors.text, width: 40, textAlign: 'center' }}>{vol.toFixed(1)}</Text>
+              <Pressable
+                onPress={async () => { const v = Math.min(1, Math.round((vol + 0.1) * 10) / 10); setVol(v); await sfx.setVolume(v); }}
+                style={{ paddingVertical: 6, paddingHorizontal: 10, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.radius.card, marginLeft: 8, backgroundColor: 'rgba(255,255,255,0.05)' }}
+              >
+                <Text style={{ color: theme.colors.text }}>+</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => sfx.attack()}
+                style={{ paddingVertical: 6, paddingHorizontal: 10, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.radius.card, marginLeft: 8, backgroundColor: 'rgba(255,255,255,0.05)' }}
+              >
+                <Text style={{ color: theme.colors.text }}>Test</Text>
+              </Pressable>
+            </View>    
+                        {/* Anim speed */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
+              <Text style={{ color: theme.colors.textMuted, marginRight: 8 }}>Anim:</Text>
+              {[
+                { label: '0.75×', v: 0.75 },
+                { label: '1×', v: 1 },
+                { label: '1.5×', v: 1.5 },
+                { label: '2×', v: 2 },
+              ].map(({ label, v }) => (
+                <Pressable
+                  key={label}
+                  onPress={() => { setAnimSpeedScale(v); setAnimScale(v); haptics.tapSoft(); }}
+                  style={{
+                    paddingVertical: 6, paddingHorizontal: 10,
+                    borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.radius.card,
+                    marginRight: 8, marginBottom: 8,
+                    backgroundColor: animScale === v ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.05)',
+                  }}
+                >
+                  <Text style={{ color: theme.colors.text }}>{label}</Text>
+                </Pressable>
+              ))}
+            </View>                
           </Panel>
         </Animated.View>
       )}
@@ -176,6 +253,22 @@ function Btn({ title, onPress, theme }: { title: string; onPress: () => void; th
       }}
     >
       <Text style={{ color: theme.colors.text, fontWeight: '600' }}>{title}</Text>
+    </Pressable>
+  );
+}
+
+function Toggle({ label, onPress, theme }: { label: string; onPress: () => void; theme: ThemeTokens }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        paddingVertical: 8, paddingHorizontal: 12,
+        borderRadius: theme.radius.card,
+        borderWidth: 1, borderColor: theme.colors.border,
+        backgroundColor: 'rgba(255,255,255,0.05)', marginRight: 8, marginBottom: 8,
+      }}
+    >
+      <Text style={{ color: theme.colors.text, fontWeight: '600' }}>{label}</Text>
     </Pressable>
   );
 }

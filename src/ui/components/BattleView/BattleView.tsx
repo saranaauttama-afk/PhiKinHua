@@ -5,6 +5,7 @@ import type { ThemeTokens } from '../../theme';
 import Panel from '../Panel';
 import Hand from '../Hand';
 import { haptics } from '../../haptics';
+import { dur } from '../../anim';
 
 type Props = {
   state: GameState;
@@ -22,6 +23,20 @@ export default function BattleView({ state, theme, onPlayCard, onEndTurn }: Prop
   const [lastDamage, setLastDamage] = React.useState<number | null>(null);
   const prevHpRef = React.useRef<number | null>(enemy?.hp ?? null);
 
+  // === Enemy Intent Tooltip (long-press) ===
+  const tipFade = React.useRef(new Animated.Value(0)).current; // 0..1
+  const [tipEverShown, setTipEverShown] = React.useState(false); // ให้ mount ครั้งเดียวเลี่ยง setState ใน callback
+  const showTip = () => {
+    if (!enemy) return;
+    setTipEverShown(true);
+    tipFade.setValue(0);
+    haptics.tapSoft();
+    Animated.timing(tipFade, { toValue: 1, duration: dur(140), useNativeDriver: true }).start();
+  };
+  const hideTip = () => {
+    Animated.timing(tipFade, { toValue: 0, duration: dur(120), useNativeDriver: true }).start();
+  };  
+
   React.useEffect(() => {
     const prev = prevHpRef.current;
     const curr = enemy?.hp ?? null;
@@ -31,12 +46,12 @@ export default function BattleView({ state, theme, onPlayCard, onEndTurn }: Prop
       // flash
       flash.setValue(0);
       Animated.sequence([
-        Animated.timing(flash, { toValue: 1, duration: 60, easing: Easing.linear, useNativeDriver: true }),
-        Animated.timing(flash, { toValue: 0, duration: 180, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(flash, { toValue: 1, duration: dur(60), easing: Easing.linear, useNativeDriver: true }),
+        Animated.timing(flash, { toValue: 0, duration: dur(180), easing: Easing.out(Easing.quad), useNativeDriver: true }),
       ]).start();
       // float number
       float.setValue(0);
-      Animated.timing(float, { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true })
+      Animated.timing(float, { toValue: 1, duration: dur(500), easing: Easing.out(Easing.cubic), useNativeDriver: true })
         .start(); // ❗️ไม่ setState ตอนจบแอนิเมชัน (หลีกเลี่ยง warning)
     }
     prevHpRef.current = curr;
@@ -55,8 +70,61 @@ export default function BattleView({ state, theme, onPlayCard, onEndTurn }: Prop
         <View style={{ position: 'relative' }}>
           {enemy ? (
             <>
-              <Text style={{ color: theme.colors.textMuted }}>HP {enemy.hp}/{enemy.maxHp}</Text>
-              <Text style={{ color: theme.colors.textMuted, marginTop: 4 }}>Intent: Attack {enemy.dmg}</Text>
+              {/* Make intent area pressable for tooltip */}
+              <Pressable
+                onLongPress={showTip}
+                delayLongPress={250}
+                onPressOut={hideTip}
+                style={{ paddingVertical: 2 }}
+              >
+                <Text style={{ color: theme.colors.textMuted }}>
+                  HP {enemy.hp}/{enemy.maxHp}
+                </Text>
+                <Text style={{ color: theme.colors.textMuted, marginTop: 4 }}>
+                  Intent: {enemy.dmg > 0 ? `Attack ${enemy.dmg}` : '—'}
+                </Text>
+              </Pressable>
+
+              {/* Tooltip bubble (mounted once; show/hide by opacity) */}
+              {tipEverShown ? (
+                <Animated.View
+                  pointerEvents="none"
+                  style={{
+                    position: 'absolute',
+                    top: -6,
+                    left: 0,
+                    right: 0,
+                    opacity: tipFade,
+                    transform: [{ translateY: tipFade.interpolate({ inputRange: [0, 1], outputRange: [6, 0] }) }],
+                    alignItems: 'center',
+                  }}
+                >
+                  <View
+                    style={{
+                      maxWidth: 280,
+                      borderRadius: theme.radius.card,
+                      borderWidth: 1,
+                      borderColor: theme.colors.border,
+                      backgroundColor: 'rgba(0,0,0,0.8)',
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                    }}
+                  >
+                    <Text style={{ color: theme.colors.text, fontWeight: '700', textAlign: 'center' }}>
+                      {enemy.name} — Intent
+                    </Text>
+                    <Text style={{ color: theme.colors.textMuted, marginTop: 6 }}>
+                      {enemy.dmg > 0
+                        ? `Will attack for ${enemy.dmg} damage on its turn.\nYour Block reduces damage this turn.`
+                        : 'No attack this turn (idle or other action).'}
+                    </Text>
+                    <Text style={{ color: theme.colors.textMuted, marginTop: 6, fontSize: 12 }}>
+                      Tip: End Turn to let the enemy act. Build Block first to mitigate damage.
+                    </Text>
+                  </View>
+                </Animated.View>
+              ) : null}
+
               {/* Floating damage */}
               {lastDamage != null ? (
                 <Animated.Text
