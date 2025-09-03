@@ -1,4 +1,3 @@
-//*** NEW: src/core/events.ts
 import type { BlessingDef, CardData, EventState, GameState, Rarity } from './types';
 import type { RNG } from './rng';
 import { int, shuffle } from './rng';

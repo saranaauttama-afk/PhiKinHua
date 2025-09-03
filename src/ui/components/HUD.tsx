@@ -56,6 +56,39 @@ export default function HUD({ state, theme }: Props) {
           Energy: <Text style={{ color: theme.colors.accent }}>{p.energy}</Text>  ·  Gold: {p.gold}g
         </Text>
 
+        {/* Blessings (แสดงใต้ Energy) */}
+        {Array.isArray(state.blessings) && state.blessings.length > 0 && (
+          <View style={{ marginTop: 6 }}>
+            <Text style={{ color: theme.colors.textMuted, fontSize: 12, marginBottom: 4 }}>
+              พรที่มีอยู่
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+              {state.blessings.map((b, i) => (
+                <View
+                  key={b.id ?? i}
+                  style={{
+                    paddingHorizontal: 8,
+                    paddingVertical: 4,
+                    borderRadius: 9999,
+                    borderWidth: 1,
+                    borderColor: theme.colors.border,
+                    backgroundColor: 'rgba(255,255,255,0.06)',
+                    marginRight: 6,
+                    marginBottom: 6,
+                  }}
+                >
+                  <Text
+                    style={{ color: theme.colors.text, fontSize: 12, maxWidth: 140 }}
+                    numberOfLines={1}
+                  >
+                    {b.name ?? b.id}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
         {/* Floating heal/damage number */}
         {lastDelta != null ? (
           <Animated.Text

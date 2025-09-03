@@ -1,0 +1,6 @@
+[
+  { "id": "evt_shrine",   "name": "Quiet Shrine",    "kind": "shrine",   "weight": 3 },
+  { "id": "evt_remove",   "name": "Card Cleanse",    "kind": "remove",   "weight": 3 },
+  { "id": "evt_gamble",   "name": "Street Gamble",   "kind": "gamble",   "weight": 2 },
+  { "id": "evt_treasure", "name": "Hidden Stash",    "kind": "treasure", "weight": 2 }
+]

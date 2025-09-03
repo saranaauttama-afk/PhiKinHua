@@ -5,7 +5,9 @@ import { rollRewardOptionsByTier } from './reward';
 import { START_ENERGY, rollEnemyId, makeEnemy, SHOP_REROLL_COST } from './balance';
 import { rollShopStock } from './shop';
 import { availableNodes, completeAndAdvance, generateMap, findNode } from './map';
-import { getCardPlayedFns, resetBlessingTurnFlags, runBlessingsTurnHook } from './blessingRuntime';
+//import { getCardPlayedFns, resetBlessingTurnFlags, runBlessingsTurnHook } from './blessingRuntime';
+//import { resetBlessingOncePerTurn, resetBlessingTurnFlags, runBlessingsOnCardPlayed, runBlessingsTurnHook } from './blessingRuntime';
+import { resetBlessingTurnFlags, runBlessingsOnCardPlayed, runBlessingsTurnHook } from './blessingRuntime';
 import { openRemoveEvent, pickEventKind, rollGamble, rollShrine, rollTreasure, applyRemoveCard } from './events';
 
 export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state: GameState; rng: RNG } {
@@ -51,14 +53,10 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       if (idx < 0 || idx >= s.piles.hand.length) return { state: s, rng: r };
       const played = s.piles.hand[idx];
       // Apply effect & move card to discard
-      applyCardEffect(s, idx);
+      applyCardEffect(s,r, idx);
       // ✅ Blessings: on_card_played ผ่านตัวกลาง (safe-guard)
       try {
-        for (const b of (s.blessings ?? [])) {
-          const fns = getCardPlayedFns(b, played);
-          const tc = { state: s };
-          for (const f of fns) f(tc, played);
-        }
+        ({ state: s, rng: r } = runBlessingsOnCardPlayed(s, r, played));
       } catch (e: any) {
         s.log.push(`Blessing error: ${e?.message ?? String(e)}`);
       }
@@ -141,15 +139,17 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
         ({ state: s, rng: r } = buildAndShuffleDeck(s, r));
         ({ state: s, rng: r } = drawUpTo(s, r));
         resetBlessingTurnFlags(s);
-        runBlessingsTurnHook(s, 'on_turn_start'); // ✅ เรียก on_turn_start ของพร        
+        ({ state: s, rng: r } = runBlessingsTurnHook(s, r, 'start'));
         s.log.push(`Enter node ${cmd.nodeId} -> Combat vs ${s.enemy?.name ?? 'Enemy'}`);
       }
       return { state: s, rng: r };
     }
     case 'EndTurn': {
       if (s.phase !== 'combat') return { state: s, rng: r };
-      // ✅ on_turn_end
-      runBlessingsTurnHook(s, 'on_turn_end');
+
+      // ✅ on_turn_end (ต้องส่ง rng และระบุ hook = 'end')
+      ({ state: s, rng: r } = runBlessingsTurnHook(s, r, 'end'));
+
       // Enemy turn
       endEnemyTurn(s);
       if (isDefeat(s)) {
@@ -157,13 +157,18 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
         s.log.push('Defeat...');
         return { state: s, rng: r };
       }
+
       // Next player turn
-      s.turn = 1;
+      s.turn += 1; // ⬅️ เดิมตั้งเป็น 1 ใหม่ ให้เพิ่มเทิร์นแทน
       ({ state: s, rng: r } = startPlayerTurn(s, r));
-      resetBlessingTurnFlags(s);
-      runBlessingsTurnHook(s, 'on_turn_start'); // ✅ เทิร์นใหม่      
+
+      // ล้าง once-per-turn แล้วยิง on_turn_start
+      resetBlessingTurnFlags(s); // ⬅️ ใช้ชื่อฟังก์ชันนี้ ไม่ใช่ resetBlessingOncePerTurn
+      ({ state: s, rng: r } = runBlessingsTurnHook(s, r, 'start')); // ⬅️ ต้องส่ง rng และใช้ 'start'
+
       return { state: s, rng: r };
     }
+
     case 'TakeReward': {
       if (s.phase !== 'reward' || !s.rewardOptions) return { state: s, rng: r };
       const idx = cmd.index;
@@ -274,7 +279,16 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       s.enemy = undefined;
       s.shopStock = undefined;
       s.event = undefined;
-      s.combatVictoryLock = false; // ✅ พร้อมคอมแบตใหม่       
+      s.combatVictoryLock = false; // ✅ พร้อมคอมแบตใหม่   
+      if (s.phase === 'victory') {
+        // เริ่มสถานะใหม่ด้วย seed เดิม (deterministic)
+        s = baseNewState(s.seed);
+        const g = generateMap(r); r = g.rng;
+        s.map = g.map;
+        s.phase = 'map';
+        s.log.push(`New run after victory. Seed=${s.seed}, cols=${s.map.totalCols}`);
+        return { state: s, rng: r };
+      }    
       if (s.map) {
         const node = findNode(s.map, s.map.currentNodeId);
         // ตีความ: ถ้าเป็น boss => จบวิ่ง (victory)

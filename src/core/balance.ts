@@ -6,6 +6,10 @@ import cardsJson from '../data/packs/base/cards.json';
 import enemiesJson from '../data/packs/base/enemies.json';
 import thaiCardsJson from '../data/packs/thai_fairytale/cards.json';
 import thaiEnemiesJson from '../data/packs/thai_fairytale/enemies.json';
+import baseBlessJson from '../data/packs/base/blessings.json';
+import baseEventsJson from '../data/packs/base/events.json';
+import thaiBlessJson from '../data/packs/thai_fairytale/blessings.json';
+import thaiEventsJson from '../data/packs/thai_fairytale/events.json';
 
 export const START_HP = 50;
 export const START_ENERGY = 3;
@@ -24,6 +28,14 @@ const ENEMIES_BY_PACK: Record<PackId, any[]> = {
   base: enemiesJson as any[],
   thai_fairytale: thaiEnemiesJson as any[],
 };
+const BLESSINGS_BY_PACK: Record<PackId, any[]> = {
+  base: baseBlessJson as any[],
+  thai_fairytale: thaiBlessJson as any[],
+};
+const EVENTS_BY_PACK: Record<PackId, any[]> = {
+  base: baseEventsJson as any[],
+  thai_fairytale: thaiEventsJson as any[],
+};
 
 // ---------- Caches (mutate แทนการสร้างใหม่ เพื่อให้รีเฟรชได้ runtime) ----------
 export const ALL_CARDS: CardData[] = [];
@@ -33,6 +45,9 @@ export const POOL_UNCOMMON: CardData[] = [];
 export const POOL_RARE: CardData[] = [];
 export const ENEMY_BY_ID: Record<string, { id: string; name: string; maxHp: number; dmg: number }> = {};
 export const ENEMY_IDS: string[] = [];
+export const BLESSINGS_JSON: any[] = [];
+export const EVENTS_JSON: any[] = [];
+export const EVENT_WEIGHTS: Record<string, number> = {};
 
 function _clear<T>(arr: T[]) { arr.length = 0; }
 function _clearObj(obj: Record<string, any>) { for (const k of Object.keys(obj)) delete obj[k]; }
@@ -59,6 +74,15 @@ export function rebuildPackCaches(pack: PackId) {
     ENEMY_BY_ID[e.id] = e;
     ENEMY_IDS.push(e.id);
   }
+  // Blessings (เก็บรูป JSON ไว้ก่อน แล้วไปแปลงเป็นฟังก์ชันที่ blessingRuntime)
+  _clear(BLESSINGS_JSON);
+  for (const b of BLESSINGS_BY_PACK[pack]) BLESSINGS_JSON.push(b);
+  // Events (เก็บ config + weight)
+  _clear(EVENTS_JSON); _clearObj(EVENT_WEIGHTS);
+  for (const ev of EVENTS_BY_PACK[pack]) {
+    EVENTS_JSON.push(ev);
+    EVENT_WEIGHTS[ev.kind] = (EVENT_WEIGHTS[ev.kind] ?? 0) + (ev.weight ?? 1);
+  }  
 }
 
 export function setActivePack(pack: PackId) {
@@ -103,3 +127,7 @@ export function rollEnemyId(rng: RNG): { id: string; rng: RNG } {
 export function getCardsByRarity(): Record<Rarity, CardData[]> {
   return { Common: POOL_COMMON, Uncommon: POOL_UNCOMMON, Rare: POOL_RARE };
 }
+
+// Blessings/Events accessors
+export function getBlessingsJson(): any[] { return BLESSINGS_JSON; }
+export function getEventWeights(): Record<string, number> { return EVENT_WEIGHTS; }

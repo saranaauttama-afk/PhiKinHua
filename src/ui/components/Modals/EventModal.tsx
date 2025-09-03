@@ -51,28 +51,78 @@ export default function EventModal({
     );
   }
 
+  // if (e.type === 'shrine') {
+  //   return (
+  //     <Panel theme={theme} title="Shrine ✨ — Choose a blessing" style={{ marginTop: 24 }}>
+  //       <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+  //         {(e.options ?? []).map((b, i) => (
+  //           <Pressable
+  //             key={b.id}
+  //             onPress={() => onChooseBlessing(i)}
+  //             style={{
+  //               paddingHorizontal: 12, paddingVertical: 8,
+  //               borderRadius: theme.radius.card,
+  //               borderWidth: 1, borderColor: theme.colors.border,
+  //               backgroundColor: 'rgba(0,0,0,0.35)', marginRight: 8, marginBottom: 8,
+  //             }}
+  //           >
+  //             <Text style={{ color: theme.colors.text, fontWeight: '600' }}>
+  //               {b.name} {b.rarity ? `(${b.rarity})` : ''}
+  //             </Text>
+  //             {b.desc ? <Text style={{ color: theme.colors.textMuted }}>{b.desc}</Text> : null}
+  //           </Pressable>
+  //         ))}
+  //       </View>
+  //       <Btn title="CompleteNode" onPress={() => { haptics.confirm(); onComplete(); }} />
+  //     </Panel>
+  //   );
+  // }
   if (e.type === 'shrine') {
+    const chosenId = e.chosenId;
+    const chosen = (e.options ?? []).find((x) => x.id === chosenId);
     return (
-      <Panel theme={theme} title="Shrine ✨ — Choose a blessing" style={{ marginTop: 24 }}>
+      <Panel theme={theme} title="Shrine ✨ — เลือกพร" style={{ marginTop: 24 }}>
+        {/* แสดงรายการพร (ถ้าเลือกแล้ว จะ disable ทั้งปุ่ม และไฮไลท์ตัวที่เลือก) */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-          {(e.options ?? []).map((b, i) => (
-            <Pressable
-              key={b.id}
-              onPress={() => onChooseBlessing(i)}
-              style={{
-                paddingHorizontal: 12, paddingVertical: 8,
-                borderRadius: theme.radius.card,
-                borderWidth: 1, borderColor: theme.colors.border,
-                backgroundColor: 'rgba(0,0,0,0.35)', marginRight: 8, marginBottom: 8,
-              }}
-            >
-              <Text style={{ color: theme.colors.text, fontWeight: '600' }}>
-                {b.name} {b.rarity ? `(${b.rarity})` : ''}
-              </Text>
-              {b.desc ? <Text style={{ color: theme.colors.textMuted }}>{b.desc}</Text> : null}
-            </Pressable>
-          ))}
+          {(e.options ?? []).map((b, i) => {
+            const isChosen = b.id === chosenId;
+            return (
+              <Pressable
+                key={b.id}
+                onPress={() => {
+                  if (chosenId) return;          // เลือกแล้ว ไม่ให้เลือกซ้ำ
+                  haptics.confirm();
+                  onChooseBlessing(i);
+                  onComplete();
+                }}
+                disabled={!!chosenId}
+                style={{
+                  paddingHorizontal: 12, paddingVertical: 8,
+                  borderRadius: theme.radius.card,
+                  borderWidth: 1,
+                  borderColor: isChosen ? theme.colors.accent : theme.colors.border,
+                  backgroundColor: isChosen ? 'rgba(0,180,140,0.2)' : 'rgba(0,0,0,0.35)',
+                  marginRight: 8, marginBottom: 8,
+                }}
+              >
+                <Text style={{ color: theme.colors.text, fontWeight: '600' }}>
+                  {isChosen ? '✓ ' : ''}{b.name} {b.rarity ? `(${b.rarity})` : ''}
+                </Text>
+                {b.desc ? <Text style={{ color: theme.colors.textMuted }}>{b.desc}</Text> : null}
+              </Pressable>
+            );
+          })}
         </View>
+        {/* แสดงผลลัพธ์หลังเลือก เพื่อให้เห็นว่า “เกิดอะไรขึ้นแล้ว” */}
+        {chosen ? (
+          <Text style={{ color: theme.colors.text, marginTop: 8 }}>
+            ได้รับพร: <Text style={{ fontWeight: '700' }}>{chosen.name}</Text>
+          </Text>
+        ) : (
+          <Text style={{ color: theme.colors.textMuted, marginTop: 8 }}>
+            แตะเพื่อเลือกพรหนึ่งอย่าง แล้วกด CompleteNode เพื่อไปต่อ
+          </Text>
+        )}
         <Btn title="CompleteNode" onPress={() => { haptics.confirm(); onComplete(); }} />
       </Panel>
     );

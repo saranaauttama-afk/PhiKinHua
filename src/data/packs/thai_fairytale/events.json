@@ -1,0 +1,6 @@
+[
+  { "id": "evt_shrine",   "name": "ศาลเงียบสงบ",   "kind": "shrine",   "weight": 3 },
+  { "id": "evt_remove",   "name": "ล้างสำรับ",      "kind": "remove",   "weight": 3 },
+  { "id": "evt_gamble",   "name": "เสี่ยงโชคตลาดมืด","kind": "gamble",  "weight": 2 },
+  { "id": "evt_treasure", "name": "หีบลึกลับ",      "kind": "treasure", "weight": 2 }
+]

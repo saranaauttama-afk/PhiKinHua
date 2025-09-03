@@ -1,6 +1,7 @@
 import type { CardData, GameState } from './types';
 import { HAND_SIZE, START_ENERGY, START_DECK_IDS, START_GOLD, CARD_BY_ID } from './balance';
 import { shuffle, type RNG } from './rng';
+import { runBlessingsOnCardPlayed } from './blessingRuntime';
 
 // NOTE: We keep state updates pure by working on shallow copies of containers.
 const clone = <T,>(x: T): T => JSON.parse(JSON.stringify(x));
@@ -59,15 +60,27 @@ function drawOne(s: GameState, rng: RNG): { state: GameState; rng: RNG; drew: bo
   return { state: s, rng: r, drew: true };
 }
 
-export function drawUpTo(s: GameState, rng: RNG, targetHandSize = HAND_SIZE): { state: GameState; rng: RNG } {
+export function drawUpTo(state: GameState, rng: RNG, targetHandSize = HAND_SIZE): { state: GameState; rng: RNG } {
+  let s = state;
   let r = rng;
-  let guard = 0;              // ฝากันลูปผิดพลาด
-  const GUARD_MAX = 200;
-  while (s.piles.hand.length < targetHandSize && guard++ < GUARD_MAX) {
-    const res = drawOne(s, r);
-    r = res.rng;
-    if (!res.drew) break;     // ไม่มีไพ่ให้จั่ว -> ออกทันที
+  // bonus draw จาก blessing
+  const extra = (s as any).turnFlags?.extraDraw ?? 0;
+  const target = targetHandSize + extra;
+  const pile = s.piles;
+  while (pile.hand.length < target && (pile.draw.length || pile.discard.length)) {
+    if (pile.draw.length === 0 && pile.discard.length) {
+      const sh = shuffle(r, pile.discard.slice());
+      r = sh.rng;
+      pile.draw = sh.array;
+      pile.discard = [];
+    }
+    if (pile.draw.length) {
+      const c = pile.draw.shift()!;
+      pile.hand.push(c);
+    }
   }
+  // ใช้แล้วล้างค่า
+  if ((s as any).turnFlags) (s as any).turnFlags.extraDraw = 0;
   return { state: s, rng: r };
 }
 
@@ -88,26 +101,33 @@ export function startPlayerTurn(state: GameState, rng: RNG): { state: GameState;
   return drawUpTo(state, rng, HAND_SIZE);
 }
 
-export function applyCardEffect(state: GameState, idxInHand: number) {
-  const card = state.piles.hand[idxInHand];
-  if (!card) return;
+export function applyCardEffect(state: GameState, rng: RNG, idxInHand: number): { state: GameState; rng: RNG } {
+  let s = state;
+  let r = rng;
+  const card = s.piles.hand[idxInHand];
+  if (!card) return { state: s, rng: r };
   // Spend energy
-  if (state.player.energy < card.cost) return;
-  state.player.energy -= card.cost;
+  if (s.player.energy < card.cost) return { state: s, rng: r };
+  s.player.energy -= card.cost;
 
   // Effect
-  if (card.dmg && state.enemy) {
-    state.enemy.hp = Math.max(0, state.enemy.hp - card.dmg);
+  if (card.dmg && s.enemy) {
+    s.enemy.hp = Math.max(0, s.enemy.hp - card.dmg);
   }
   if (card.block) {
-    state.player.block = card.block;
+    s.player.block = card.block;
   }
   // ✅ รองรับการ์ดที่ให้พลังงาน (เช่น Focus: energyGain = 1)
   if (card.energyGain && card.energyGain > 0) {
-    state.player.energy += card.energyGain;
-    state.log.push(`Gained +${card.energyGain} energy`);
+    s.player.energy += card.energyGain;
+    s.log.push(`Gained +${card.energyGain} energy`);
   }
+
+  // ✅ Blessings: on_card_played ผ่าน runtime กลาง (deterministic)
+  ({ state: s, rng: r } = runBlessingsOnCardPlayed(s, r, card));
+
   // draw will be handled by reducer after moving the card
+  return { state: s, rng: r };
 }
 
 export function isVictory(state: GameState): boolean {

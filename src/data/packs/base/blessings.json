@@ -1,0 +1,14 @@
+[
+  { "id": "bl_energy_on_attack", "name": "Battle Rhythm", "rarity": "Uncommon",
+    "desc": "Gain 1 energy when you play an Attack (once/turn).",
+    "on_card_played": { "effects": ["gainEnergy(1)"], "once_per_turn": true, "tag": "attack" }
+  },
+  { "id": "bl_block_on_skill", "name": "Calm Guard", "rarity": "Common",
+    "desc": "Gain 2 Block when you play a Skill.",
+    "on_card_played": { "effects": ["gainBlock(2)"], "tag": "skill" }
+  },
+  { "id": "bl_draw_on_rare", "name": "Sharp Insight", "rarity": "Rare",
+    "desc": "Draw 1 when you play a Rare card (once/turn).",
+    "on_card_played": { "effects": ["draw(1)"], "once_per_turn": true, "tag": "rarity:Rare" }
+  }
+]

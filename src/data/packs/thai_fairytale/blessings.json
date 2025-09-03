@@ -1,0 +1,14 @@
+[
+  { "id": "bl_energy_on_attack", "name": "จังหวะยุทธ", "rarity": "Uncommon",
+    "desc": "ได้พลังงาน +1 เมื่อเล่นไพ่โจมตี (ครั้งเดียวต่อเทิร์น)",
+    "on_card_played": { "effects": ["gainEnergy(1)"], "once_per_turn": true, "tag": "attack" }
+  },
+  { "id": "bl_block_on_skill", "name": "ตั้งสติป้องกัน", "rarity": "Common",
+    "desc": "ได้บล็อก +2 เมื่อเล่นไพ่สกิล",
+    "on_card_played": { "effects": ["gainBlock(2)"], "tag": "skill" }
+  },
+  { "id": "bl_draw_on_rare", "name": "ญาณทิพย์", "rarity": "Rare",
+    "desc": "จั่วไพ่ +1 เมื่อเล่นไพ่ระดับ Rare (ครั้งเดียวต่อเทิร์น)",
+    "on_card_played": { "effects": ["draw(1)"], "once_per_turn": true, "tag": "rarity:Rare" }
+  }
+]
