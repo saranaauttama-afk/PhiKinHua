@@ -1,5 +1,5 @@
 import type { CardData, GameState } from './types';
-import { HAND_SIZE, START_ENERGY, START_DECK,START_GOLD  } from './balance';
+import { HAND_SIZE, START_ENERGY, START_DECK, START_GOLD, START_HP, nextExpForLevel } from './balance';
 import { shuffle, type RNG } from './rng';
 
 // NOTE: We keep state updates pure by working on shallow copies of containers.
@@ -10,7 +10,12 @@ export function baseNewState(seed: string): GameState {
     seed,
     phase: 'menu',
     turn: 0,
-    player: { hp: 50, maxHp: 50, block: 0, energy: START_ENERGY, gold: START_GOLD },
+    player: {
+      hp: START_HP, maxHp: START_HP, block: 0,
+      energy: START_ENERGY, gold: START_GOLD,
+      level: 1, exp: 0, expToNext: nextExpForLevel(1),
+      maxEnergy: START_ENERGY, maxHandSize: HAND_SIZE,
+    },
     enemy: undefined,
     piles: { draw: [], hand: [], discard: [], exhaust: [] },
     log: [],
@@ -23,6 +28,8 @@ export function baseNewState(seed: string): GameState {
     shopStock: undefined,
     event: undefined,
     combatVictoryLock: false,    
+    masterDeck: [],               // ✅ ใส่ค่าเริ่มต้นว่างไว้ เดี๋ยว NewRun จะตั้งจริง
+    deckOpen: false,
   };
 }
 
@@ -74,16 +81,18 @@ export function drawUpTo(s: GameState, rng: RNG, targetHandSize = HAND_SIZE): { 
 export function buildAndShuffleDeck(_state: GameState, _rng: RNG): { state: GameState; rng: RNG } {
   let state = _state;
   let rng = _rng;
-  const out = shuffle(rng, START_DECK);
+  // ✅ ใช้ masterDeck เป็นแหล่งสร้างกอง ถ้าว่างค่อย fallback ไป START_DECK
+  const source = state.masterDeck?.length ? state.masterDeck : START_DECK;
+  const out = shuffle(rng, source);
   state.piles = { draw: out.array.slice(), hand: [], discard: [], exhaust: [] };
   rng = out.rng;
   return { state, rng };
 }
 
 export function startPlayerTurn(state: GameState, rng: RNG): { state: GameState; rng: RNG } {
-  state.player.energy = START_ENERGY;
+  state.player.energy = state.player.maxEnergy ?? START_ENERGY;
   state.player.block = 0;
-  return drawUpTo(state, rng, HAND_SIZE);
+  return drawUpTo(state,rng ,state.player.maxHandSize ?? HAND_SIZE);
 }
 
 export function applyCardEffect(state: GameState, idxInHand: number) {

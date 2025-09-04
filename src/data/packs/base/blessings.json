@@ -1,0 +1,7 @@
+[
+  { "id": "bl_energy_first",     "name": "Battle Rhythm", "rarity": "Common",   "desc": "First card each turn grants +1 energy." },
+  { "id": "bl_start_block",      "name": "Guarded Start", "rarity": "Common",   "desc": "+3 Block at turn start." },
+  { "id": "bl_attack_block",     "name": "Counter Edge",  "rarity": "Uncommon", "desc": "When playing an attack, gain +2 Block." },
+  { "id": "bl_end_heal",         "name": "Second Wind",   "rarity": "Uncommon", "desc": "On turn end, heal 1." },
+  { "id": "bl_big_energy_first", "name": "Battle Frenzy", "rarity": "Rare",     "desc": "First card each turn grants +2 energy." }
+]

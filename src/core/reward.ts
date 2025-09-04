@@ -1,14 +1,50 @@
 import type { CardData, Rarity } from './types';
-import { int, shuffle, type RNG } from './rng';
+import { int, shuffle, next, type RNG } from './rng';
 import { POOL_COMMON, POOL_UNCOMMON, POOL_RARE } from './balance';
+//import { BY_RARITY } from './pack';
+import cardsJson from '../data/packs/base/cards.json';
+
+type CardJson = CardData & { starter?: number; inRewards?: boolean; inShop?: boolean };
+const CARD_LIST: CardJson[] = cardsJson as any;
+const META_BY_ID = new Map<string, CardJson>(CARD_LIST.map(c => [c.id, c]));
+
+// ✅ เลือกแบบถ่วงน้ำหนัก (ไม่ใช้ Math.random)
+ function pickWeighted<T>(rng: RNG, items: T[], getW: (x: T) => number) {
+   let r = rng;
+   let sum = 0;
+   for (const it of items) sum += Math.max(0, getW(it));
+   const step = next(r);          // ✅ ใช้ฟังก์ชัน next(r)
+   r = step.rng;
+   let roll = step.value * sum;
+   for (const it of items) {
+     roll -= Math.max(0, getW(it));
+     if (roll <= 0) return { rng: r, value: it };
+   }
+   return { rng: r, value: items[items.length - 1] };
+ }
+
+// ✅ น้ำหนักร้าน: base ตาม rarity + โบนัสถ้า inShop=true
+function shopWeight(c: CardData) {
+  const rarity = (c.rarity ?? 'Common') as Rarity;
+  const base = rarity === 'Rare' ? 5 : rarity === 'Uncommon' ? 25 : 70;
+  const meta = META_BY_ID.get(c.id);
+  const bonus = meta?.inShop ? 25 : 0; // ปรับได้ตามต้องการ
+  return base + bonus;
+}
+
+const ALL_CARDS: CardData[] = CARD_LIST
+  .filter(c => (c.starter ?? 0) === 0)                // ไม่เอา starter
+  .filter(c => (c.inRewards ?? true));                // รางวัลต้องอนุญาต
+
+const BY_RARITY: Record<Rarity, CardData[]> = {
+  Common:   ALL_CARDS.filter(c => (c.rarity ?? 'Common') === 'Common'),
+  Uncommon: ALL_CARDS.filter(c => c.rarity === 'Uncommon'),
+  Rare:     ALL_CARDS.filter(c => c.rarity === 'Rare'),
+};
 
 type Tier = 'normal' | 'elite' | 'boss';
 
-const BY_RARITY: Record<Rarity, CardData[]> = {
-  Common: POOL_COMMON,
-  Uncommon: POOL_UNCOMMON,
-  Rare: POOL_RARE,
-};
+const BY_RARITY_LOCAL: Record<Rarity, CardData[]> = BY_RARITY;
 
 function chooseRarity(rng: RNG, weights: Record<Rarity, number>): { rng: RNG; rarity: Rarity } {
   let r = rng;
@@ -22,7 +58,7 @@ function chooseRarity(rng: RNG, weights: Record<Rarity, number>): { rng: RNG; ra
 
 function drawUniqueFrom(rng: RNG, rarity: Rarity, taken: Set<string>): { rng: RNG; card?: CardData } {
   let r = rng;
-  const pool = BY_RARITY[rarity].filter(c => !taken.has(c.id));
+  const pool = BY_RARITY_LOCAL[rarity].filter(c => !taken.has(c.id));
   if (pool.length === 0) return { rng: r };
   const pick = int(r, 0, pool.length - 1); r = pick.rng;
   const card = pool[pick.value];
@@ -50,7 +86,7 @@ export function rollRewardOptionsByTier(rng: RNG, tier: Tier): { rng: RNG; optio
     if (d.card) out.push(d.card);
   }
   // การันตีอย่างน้อย 1 Rare ใน boss ถ้ายังไม่มีและมี rare ให้เลือก
-  if (tier === 'boss' && !out.some(c => c.rarity === 'Rare') && POOL_RARE.length > 0) {
+  if (tier === 'boss' && !out.some(c => c.rarity === 'Rare') && BY_RARITY_LOCAL.Rare.length > 0) {
     const d = drawUniqueFrom(r, 'Rare', taken); r = d.rng;
     if (d.card) {
       // แทนตัวแรก
@@ -60,17 +96,31 @@ export function rollRewardOptionsByTier(rng: RNG, tier: Tier): { rng: RNG; optio
   return { rng: r, options: out };
 }
 
-// เวอร์ชัน shop (เลือกรับฟรี 1 ใบ): ใช้ bias คล้าย elite แต่จำนวน 5
-export function rollShopStock(rng: RNG, count = 5): { rng: RNG; options: CardData[] } {
+// ✅ เวอร์ชัน shop (เลือกรับฟรี 1 ใบ): bias inShop + ตัด starter ออก + ไม่ซ้ำในล็อต
+export function rollShopStock(rng: RNG, count = 5) {
   let r = rng;
   const taken = new Set<string>();
   const out: CardData[] = [];
   for (let i = 0; i < count; i++) {
-    const w = chooseRarity(r, { Common: 60, Uncommon: 30, Rare: 10 }); r = w.rng;
-    const d = drawUniqueFrom(r, w.rarity, taken); r = d.rng;
-    if (d.card) out.push(d.card);
+    // รวมพูลทุก rarity (หรือจะสุ่ม rarity ก่อนก็ได้ แต่เรา bias ด้วย weight อยู่แล้ว)
+    const pool = [
+      ...BY_RARITY.Common,
+      ...BY_RARITY.Uncommon,
+      ...BY_RARITY.Rare,
+    ].filter(c => {
+      if (taken.has(c.id)) return false;
+      const meta = META_BY_ID.get(c.id);
+      // ไม่เอา starter เข้าร้าน (หรือเปลี่ยนเป็น allow ได้ตามดีไซน์)
+      if ((meta?.starter ?? 0) > 0) return false;
+      return true;
+    });
+    if (!pool.length) break;
+    const pick = pickWeighted(r, pool, shopWeight); r = pick.rng;
+    const card = JSON.parse(JSON.stringify(pick.value));
+    out.push(card);
+    taken.add(card.id);
   }
-  // สับเล็กน้อยเพื่อความกระจาย
+  // กระจายลำดับเล็กน้อย (ยัง deterministic)
   const sh = shuffle(r, out); r = sh.rng;
   return { rng: r, options: sh.array };
 }

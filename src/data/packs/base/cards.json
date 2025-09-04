@@ -1,0 +1,14 @@
+[
+  { "id": "strike", "name": "Strike", "type": "attack", "cost": 1, "dmg": 6, "rarity": "Common",   "starter": 3, "tags": ["attack"] },
+  { "id": "defend", "name": "Defend", "type": "skill",  "cost": 1, "block": 5, "rarity": "Common",   "starter": 1, "tags": ["block"] },
+  { "id": "focus",  "name": "Focus",  "type": "skill",  "cost": 0, "draw": 1, "energyGain": 1, "rarity": "Uncommon", "starter": 1 },
+  { "id": "bash",   "name": "Bash",   "type": "attack", "cost": 2, "dmg": 10, "rarity": "Rare", "tags": ["attack"] },
+  { "id": "guard",  "name": "Guard",  "type": "skill",  "cost": 1, "block": 8, "rarity": "Uncommon" },
+  { "id": "slice",         "name": "Slice",         "type": "attack", "cost": 1, "dmg": 5,  "draw": 1,               "rarity": "Common",   "inShop": true,  "tags": ["attack"] },
+  { "id": "brace",         "name": "Brace",         "type": "skill",  "cost": 1, "block": 9,                          "rarity": "Common",   "inShop": true,  "tags": ["block"] },
+  { "id": "quickshot",     "name": "Quick Shot",    "type": "attack", "cost": 0, "dmg": 3,  "draw": 1,               "rarity": "Uncommon", "inShop": true,  "tags": ["attack"] },
+  { "id": "fortify",       "name": "Fortify",       "type": "skill",  "cost": 1, "block": 12,                         "rarity": "Uncommon", "inShop": true,  "tags": ["block"] },
+  { "id": "adrenaline",    "name": "Adrenaline",    "type": "skill",  "cost": 0, "draw": 2, "energyGain": 1,         "rarity": "Rare",     "inShop": true },
+  { "id": "shield_bash",   "name": "Shield Bash",   "type": "attack", "cost": 2, "dmg": 8,  "block": 6,              "rarity": "Uncommon", "inShop": true,  "tags": ["attack","block"] },
+  { "id": "heavy_blade",   "name": "Heavy Blade",   "type": "attack", "cost": 2, "dmg": 14,                           "rarity": "Rare",     "inShop": true,  "tags": ["attack"] }  
+]

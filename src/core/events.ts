@@ -3,6 +3,7 @@ import type { BlessingDef, CardData, EventState, GameState, Rarity } from './typ
 import type { RNG } from './rng';
 import { int, shuffle } from './rng';
 import { GAMBLE_LOSE_HP, GAMBLE_WIN_GOLD, REMOVE_CAP_PER_RUN, TREASURE_MAX, TREASURE_MIN } from './balance';
+import { BLESSINGS_BY_RARITY } from './pack';
 
 // ===== Blessings pool (ตัวอย่างเล็ก ๆ ใช้งานได้เลย)
 const BLESSINGS: BlessingDef[] = [
@@ -45,11 +46,12 @@ const BLESSINGS: BlessingDef[] = [
   },
 ];
 
-const byRarity: Record<Rarity, BlessingDef[]> = {
-  Common: BLESSINGS.filter(b => b.rarity === 'Common'),
-  Uncommon: BLESSINGS.filter(b => b.rarity === 'Uncommon'),
-  Rare: BLESSINGS.filter(b => b.rarity === 'Rare'),
-};
+//const byRarity: Record<Rarity, BlessingDef[]> = {
+//  Common: BLESSINGS.filter(b => b.rarity === 'Common'),
+//  Uncommon: BLESSINGS.filter(b => b.rarity === 'Uncommon'),
+//  Rare: BLESSINGS.filter(b => b.rarity === 'Rare'),
+//};
+const byRarity: Record<Rarity, BlessingDef[]> = BLESSINGS_BY_RARITY;
 
 function chooseRarity(rng: RNG, weights: Record<Rarity, number>): { rng: RNG; rarity: Rarity } {
   let r = rng;

@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { create } from 'zustand';
 import type { Command, GameState } from '../src/core/types';
 import { applyCommand } from '../src/core/reducer';
-import { HAND_SIZE } from '../src/core/balance';
+import { HAND_SIZE, nextExpForLevel, START_ENERGY, START_HP } from '../src/core/balance';
 import { makeRng, seedFromString, type RNG } from '../src/core/rng';
 import { START_GOLD } from '../src/core/balance'; // path ตามโปรเจกต์คุณ
 
@@ -22,7 +22,10 @@ const makeEmptyState = (): GameState => ({
   seed: '',
   phase: 'menu',
   turn: 0,
-  player: { hp: 50, maxHp: 50, block: 0, energy: 3, gold: START_GOLD },
+  player: { hp: START_HP, maxHp: START_HP, block: 0,
+        energy: START_ENERGY, gold: START_GOLD,
+        level: 1, exp: 0, expToNext: nextExpForLevel(1),
+        maxEnergy: START_ENERGY, maxHandSize: HAND_SIZE, },
   enemy: undefined,
   piles: { draw: [], hand: [], discard: [], exhaust: [] },
   log: [],
@@ -35,6 +38,7 @@ const makeEmptyState = (): GameState => ({
   shopStock: undefined,
   event: undefined,
   combatVictoryLock: false,
+  masterDeck:[]
 });
 
 const useGame = create<Store>((set, get) => ({
@@ -106,6 +110,53 @@ export default function Home() {
           </View>
         </View>
 
+  {/* ===== Player Level & EXP (ใต้ Hand) ===== */}
+  {(() => {
+    const lv = state.player?.level ?? 1;
+    const cur = state.player?.exp ?? 0;
+    const next = Math.max(1, state.player?.expToNext ?? 1);
+    const pct = Math.max(0, Math.min(100, Math.floor((cur / next) * 100)));
+    return (
+      <View
+        style={{
+          marginTop: 8,
+          padding: 10,
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: '#000',
+          backgroundColor: 'rgba(0,0,0,0.25)',
+          alignSelf: 'flex-start',
+        }}
+      >
+        <Text style={{ color: '#000', fontWeight: '700' }}>
+          Level {lv}
+        </Text>
+        <Text style={{ color: '#000' }}>
+          EXP {cur} / {next} ({pct}%)
+        </Text>
+        <View
+          style={{
+            height: 6,
+            width: 180,
+            borderRadius: 9999,
+            backgroundColor: 'rgba(255,255,255,0.08)',
+            overflow: 'hidden',
+            marginTop: 4,
+          }}
+        >
+          <View
+            style={{
+              height: '100%',
+              width: `${pct}%`,
+              backgroundColor: '#CCC',
+            }}
+          />
+        </View>
+      </View>
+    );
+  })()}
+
+
         {/* Enemy panel — แสดงเฉพาะตอนคอมแบต */}
         {inCombat && (
           <View className="rounded-2xl p-4 bg-zinc-800/70 border border-white/10 mb-4">
@@ -121,38 +172,79 @@ export default function Home() {
           </View>
         )}
 
+        
+  {/* ===== Deck Toggle Button (ใต้ Hand) ===== */}
+  <View style={{ marginTop: 8 }}>
+    <Pressable
+      onPress={() => {
+        // เอาออกได้ถ้าไม่ได้ใช้ haptics
+        //haptics?.tapSoft?.();
+        dispatch({ type: state.deckOpen ? 'CloseDeck' : 'OpenDeck' });
+      }}
+      style={{
+        alignSelf: 'flex-start',
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#000',
+        backgroundColor: 'rgba(0,0,0,0.35)',
+      }}
+    >
+      <Text style={{ color: '#000', fontWeight: '600' }}>
+        {state.deckOpen ? 'Close Deck' : 'Open Deck'} ({state.masterDeck?.length ?? 0})
+      </Text>
+    </Pressable>
+  </View>
+
+  {/* ===== Deck Text Panel (ง่าย ๆ) ===== */}
+  {state.deckOpen ? (
+    <View
+      style={{
+        marginTop: 8,
+        padding: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#000',
+        backgroundColor: 'rgba(0,0,0,0.25)',
+      }}
+    >
+      {/* สรุปจำนวนใบซ้ำแบบง่าย ๆ */}
+      {(() => {
+        const counts = new Map<string, { name: string; count: number }>();
+        for (const c of state.masterDeck ?? []) {
+          const name = c.name ?? c.id;
+          const rec = counts.get(c.id) ?? { name, count: 0 };
+          rec.count += 1;
+          counts.set(c.id, rec);
+        }
+        const list = Array.from(counts.values()).sort((a, b) =>
+          a.name.localeCompare(b.name),
+        );
+        if (!list.length) {
+          return <Text style={{ color: '#000' }}>Deck is empty.</Text>;
+        }
+        return (
+          <View>
+            <Text style={{ color: '#000', fontWeight: '700', marginBottom: 6 }}>
+              Your Deck
+            </Text>
+            {list.map((it, idx) => (
+              <Text
+                key={`${it.name}-${idx}`}
+                style={{ color: '#000', lineHeight: 20 }}
+              >
+                {it.name} × {it.count}
+              </Text>
+            ))}
+          </View>
+        );
+      })()}
+    </View>
+  ) : null}
         {/* HUD: Gold */}
         <View className="rounded-2xl p-4 bg-zinc-800/70 border border-white/10 mb-4">
           <Text className="text-white">Gold: {state.player.gold}g</Text>
-        </View>
-
-        {/* Controls */}
-        <View className="rounded-2xl p-4 bg-zinc-800/50 border border-white/10 mb-4">
-          <Text className="text-white/80 mb-2">Seed</Text>
-          <TextInput
-            value={seed}
-            onChangeText={setSeed}
-            placeholder="seed"
-            placeholderTextColor="#aaa"
-            className="px-3 py-2 rounded-xl bg-zinc-900 text-white border border-white/10"
-          />
-          <View className="flex-row gap-2 mt-3 flex-wrap">
-            <Button title="New Run" onPress={() => newRun(seed)} />
-            <Button title="Start Combat" onPress={() => dispatch({ type: 'StartCombat' })} disabled={!canStartCombat} />
-            <Button title="End Turn" onPress={() => dispatch({ type: 'EndTurn' })} disabled={!inCombat} />
-          </View>
-          {/* QA row (debug ผ่าน commands เท่านั้น) */}
-          <View className="flex-row gap-2 mt-3 flex-wrap">
-            <Button title="QA: Kill Enemy" onPress={() => dispatch({ type: 'QA_KillEnemy' })} disabled={!inCombat} />
-            <Button title="QA: Draw 1" onPress={() => dispatch({ type: 'QA_Draw', count: 1 })} disabled={!inCombat} />
-            <Button title="QA: Energy=3" onPress={() => dispatch({ type: 'QA_SetEnergy', value: 3 })} disabled={!inCombat} />
-            <Button title="QA: Blessing Demo" onPress={() => dispatch({ type: 'QA_AddBlessingDemo' })} />
-            <Button title="QA: Open Shop" onPress={() => dispatch({ type: 'QA_OpenShopHere' })} />
-            <Button title="QA: Shrine" onPress={() => dispatch({ type: 'QA_OpenShrine' })} />
-            <Button title="QA: Remove" onPress={() => dispatch({ type: 'QA_OpenRemove' })} />
-            <Button title="QA: Gamble" onPress={() => dispatch({ type: 'QA_OpenGamble' })} />
-            <Button title="QA: Treasure" onPress={() => dispatch({ type: 'QA_OpenTreasure' })} />
-          </View>
         </View>
 
         {/* === Map View (เลือกโหนด) === */}
@@ -423,6 +515,35 @@ export default function Home() {
             </View>
           </View>
         )}
+
+        {/* Controls */}
+        <View className="rounded-2xl p-4 bg-zinc-800/50 border border-white/10 mb-4">
+          <Text className="text-white/80 mb-2">Seed</Text>
+          <TextInput
+            value={seed}
+            onChangeText={setSeed}
+            placeholder="seed"
+            placeholderTextColor="#aaa"
+            className="px-3 py-2 rounded-xl bg-zinc-900 text-white border border-white/10"
+          />
+          <View className="flex-row gap-2 mt-3 flex-wrap">
+            <Button title="New Run" onPress={() => newRun(seed)} />
+            <Button title="Start Combat" onPress={() => dispatch({ type: 'StartCombat' })} disabled={!canStartCombat} />
+            <Button title="End Turn" onPress={() => dispatch({ type: 'EndTurn' })} disabled={!inCombat} />
+          </View>
+          {/* QA row (debug ผ่าน commands เท่านั้น) */}
+          <View className="flex-row gap-2 mt-3 flex-wrap">
+            <Button title="QA: Kill Enemy" onPress={() => dispatch({ type: 'QA_KillEnemy' })} disabled={!inCombat} />
+            <Button title="QA: Draw 1" onPress={() => dispatch({ type: 'QA_Draw', count: 1 })} disabled={!inCombat} />
+            <Button title="QA: Energy=3" onPress={() => dispatch({ type: 'QA_SetEnergy', value: 3 })} disabled={!inCombat} />
+            <Button title="QA: Blessing Demo" onPress={() => dispatch({ type: 'QA_AddBlessingDemo' })} />
+            <Button title="QA: Open Shop" onPress={() => dispatch({ type: 'QA_OpenShopHere' })} />
+            <Button title="QA: Shrine" onPress={() => dispatch({ type: 'QA_OpenShrine' })} />
+            <Button title="QA: Remove" onPress={() => dispatch({ type: 'QA_OpenRemove' })} />
+            <Button title="QA: Gamble" onPress={() => dispatch({ type: 'QA_OpenGamble' })} />
+            <Button title="QA: Treasure" onPress={() => dispatch({ type: 'QA_OpenTreasure' })} />
+          </View>
+        </View>
 
         {/* Log */}
         <Text className="text-white font-semibold mt-6 mb-2">Log</Text>

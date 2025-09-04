@@ -42,14 +42,13 @@ export type DeckPiles = {
   exhaust: CardData[];
 };
 
-export type Phase = 'menu' | 'map' | 'combat' | 'reward' | 'shop' | 'event' | 'victory' | 'defeat';
+export type Phase = 'menu'|'map'|'combat'|'victory'|'defeat'|'reward'|'event'|'shop'|'levelup';
+export type Bucket = 'max_hp'|'max_energy'|'max_hand'|'cards'|'blessing'|'remove'|'upgrade'|'gold';
 
-export type PlayerState = {
-  hp: number;
-  maxHp: number;
-  block: number;
-  energy: number;
-  gold: number;        // ✅ ทอง
+export type PlayerState = {     // ✅ ทอง
+    hp: number; maxHp: number; block: number; energy: number; gold: number;
+    level: number; exp: number; expToNext: number;
+    maxEnergy: number; maxHandSize: number;  
 };
 
 // ===== Events =====
@@ -81,6 +80,17 @@ export type GameState = {
   };
   runCounters?: { removed: number };        // นับ remove ต่อ run
   combatVictoryLock?: boolean; // ✅ กัน re-entrancy “ชนะคอมแบต”  
+  masterDeck: CardData[];
+  deckOpen?: boolean;
+  levelUp?: {
+    // กล่องสุ่มหมวด (หนึ่งหมวดต่อการเลเวล)
+    bucket: Bucket;
+    // ตัวเลือกย่อย (สำหรับ cards/blessing)
+    cardChoices?: CardData[];
+    blessingChoices?: BlessingDef[];
+    // สำหรับ remove/upgrade ต้องเลือกการ์ดจาก masterDeck → UI จะส่ง index กลับมาในคำสั่ง
+    consumed?: boolean; // กดเลือกแล้ว แต่รอ CompleteNode ปิด modal
+  } | null;  
 };
 
 export type Command =
@@ -92,12 +102,17 @@ export type Command =
   | { type: 'CompleteNode' }
   | { type: 'EnterNode'; nodeId: string }
   | { type: 'TakeShop'; index: number }
+  | { type: 'OpenDeck' }       // ✅ เปิดดูเด็ค
+  | { type: 'CloseDeck' }     // ✅ ปิดดูเด็ค  
   | { type: 'ShopReroll' }                 // ✅ รีโรลสต็อก (เสียทอง)  
   | { type: 'DoBonfireHeal' }
   | { type: 'EventChooseBlessing'; index: number }
   | { type: 'EventRemoveCard'; pile: keyof DeckPiles; index: number }
   | { type: 'EventGambleRoll' }
   | { type: 'EventTreasureOpen' }  
+  // เลเวลอัพ
+  | { type: 'ChooseLevelUp'; index?: number } // index: สำหรับเลือกการ์ด/พร | สำหรับ remove/upgrade จะเป็น index ของ masterDeck
+  | { type: 'SkipLevelUp' }
   // QA/Debug (ผ่าน commands เท่านั้น)
   | { type: 'QA_KillEnemy' }
   | { type: 'QA_Draw'; count: number }
