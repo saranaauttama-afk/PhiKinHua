@@ -1,6 +1,7 @@
 import type { CardData, GameState } from './types';
 import { HAND_SIZE, START_ENERGY, START_DECK, START_GOLD, START_HP, nextExpForLevel } from './balance';
 import { shuffle, type RNG } from './rng';
+import { resetBlessingTurnFlags } from './blessingRuntime';
 
 // NOTE: We keep state updates pure by working on shallow copies of containers.
 const clone = <T,>(x: T): T => JSON.parse(JSON.stringify(x));
@@ -92,6 +93,7 @@ export function buildAndShuffleDeck(_state: GameState, _rng: RNG): { state: Game
 export function startPlayerTurn(state: GameState, rng: RNG): { state: GameState; rng: RNG } {
   state.player.energy = state.player.maxEnergy ?? START_ENERGY;
   state.player.block = 0;
+  resetBlessingTurnFlags(state); // ✅ ให้พรแบบ once-per-turn ยิงได้ใหม่
   return drawUpTo(state,rng ,state.player.maxHandSize ?? HAND_SIZE);
 }
 

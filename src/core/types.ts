@@ -42,7 +42,7 @@ export type DeckPiles = {
   exhaust: CardData[];
 };
 
-export type Phase = 'menu'|'map'|'combat'|'victory'|'defeat'|'reward'|'event'|'shop'|'levelup';
+export type Phase = 'menu'|'map'|'combat'|'victory'|'defeat'|'reward'|'event'|'shop'|'levelup'|'starter';
 export type Bucket = 'max_hp'|'max_energy'|'max_hand'|'cards'|'blessing'|'remove'|'upgrade'|'gold';
 
 export type PlayerState = {     // ✅ ทอง
@@ -91,6 +91,7 @@ export type GameState = {
     // สำหรับ remove/upgrade ต้องเลือกการ์ดจาก masterDeck → UI จะส่ง index กลับมาในคำสั่ง
     consumed?: boolean; // กดเลือกแล้ว แต่รอ CompleteNode ปิด modal
   } | null;  
+  starter?: { choices: BlessingDef[]; consumed?: boolean } | null;
 };
 
 export type Command =
@@ -110,6 +111,7 @@ export type Command =
   | { type: 'EventRemoveCard'; pile: keyof DeckPiles; index: number }
   | { type: 'EventGambleRoll' }
   | { type: 'EventTreasureOpen' }  
+  | { type: 'ChooseStarterBlessing'; index: number } // ✅ เลือกพรเริ่มเกม (ไม่มี skip/gold)
   // เลเวลอัพ
   | { type: 'ChooseLevelUp'; index?: number } // index: สำหรับเลือกการ์ด/พร | สำหรับ remove/upgrade จะเป็น index ของ masterDeck
   | { type: 'SkipLevelUp' }

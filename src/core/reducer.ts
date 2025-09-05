@@ -7,8 +7,14 @@ import { availableNodes, completeAndAdvance, generateMap, findNode } from './map
 import { getCardPlayedFns, resetBlessingTurnFlags, runBlessingsTurnHook } from './blessingRuntime';
 import { openRemoveEvent, pickEventKind, rollGamble, rollShrine, rollTreasure, applyRemoveCard } from './events';
 import { START_ENERGY, EXP_KILL_NORMAL, EXP_KILL_ELITE, EXP_KILL_BOSS, nextExpForLevel } from './balance';
-import { rollLevelUpBucket, rollTwoCards, rollTwoBlessings } from './level';
+import { rollLevelUpBucket, rollTwoCards, rollTwoBlessings, LevelBucket } from './level';
 import { pickEnemy } from './pack';
+
+// ช่วยให้รองรับได้ทั้ง currentNodeId และ currentId (โค้ดเก่าบางสาขาใช้คนละชื่อ)
+function getCurrentNodeId(map?: any): string | undefined {
+  if (!map) return undefined;
+  return map.currentNodeId ?? map.currentId;
+}
 
 function cloneForReducer(prev: GameState): GameState {
   // โคลนข้อมูลด้วย JSON แต่ “คง” ฟังก์ชันใน blessings และ shrine options
@@ -33,28 +39,26 @@ function upgradeCard(c: CardData): CardData {
 }
 
 function grantExpAndQueueLevelUp(s: GameState, r: RNG): RNG {
-  // ใส่ EXP ตามชนิดโหนด
+  // ใส่ EXP ตามชนิดโหนดปัจจุบัน
   let gained = EXP_KILL_NORMAL;
   if (s.map?.currentNodeId) {
     const n = findNode(s.map, s.map.currentNodeId);
     if (n?.kind === 'elite') gained = EXP_KILL_ELITE;
-    if (n?.kind === 'boss')  gained = EXP_KILL_BOSS;
+    if (n?.kind === 'boss') gained = EXP_KILL_BOSS;
   }
   s.player.exp += gained;
 
-  // เช็คเลื่อนระดับ — “คิว” ไว้ (อย่าเปิด modal ตรงนี้)
+  // ตรวจเลเวลอัป แล้ว "คิว" ชุดรางวัลไว้ใน s.levelUp (อย่าย้าย phase ที่นี่)
   while (s.player.exp >= s.player.expToNext) {
     s.player.exp -= s.player.expToNext;
     s.player.level += 1;
     s.player.expToNext = nextExpForLevel(s.player.level);
-
-    // ถ้ายังไม่มี levelUp modal ค้างอยู่ → สุ่มหมวด + ตัวเลือก
     if (!s.levelUp) {
       const rolled = rollLevelUpBucket(r, s); r = rolled.rng;
-      const bucket = rolled.bucket;
+      const bucket = rolled.bucket as LevelBucket;
       let cardChoices, blessingChoices;
-      if (bucket === 'cards')     { const rr = rollTwoCards(r);     r = rr.rng; cardChoices = rr.list; }
-      if (bucket === 'blessing')  { const bb = rollTwoBlessings(r); r = bb.rng; blessingChoices = bb.list; }
+      if (bucket === 'cards') { const rr = rollTwoCards(r); r = rr.rng; cardChoices = rr.list; }
+      if (bucket === 'blessing') { const bb = rollTwoBlessings(r); r = bb.rng; blessingChoices = bb.list; }
       s.levelUp = { bucket, cardChoices, blessingChoices, consumed: false };
     } else {
       s.log.push('LevelUp queued (multiple levels).');
@@ -80,13 +84,30 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       s.runCounters = { removed: 0 };
       // ✅ ก๊อปเด็คตั้งต้นเข้า masterDeck
       const { START_DECK } = require('./balance');
-      s.masterDeck = JSON.parse(JSON.stringify(START_DECK));      
+      s.masterDeck = JSON.parse(JSON.stringify(START_DECK));
       // สร้างแผนที่สำหรับ Act (deterministic ด้วย RNG)
       const g = generateMap(r);
       r = g.rng;
       s.map = g.map;
+      // gen map เสร็จ → เปิด LevelUp แบบ blessing 2 ตัวตั้งต้น
+      s.levelUp = null;
+      const bb = rollTwoBlessings(r); r = bb.rng;
+      s.starter = { choices: bb.list, consumed: false };
+      s.phase = 'starter';
+      return { state: s, rng: r };
+    }
+    case 'ChooseStarterBlessing': {
+      if (s.phase !== 'starter' || !s.starter || s.starter.consumed) return { state: s, rng: r };
+      const b = s.starter.choices[cmd.index];
+      if (b) {
+        s.blessings.push(b);
+        s.log.push(`Starter blessing: ${b.name ?? b.id}`);
+      }
+      s.starter = null;
       s.phase = 'map';
-      s.log.push(`New run: seed=${cmd.seed}. Map ready with ${s.map.totalCols} cols.`);
+      s.enemy = undefined;
+      s.player.block = 0;
+      s.player.energy = s.player.maxEnergy ?? START_ENERGY;
       return { state: s, rng: r };
     }
     case 'StartCombat': {
@@ -97,6 +118,7 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
         const res = pickEnemy(r, 'normal'); r = res.rng;
         s.enemy = res.enemy;
       }
+      r = (runBlessingsTurnHook(s, 'on_turn_start'), r);
       s.player.energy = s.player.maxEnergy ?? START_ENERGY;
       ({ state: s, rng: r } = buildAndShuffleDeck(s, r));
       ({ state: s, rng: r } = drawUpTo(s, r));
@@ -110,12 +132,22 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       const played = s.piles.hand[idx];
       // Apply effect & move card to discard
       applyCardEffect(s, idx);
+
       // ✅ Blessings: on_card_played ผ่านตัวกลาง (safe-guard)
       try {
         for (const b of (s.blessings ?? [])) {
           const fns = getCardPlayedFns(b, played);
           const tc = { state: s };
           for (const f of fns) f(tc, played);
+        }
+        {
+          const card = played; // ← อ้างอิงไพ่ที่เพิ่งเล่น (เปลี่ยนเป็นตัวแปรจริงในโค้ดคุณ)
+          if (card) {
+            for (const b of s.blessings) {
+              const fns = getCardPlayedFns(b, card);
+              for (const fx of fns) fx({ state: s } as any, card); // deterministic, ไม่มี rng
+            }
+          }
         }
       } catch (e: any) {
         s.log.push(`Blessing error: ${e?.message ?? String(e)}`);
@@ -131,21 +163,26 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
         ({ state: s, rng: r } = drawUpTo(s, r, target));
       }
       if (isVictory(s)) {
-         // ชนะแล้ว: ให้ EXP + คิว LevelUp (อย่าเปิด modal ตรงนี้)
-          r = grantExpAndQueueLevelUp(s, r);
-        // ไปหน้ารางวัล (ขึ้นกับชนิดโหนด: normal/elite/boss)
-        s.combatVictoryLock = true; // ✅ ล็อกไม่ให้ PlayCard ยิงซ้ำ        
-        s.phase = 'reward';
-        let tier: 'normal' | 'elite' | 'boss' = 'normal';
-        if (s.map) {
-          const node = findNode(s.map, s.map.currentNodeId);
-          if (node?.kind === 'elite') tier = 'elite';
-          if (node?.kind === 'boss') tier = 'boss';
-        }
-        const rolled = rollRewardOptionsByTier(r, tier);
-        r = rolled.rng;
-        s.rewardOptions = rolled.options;
-        s.log.push(`Victory! Choose a card (${tier}).`);
+        //  // ชนะแล้ว: ให้ EXP + คิว LevelUp (อย่าเปิด modal ตรงนี้)
+        //   r = grantExpAndQueueLevelUp(s, r);
+        // // ไปหน้ารางวัล (ขึ้นกับชนิดโหนด: normal/elite/boss)
+        // s.combatVictoryLock = true; // ✅ ล็อกไม่ให้ PlayCard ยิงซ้ำ        
+        // s.phase = 'reward';
+        // let tier: 'normal' | 'elite' | 'boss' = 'normal';
+        // if (s.map) {
+        //   const node = findNode(s.map, s.map.currentNodeId);
+        //   if (node?.kind === 'elite') tier = 'elite';
+        //   if (node?.kind === 'boss') tier = 'boss';
+        // }
+        // const rolled = rollRewardOptionsByTier(r, tier);
+        // r = rolled.rng;
+        // s.rewardOptions = rolled.options;
+        // s.log.push(`Victory! Choose a card (${tier}).`);
+        // ชนะ → คิว LevelUp (ถ้ามี) และแสดง Victory banner เฉย ๆ
+        r = grantExpAndQueueLevelUp(s, r);
+        s.combatVictoryLock = true;
+        s.phase = 'victory';
+        s.log.push('Victory!');
       }
       return { state: s, rng: r };
     }
@@ -193,14 +230,14 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
         // combat: monster/elite/boss
         s.phase = 'combat';
         s.turn = 1;
-      {
-        // map.kind → tier
-        let tier: 'normal'|'elite'|'boss' = 'normal';
-        if (ok.kind === 'elite') tier = 'elite';
-        if (ok.kind === 'boss')  tier = 'boss';
-        const res = pickEnemy(r, tier); r = res.rng;
-        s.enemy = res.enemy;
-      }
+        {
+          // map.kind → tier
+          let tier: 'normal' | 'elite' | 'boss' = 'normal';
+          if (ok.kind === 'elite') tier = 'elite';
+          if (ok.kind === 'boss') tier = 'boss';
+          const res = pickEnemy(r, tier); r = res.rng;
+          s.enemy = res.enemy;
+        }
         s.player.energy = START_ENERGY;
         ({ state: s, rng: r } = buildAndShuffleDeck(s, r));
         ({ state: s, rng: r } = drawUpTo(s, r));
@@ -213,7 +250,8 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
     case 'EndTurn': {
       if (s.phase !== 'combat') return { state: s, rng: r };
       // ✅ on_turn_end
-      runBlessingsTurnHook(s, 'on_turn_end');
+      //runBlessingsTurnHook(s, 'on_turn_end');
+      r = (runBlessingsTurnHook(s, 'on_turn_end'), r);
       // Enemy turn
       endEnemyTurn(s);
       if (isDefeat(s)) {
@@ -251,7 +289,7 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
         return { state: s, rng: r };
       }
       s.player.gold -= item.price;
-      
+
       // ✅ เพิ่มเข้า masterDeck เสมอ (พร้อมใช้ในคอมแบตถัดไป)
       s.masterDeck.push(JSON.parse(JSON.stringify(item.card)));
       s.shopStock.splice(i, 1);
@@ -267,7 +305,7 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       s.deckOpen = false;
       s.log.push('Deck: close');
       return { state: s, rng: r };
-    }    
+    }
     case 'ShopReroll': {
       if (s.phase !== 'shop') return { state: s, rng: r };
       const { SHOP_REROLL_COST } = require('./balance');
@@ -336,45 +374,95 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
         s.log.push(`Treasure: +${t.amount}g`);
       }
       return { state: s, rng: r };
-    }    
+    }
     case 'CompleteNode': {
-      // ปิด modal/event ทั้งหมด แล้ว “กลับเมนู” ชั่วคราว (ก่อนมี map)
-      // ปิด modal แล้วกลับแผนที่ + เลื่อนไปคอลัมน์ถัดไป
-      // ปิด modal หลังคอมแบต และตัดสินว่าจะ "ชัยชนะจบ Act" หรือ "กลับแผนที่"
-       // (1) จาก victory → เปิด Rewards (เหมือนเดิม)
-       // (2) จาก Rewards → กลับ map และ reveal (เหมือนเดิม)
-      // (3) ถ้ามี LevelUp ที่เตรียมไว้ → เปิด phase 'levelup'
-      if ((s.phase === 'reward' || s.phase === 'event' || s.phase === 'shop') && s.levelUp && !s.levelUp.consumed) {
-        s.phase = 'levelup';
-        return { state: s, rng: r };
-      }
-      if (s.phase === 'levelup') {
-        // ปิด modal levelup
-        s.levelUp = null;
-        s.phase = 'map';
-        return { state: s, rng: r };
-      }      
-      s.rewardOptions = undefined;
-      s.enemy = undefined;
-      s.shopStock = undefined;
-      s.event = undefined;
-      s.combatVictoryLock = false; // ✅ พร้อมคอมแบตใหม่       
-      if (s.map) {
-        const node = findNode(s.map, s.map.currentNodeId);
-        // ตีความ: ถ้าเป็น boss => จบวิ่ง (victory)
-        if (node?.kind === 'boss') {
-          s.map = completeAndAdvance(s.map, s.map.currentNodeId);
-          s.phase = 'victory';
-          s.turn = 0;
-          s.log.push('Act cleared! 🎉');
+      // // ปิด modal/event ทั้งหมด แล้ว “กลับเมนู” ชั่วคราว (ก่อนมี map)
+      // // ปิด modal แล้วกลับแผนที่ + เลื่อนไปคอลัมน์ถัดไป
+      // // ปิด modal หลังคอมแบต และตัดสินว่าจะ "ชัยชนะจบ Act" หรือ "กลับแผนที่"
+      //  // (1) จาก victory → เปิด Rewards (เหมือนเดิม)
+      //  // (2) จาก Rewards → กลับ map และ reveal (เหมือนเดิม)
+      // // (3) ถ้ามี LevelUp ที่เตรียมไว้ → เปิด phase 'levelup'
+      // if ((s.phase === 'reward' || s.phase === 'event' || s.phase === 'shop') && s.levelUp && !s.levelUp.consumed) {
+      //   s.phase = 'levelup';
+      //   return { state: s, rng: r };
+      // }
+      // if (s.phase === 'levelup') {
+      //   // ปิด modal levelup
+      //   s.levelUp = null;
+      //   s.phase = 'map';
+      //   return { state: s, rng: r };
+      // }      
+      // s.rewardOptions = undefined;
+      // s.enemy = undefined;
+      // s.shopStock = undefined;
+      // s.event = undefined;
+      // s.combatVictoryLock = false; // ✅ พร้อมคอมแบตใหม่       
+      // if (s.map) {
+      //   const node = findNode(s.map, s.map.currentNodeId);
+      //   // ตีความ: ถ้าเป็น boss => จบวิ่ง (victory)
+      //   if (node?.kind === 'boss') {
+      //     s.map = completeAndAdvance(s.map, s.map.currentNodeId);
+      //     s.phase = 'victory';
+      //     s.turn = 0;
+      //     s.log.push('Act cleared! 🎉');
+      //     return { state: s, rng: r };
+      //   }
+      //   // ไม่ใช่บอส => กลับแผนที่ เลื่อนไปคอลัมน์ถัดไป
+      //   s.map = completeAndAdvance(s.map, s.map.currentNodeId);
+      //   s.log.push(`Node ${s.map.currentNodeId ?? ''} completed. Depth=${s.map.depth}/${s.map.totalCols}`);
+      // }
+      // s.phase = 'map';
+      // s.turn = 0;
+      // ✅ จาก starter → ปิด modal แล้ว "ไปหน้าแผนที่" ทันที (ไม่ advance node)
+      // if (s.phase === 'starter') {
+      //   s.starter = null;
+      //   s.phase = 'map';
+      //   s.enemy = undefined;
+      //   s.player.block = 0;
+      //   s.player.energy = s.player.maxEnergy ?? START_ENERGY;
+      //   return { state: s, rng: r };
+      // }
+
+      if (s.phase === 'victory') {
+        if (s.levelUp && !s.levelUp.consumed) {
+          s.phase = 'levelup';
           return { state: s, rng: r };
         }
-        // ไม่ใช่บอส => กลับแผนที่ เลื่อนไปคอลัมน์ถัดไป
-        s.map = completeAndAdvance(s.map, s.map.currentNodeId);
-        s.log.push(`Node ${s.map.currentNodeId ?? ''} completed. Depth=${s.map.depth}/${s.map.totalCols}`);
+        // กลับแผนที่และขยับ node (เฉพาะเมื่อ "มี" node ปัจจุบันจริง)
+        const curId = getCurrentNodeId(s.map);
+        if (s.map && curId) s.map = completeAndAdvance(s.map, curId);
+        s.phase = 'map';
+        s.enemy = undefined;
+        s.player.block = 0;
+        s.player.energy = s.player.maxEnergy ?? START_ENERGY;
+        return { state: s, rng: r };
       }
-      s.phase = 'map';
-      s.turn = 0;
+
+      // จาก levelup → ปิด modal แล้วกลับ map
+      // จาก levelup → ปิด modal แล้วกลับ map
+      if (s.phase === 'levelup') {
+        s.levelUp = null;
+        // กรณี NewRun (ยังไม่มี node ปัจจุบัน) ไม่ต้อง advance ใด ๆ
+        const curId = getCurrentNodeId(s.map);
+        if (s.map && curId) s.map = completeAndAdvance(s.map, curId);
+        s.phase = 'map';
+        s.enemy = undefined;
+        s.player.block = 0;
+        s.player.energy = s.player.maxEnergy ?? START_ENERGY;
+        return { state: s, rng: r };
+      }
+
+
+
+      if ((s.phase === 'event' || s.phase === 'shop') && s.map) {
+        const curId = getCurrentNodeId(s.map);
+        if (curId) s.map = completeAndAdvance(s.map, curId);
+        s.phase = 'map';
+        s.enemy = undefined;
+        s.player.block = 0;
+        s.player.energy = START_ENERGY;
+        return { state: s, rng: r };
+      }
       return { state: s, rng: r };
     }
     case 'ChooseLevelUp': {
@@ -440,18 +528,22 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       s.log.push('QA: kill enemy');
       // รีไช้ logic เดิมแบบไม่เรียกซ้อน
       if (isVictory(s)) {
+        // s.combatVictoryLock = true;
+        // s.phase = 'reward';
+        // let tier: 'normal' | 'elite' | 'boss' = 'normal';
+        // if (s.map) {
+        //   const node = findNode(s.map, s.map.currentNodeId);
+        //   if (node?.kind === 'elite') tier = 'elite';
+        //   if (node?.kind === 'boss') tier = 'boss';
+        // }
+        // const rolled = rollRewardOptionsByTier(r, tier);
+        // r = rolled.rng;
+        // s.rewardOptions = rolled.options;
+        // s.log.push(`Victory! Choose a card (${tier}).`);
+        r = grantExpAndQueueLevelUp(s, r);
         s.combatVictoryLock = true;
-        s.phase = 'reward';
-        let tier: 'normal' | 'elite' | 'boss' = 'normal';
-        if (s.map) {
-          const node = findNode(s.map, s.map.currentNodeId);
-          if (node?.kind === 'elite') tier = 'elite';
-          if (node?.kind === 'boss') tier = 'boss';
-        }
-        const rolled = rollRewardOptionsByTier(r, tier);
-        r = rolled.rng;
-        s.rewardOptions = rolled.options;
-        s.log.push(`Victory! Choose a card (${tier}).`);
+        s.phase = 'victory';
+        s.log.push('Victory!');
       }
       return { state: s, rng: r };
     }
@@ -516,7 +608,7 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       s.phase = 'event';
       s.log.push('QA: opened Treasure');
       return { state: s, rng: r };
-    }    
+    }
     default:
       return { state: s, rng: r };
   }

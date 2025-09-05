@@ -22,10 +22,12 @@ const makeEmptyState = (): GameState => ({
   seed: '',
   phase: 'menu',
   turn: 0,
-  player: { hp: START_HP, maxHp: START_HP, block: 0,
-        energy: START_ENERGY, gold: START_GOLD,
-        level: 1, exp: 0, expToNext: nextExpForLevel(1),
-        maxEnergy: START_ENERGY, maxHandSize: HAND_SIZE, },
+  player: {
+    hp: START_HP, maxHp: START_HP, block: 0,
+    energy: START_ENERGY, gold: START_GOLD,
+    level: 1, exp: 0, expToNext: nextExpForLevel(1),
+    maxEnergy: START_ENERGY, maxHandSize: HAND_SIZE,
+  },
   enemy: undefined,
   piles: { draw: [], hand: [], discard: [], exhaust: [] },
   log: [],
@@ -38,7 +40,7 @@ const makeEmptyState = (): GameState => ({
   shopStock: undefined,
   event: undefined,
   combatVictoryLock: false,
-  masterDeck:[]
+  masterDeck: []
 });
 
 const useGame = create<Store>((set, get) => ({
@@ -109,53 +111,263 @@ export default function Home() {
             <Text className="text-white">Hand {hand.length}/{HAND_SIZE}</Text>
           </View>
         </View>
-
-  {/* ===== Player Level & EXP (ใต้ Hand) ===== */}
-  {(() => {
-    const lv = state.player?.level ?? 1;
-    const cur = state.player?.exp ?? 0;
-    const next = Math.max(1, state.player?.expToNext ?? 1);
-    const pct = Math.max(0, Math.min(100, Math.floor((cur / next) * 100)));
-    return (
-      <View
-        style={{
-          marginTop: 8,
-          padding: 10,
-          borderRadius: 12,
-          borderWidth: 1,
-          borderColor: '#000',
-          backgroundColor: 'rgba(0,0,0,0.25)',
-          alignSelf: 'flex-start',
-        }}
-      >
-        <Text style={{ color: '#000', fontWeight: '700' }}>
-          Level {lv}
-        </Text>
-        <Text style={{ color: '#000' }}>
-          EXP {cur} / {next} ({pct}%)
-        </Text>
-        <View
-          style={{
-            height: 6,
-            width: 180,
-            borderRadius: 9999,
-            backgroundColor: 'rgba(255,255,255,0.08)',
-            overflow: 'hidden',
-            marginTop: 4,
-          }}
-        >
+{/* ===== Blessings (โชว์ใต้ Hand) ===== */}
+        {(state.blessings?.length ?? 0) > 0 ? (
           <View
             style={{
-              height: '100%',
-              width: `${pct}%`,
-              backgroundColor: '#CCC',
+              marginTop: 8,
+              padding: 10,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: '#000',
+              backgroundColor: 'rgba(0,0,0,0.20)',
+              alignSelf: 'stretch',
             }}
-          />
-        </View>
-      </View>
-    );
-  })()}
+          >
+            <Text style={{ color: '#000', fontWeight: '700', marginBottom: 6 }}>
+              Blessings
+            </Text>
+            {state.blessings.map((b, i) => (
+              <Text key={`${b.id}-${i}`} style={{ color: '#000', lineHeight: 20 }}>
+                • {b.name ?? b.id}
+                {b.rarity ? ` (${b.rarity})` : ''}{b.desc ? ` — ${b.desc}` : ''}
+              </Text>
+            ))}
+          </View>
+        ) : null}
+        {/* ===== Player Level & EXP (เดิม: ใต้ Hand) ===== */}
+        {(() => {
+          const lv = state.player?.level ?? 1;
+          const cur = state.player?.exp ?? 0;
+          const next = Math.max(1, state.player?.expToNext ?? 1);
+          const pct = Math.max(0, Math.min(100, Math.floor((cur / next) * 100)));
+          return (
+            <View
+              style={{
+                marginTop: 8,
+                padding: 10,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: '#000',
+                backgroundColor: 'rgba(0,0,0,0.25)',
+                alignSelf: 'flex-start',
+              }}
+            >
+              <Text style={{ color: '#000', fontWeight: '700' }}>
+                Level {lv}
+              </Text>
+              <Text style={{ color: '#000' }}>
+                EXP {cur} / {next} ({pct}%)
+              </Text>
+              <View
+                style={{
+                  height: 6,
+                  width: 180,
+                  borderRadius: 9999,
+                  backgroundColor: 'rgba(255,255,255,0.08)',
+                  overflow: 'hidden',
+                  marginTop: 4,
+                }}
+              >
+                <View style={{ height: '100%', width: `${pct}%`, backgroundColor: '#CCC' }} />
+              </View>
+            </View>
+          );
+        })()}
 
+        {/* ===== Level Up Panel (แสดงเมื่อ phase === 'levelup') ===== */}
+        {state.phase === 'levelup' && state.levelUp ? (
+          <View
+            style={{
+              marginTop: 12,
+              padding: 12,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: '#000',
+              backgroundColor: 'rgba(0,0,0,0.35)',
+            }}
+          >
+            <Text style={{ color: '#000', fontWeight: '800', marginBottom: 6 }}>
+              Level Up!
+            </Text>
+            <Text style={{ color: '#000', marginBottom: 8 }}>
+              เลือก 1 อย่าง
+            </Text>
+
+            {/* Render ตาม bucket */}
+            {(() => {
+              const lu = state.levelUp!;
+              const Button = ({ label, onPress }: { label: string; onPress: () => void }) => (
+                <Pressable
+                  onPress={onPress}
+                  style={{
+                    paddingVertical: 8,
+                    paddingHorizontal: 12,
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: '#000',
+                    backgroundColor: 'rgba(0,0,0,0.25)',
+                    marginBottom: 8,
+                    alignSelf: 'flex-start',
+                  }}
+                >
+                  <Text style={{ color: '#000' }}>{label}</Text>
+                </Pressable>
+              );
+
+              switch (lu.bucket) {
+                case 'blessing':
+                  return (
+                    <View>
+                      {(lu.blessingChoices ?? []).map((b, i) => (
+                        <Button
+                          key={`${b.id}-${i}`}
+                          label={`${b.name ?? b.id}${b.rarity ? ` (${b.rarity})` : ''}${b.desc ? ` — ${b.desc}` : ''}`}
+                          onPress={() => dispatch({ type: 'ChooseLevelUp', index: i })}
+                        />
+                      ))}
+                    </View>
+                  );
+                case 'cards':
+                  return (
+                    <View>
+                      {(lu.cardChoices ?? []).map((c, i) => (
+                        <Button
+                          key={`${c.id}-${i}`}
+                          label={`${c.name ?? c.id}${c.rarity ? ` (${c.rarity})` : ''} — cost ${c.cost}${c.dmg ? ` | DMG ${c.dmg}` : ''}${c.block ? ` | Block ${c.block}` : ''}${c.draw ? ` | Draw ${c.draw}` : ''}${c.energyGain ? ` | +Energy ${c.energyGain}` : ''}`}
+                          onPress={() => dispatch({ type: 'ChooseLevelUp', index: i })}
+                        />
+                      ))}
+                    </View>
+                  );
+                case 'remove': {
+                  // เลือกการ์ดจากเด็คเพื่อ "ลบ"
+                  const counts = new Map<string, number>();
+                  (state.masterDeck ?? []).forEach(c => counts.set(c.id, (counts.get(c.id) ?? 0) + 1));
+                  return (
+                    <View>
+                      <Text style={{ color: '#000', marginBottom: 6 }}>ลบการ์ด 1 ใบจากเด็ค</Text>
+                      {(state.masterDeck ?? []).map((c, i) => (
+                        <Button
+                          key={`${c.id}-${i}`}
+                          label={`${c.name ?? c.id} (${counts.get(c.id) ?? 1})`}
+                          onPress={() => dispatch({ type: 'ChooseLevelUp', index: i })}
+                        />
+                      ))}
+                    </View>
+                  );
+                }
+                case 'upgrade': {
+                  // เลือกการ์ดจากเด็คเพื่อ "อัปเกรด"
+                  return (
+                    <View>
+                      <Text style={{ color: '#000', marginBottom: 6 }}>อัปเกรดการ์ด 1 ใบ</Text>
+                      {(state.masterDeck ?? []).map((c, i) => (
+                        <Button
+                          key={`${c.id}-${i}`}
+                          label={`${c.name ?? c.id}${c.dmg ? ` | DMG ${c.dmg}` : ''}${c.block ? ` | Block ${c.block}` : ''}`}
+                          onPress={() => dispatch({ type: 'ChooseLevelUp', index: i })}
+                        />
+                      ))}
+                    </View>
+                  );
+                }
+                case 'max_hp':
+                  return <Button label="+5 Max HP" onPress={() => dispatch({ type: 'ChooseLevelUp' })} />;
+                case 'max_energy':
+                  return <Button label="+1 Max Energy" onPress={() => dispatch({ type: 'ChooseLevelUp' })} />;
+                case 'max_hand':
+                  return <Button label="+1 Max Hand Size" onPress={() => dispatch({ type: 'ChooseLevelUp' })} />;
+                case 'gold':
+                default:
+                  return <Button label="+25 Gold" onPress={() => dispatch({ type: 'ChooseLevelUp' })} />;
+              }
+            })()}
+
+            {/* Footer actions */}
+            <View style={{ flexDirection: 'row', columnGap: 8, marginTop: 6 }}>
+              {!state.levelUp?.consumed ? (
+                <Pressable
+                  onPress={() => dispatch({ type: 'SkipLevelUp' })}
+                  style={{ paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: '#000' }}
+                >
+                  <Text style={{ color: '#000' }}>Skip (+25g)</Text>
+                </Pressable>
+              ) : null}
+              {state.levelUp?.consumed ? (
+                <Pressable
+                  onPress={() => dispatch({ type: 'CompleteNode' })}
+                  style={{
+                    paddingVertical: 8, paddingHorizontal: 12,
+                    borderRadius: 10, borderWidth: 1,
+                    borderColor: '#000',
+                    backgroundColor: '#CCC',
+                  }}
+                >
+                  <Text style={{ color: '#000', fontWeight: '700' }}>Continue</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
+        ) : null}
+
+  {/* ===== Starter Blessing Panel (แสดงเมื่อ phase === 'starter') ===== */}
+  {state.phase === 'starter' && state.starter ? (
+    <View
+      style={{
+        marginTop: 12,
+        padding: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#000',
+        backgroundColor: 'rgba(0,0,0,0.35)',
+      }}
+    >
+      <Text style={{ color: '#000', fontWeight: '800', marginBottom: 6 }}>
+        Choose a Starter Blessing
+      </Text>
+      <Text style={{ color: '#000', marginBottom: 8 }}>
+        เลือกพร 1 อย่างเพื่อเริ่มต้นการผจญภัย
+      </Text>
+      {(state.starter.choices ?? []).map((b, i) => (
+        <Pressable
+          key={`${b.id}-${i}`}
+          onPress={() => dispatch({ type: 'ChooseStarterBlessing', index: i })}
+          style={{
+            paddingVertical: 8,
+            paddingHorizontal: 12,
+            borderRadius: 10,
+            borderWidth: 1,
+            borderColor: '#000',
+            backgroundColor: 'rgba(0,0,0,0.25)',
+            marginBottom: 8,
+            alignSelf: 'flex-start',
+          }}
+        >
+          <Text style={{ color: '#000' }}>
+            {b.name ?? b.id}{b.rarity ? ` (${b.rarity})` : ''}{b.desc ? ` — ${b.desc}` : ''}
+          </Text>
+        </Pressable>
+      ))}
+      {state.starter.consumed ? (
+        <Pressable
+          onPress={() => dispatch({ type: 'CompleteNode' })}
+          style={{
+            marginTop: 6,
+            paddingVertical: 8,
+            paddingHorizontal: 12,
+            borderRadius: 10,
+            borderWidth: 1,
+            borderColor: '#000',
+            backgroundColor: '#CCC',
+            alignSelf: 'flex-start',
+          }}
+        >
+          <Text style={{ color: '#000', fontWeight: '700' }}>Continue</Text>
+        </Pressable>
+      ) : null}
+    </View>
+  ) : null}
 
         {/* Enemy panel — แสดงเฉพาะตอนคอมแบต */}
         {inCombat && (
@@ -172,76 +384,76 @@ export default function Home() {
           </View>
         )}
 
-        
-  {/* ===== Deck Toggle Button (ใต้ Hand) ===== */}
-  <View style={{ marginTop: 8 }}>
-    <Pressable
-      onPress={() => {
-        // เอาออกได้ถ้าไม่ได้ใช้ haptics
-        //haptics?.tapSoft?.();
-        dispatch({ type: state.deckOpen ? 'CloseDeck' : 'OpenDeck' });
-      }}
-      style={{
-        alignSelf: 'flex-start',
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#000',
-        backgroundColor: 'rgba(0,0,0,0.35)',
-      }}
-    >
-      <Text style={{ color: '#000', fontWeight: '600' }}>
-        {state.deckOpen ? 'Close Deck' : 'Open Deck'} ({state.masterDeck?.length ?? 0})
-      </Text>
-    </Pressable>
-  </View>
 
-  {/* ===== Deck Text Panel (ง่าย ๆ) ===== */}
-  {state.deckOpen ? (
-    <View
-      style={{
-        marginTop: 8,
-        padding: 12,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#000',
-        backgroundColor: 'rgba(0,0,0,0.25)',
-      }}
-    >
-      {/* สรุปจำนวนใบซ้ำแบบง่าย ๆ */}
-      {(() => {
-        const counts = new Map<string, { name: string; count: number }>();
-        for (const c of state.masterDeck ?? []) {
-          const name = c.name ?? c.id;
-          const rec = counts.get(c.id) ?? { name, count: 0 };
-          rec.count += 1;
-          counts.set(c.id, rec);
-        }
-        const list = Array.from(counts.values()).sort((a, b) =>
-          a.name.localeCompare(b.name),
-        );
-        if (!list.length) {
-          return <Text style={{ color: '#000' }}>Deck is empty.</Text>;
-        }
-        return (
-          <View>
-            <Text style={{ color: '#000', fontWeight: '700', marginBottom: 6 }}>
-              Your Deck
+        {/* ===== Deck Toggle Button (ใต้ Hand) ===== */}
+        <View style={{ marginTop: 8 }}>
+          <Pressable
+            onPress={() => {
+              // เอาออกได้ถ้าไม่ได้ใช้ haptics
+              //haptics?.tapSoft?.();
+              dispatch({ type: state.deckOpen ? 'CloseDeck' : 'OpenDeck' });
+            }}
+            style={{
+              alignSelf: 'flex-start',
+              paddingVertical: 8,
+              paddingHorizontal: 12,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: '#000',
+              backgroundColor: 'rgba(0,0,0,0.35)',
+            }}
+          >
+            <Text style={{ color: '#000', fontWeight: '600' }}>
+              {state.deckOpen ? 'Close Deck' : 'Open Deck'} ({state.masterDeck?.length ?? 0})
             </Text>
-            {list.map((it, idx) => (
-              <Text
-                key={`${it.name}-${idx}`}
-                style={{ color: '#000', lineHeight: 20 }}
-              >
-                {it.name} × {it.count}
-              </Text>
-            ))}
+          </Pressable>
+        </View>
+
+        {/* ===== Deck Text Panel (ง่าย ๆ) ===== */}
+        {state.deckOpen ? (
+          <View
+            style={{
+              marginTop: 8,
+              padding: 12,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: '#000',
+              backgroundColor: 'rgba(0,0,0,0.25)',
+            }}
+          >
+            {/* สรุปจำนวนใบซ้ำแบบง่าย ๆ */}
+            {(() => {
+              const counts = new Map<string, { name: string; count: number }>();
+              for (const c of state.masterDeck ?? []) {
+                const name = c.name ?? c.id;
+                const rec = counts.get(c.id) ?? { name, count: 0 };
+                rec.count += 1;
+                counts.set(c.id, rec);
+              }
+              const list = Array.from(counts.values()).sort((a, b) =>
+                a.name.localeCompare(b.name),
+              );
+              if (!list.length) {
+                return <Text style={{ color: '#000' }}>Deck is empty.</Text>;
+              }
+              return (
+                <View>
+                  <Text style={{ color: '#000', fontWeight: '700', marginBottom: 6 }}>
+                    Your Deck
+                  </Text>
+                  {list.map((it, idx) => (
+                    <Text
+                      key={`${it.name}-${idx}`}
+                      style={{ color: '#000', lineHeight: 20 }}
+                    >
+                      {it.name} × {it.count}
+                    </Text>
+                  ))}
+                </View>
+              );
+            })()}
           </View>
-        );
-      })()}
-    </View>
-  ) : null}
+        ) : null}
         {/* HUD: Gold */}
         <View className="rounded-2xl p-4 bg-zinc-800/70 border border-white/10 mb-4">
           <Text className="text-white">Gold: {state.player.gold}g</Text>
@@ -297,7 +509,7 @@ export default function Home() {
           })}
           {hand.length === 0 && <Text className="text-white/60">Empty</Text>}
         </View>
-
+        
         {/* === Reward Modal (simple) === */}
         {inReward && (
           <View className="mt-6 rounded-2xl p-4 bg-zinc-800/80 border border-white/10">
