@@ -1,0 +1,23 @@
+[
+  {
+    "id": "regen_charm",
+    "name": "Regeneration Charm",
+    "rarity": "Common",
+    "slotCost": 1,
+    "desc": "Heal 1 HP at the end of your turn."
+  },
+  {
+    "id": "start_shield",
+    "name": "Start Shield",
+    "rarity": "Uncommon",
+    "slotCost": 1,
+    "desc": "Gain 5 Block when combat begins."
+  },
+  {
+    "id": "battle_rhythm_band",
+    "name": "Battle Rhythm Band",
+    "rarity": "Rare",
+    "slotCost": 1,
+    "desc": "First card you play each turn grants +1 Energy."
+  }
+]

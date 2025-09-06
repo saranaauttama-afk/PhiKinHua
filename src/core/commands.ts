@@ -1,3 +1,6 @@
+// Commands — pure helpers used by reducer
+// baseNewState, buildAndShuffleDeck, drawUpTo, startPlayerTurn, applyCardEffect,
+// isVictory/isDefeat, endEnemyTurn
 import type { CardData, GameState } from './types';
 import { HAND_SIZE, START_ENERGY, START_DECK, START_GOLD, START_HP, nextExpForLevel } from './balance';
 import { shuffle, type RNG } from './rng';

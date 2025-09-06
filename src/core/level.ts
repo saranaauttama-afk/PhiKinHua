@@ -1,3 +1,4 @@
+// Level/XP — weights & rolling for level-up rewards (buckets)
 // src/core/level.ts
 import type { RNG } from './rng';
 import { next, int } from './rng';

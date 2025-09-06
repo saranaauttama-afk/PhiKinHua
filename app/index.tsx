@@ -2,6 +2,7 @@ import 'react-native-gesture-handler'; // ต้องมาก่อน
 import 'react-native-reanimated';
 import { Stack } from 'expo-router';
 import React, { useMemo, useState } from 'react';
+import { useCallback } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { create } from 'zustand';
@@ -80,6 +81,31 @@ export default function Home() {
   const inShop = state.phase === 'shop';
   const inEvent = state.phase === 'event';
   const canStartCombat = state.phase === 'menu';
+
+  // Helper หา node ปัจจุบัน แล้วบอกว่าเป็นบอสรึเปล่า
+  const isBossVictory = useMemo(() => {
+    if (!inVictory || !state.map) return false;
+    const curId = state.map.currentNodeId ?? (state as any)?.map?.currentId;
+    if (!curId) return false;
+    const cols = state.map.cols ?? [];
+    for (const col of cols) {
+      const n = col.find((v: any) => v.id === curId);
+      if (n) return n.kind === 'boss';
+    }
+    return false;
+  }, [inVictory, state.map]);
+  // Combat ชนะธรรมดา (ไม่ใช่บอส)
+  const inRegularVictory = inVictory && !isBossVictory;
+
+  const enterNodeAndMaybeStart = useCallback((node: any) => {
+    // เข้าโหนดก่อน
+    dispatch({ type: 'EnterNode', nodeId: node.id }); // หรือ nodeId ตาม reducer รองรับ
+    // ถ้าเป็นคอมแบต ให้เริ่มคอมแบตทันที
+    if (node.kind === 'monster' || node.kind === 'elite' || node.kind === 'boss') {
+      // เว้น 1 tick ให้ state เปลี่ยน phase เป็น 'combat' ก่อน
+      setTimeout(() => dispatch({ type: 'StartCombat' }), 0);
+    }
+  }, [dispatch]);
 
   const energy = state.player.energy;
 
@@ -349,24 +375,7 @@ export default function Home() {
           </Text>
         </Pressable>
       ))}
-      {state.starter.consumed ? (
-        <Pressable
-          onPress={() => dispatch({ type: 'CompleteNode' })}
-          style={{
-            marginTop: 6,
-            paddingVertical: 8,
-            paddingHorizontal: 12,
-            borderRadius: 10,
-            borderWidth: 1,
-            borderColor: '#000',
-            backgroundColor: '#CCC',
-            alignSelf: 'flex-start',
-          }}
-        >
-          <Text style={{ color: '#000', fontWeight: '700' }}>Continue</Text>
-        </Pressable>
-      ) : null}
-    </View>
+      </View>
   ) : null}
 
         {/* Enemy panel — แสดงเฉพาะตอนคอมแบต */}
@@ -468,7 +477,7 @@ export default function Home() {
               {(state.map?.cols[state.map?.depth ?? 0] ?? []).map((n, i) => (
                 <Pressable
                   key={n.id}
-                  onPress={() => dispatch({ type: 'EnterNode', nodeId: n.id })}
+                  onPress={() => enterNodeAndMaybeStart(n)}
                   className="px-3 py-2 rounded-2xl border bg-zinc-900 border-white/10 active:opacity-70"
                 >
                   <Text className="text-white font-semibold">
@@ -712,14 +721,30 @@ export default function Home() {
           </View>
         )}
 
-        {/* === Victory screen (จบวิ่ง) === */}
-        {inVictory && (
+        {/* === Combat Victory (ธรรมดา) → กลับแผนที่ด้วย CompleteNode === */}
+        {inRegularVictory && (
+          <View className="mt-6 rounded-2xl p-4 bg-emerald-900/30 border border-emerald-400/20">
+            <Text className="text-white text-lg font-semibold">Victory</Text>
+            <Text className="text-white/70 mt-1">You won the battle.</Text>
+            <View className="flex-row gap-2 mt-3">
+              <Pressable
+                onPress={() => dispatch({ type: 'CompleteNode' })}
+                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"
+              >
+                <Text className="text-white font-semibold">Continue</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {/* === Act Cleared (ชนะบอสเท่านั้น) === */}
+        {inVictory && isBossVictory && (
           <View className="mt-6 rounded-2xl p-4 bg-emerald-900/40 border border-emerald-400/30">
             <Text className="text-white text-lg font-semibold">Act Cleared! 🎉</Text>
             <Text className="text-white/70 mt-1">You defeated the boss. Start a new run to play again.</Text>
             <View className="flex-row gap-2 mt-3">
               <Pressable
-                onPress={() => /* เริ่มใหม่ด้วย seed เดิม */ newRun(state.seed)}
+                onPress={() => newRun(state.seed)}
                 className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"
               >
                 <Text className="text-white font-semibold">New Run (same seed)</Text>
@@ -749,6 +774,8 @@ export default function Home() {
             <Button title="QA: Draw 1" onPress={() => dispatch({ type: 'QA_Draw', count: 1 })} disabled={!inCombat} />
             <Button title="QA: Energy=3" onPress={() => dispatch({ type: 'QA_SetEnergy', value: 3 })} disabled={!inCombat} />
             <Button title="QA: Blessing Demo" onPress={() => dispatch({ type: 'QA_AddBlessingDemo' })} />
+              <Button title="QA: Equip Demo" onPress={() => dispatch({ type: 'QA_AddEquipmentDemo' })} />
+
             <Button title="QA: Open Shop" onPress={() => dispatch({ type: 'QA_OpenShopHere' })} />
             <Button title="QA: Shrine" onPress={() => dispatch({ type: 'QA_OpenShrine' })} />
             <Button title="QA: Remove" onPress={() => dispatch({ type: 'QA_OpenRemove' })} />

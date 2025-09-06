@@ -1,5 +1,5 @@
 // src/core/pack.ts
-import type { CardData, Rarity, EnemyState, BlessingDef } from './types';
+import type { CardData, Rarity, EnemyState, BlessingDef, EquipmentData } from './types';
 import type { RNG } from './rng';
 import { int } from './rng';
 
@@ -10,6 +10,7 @@ export const ACTIVE_PACK = 'base' as const;
 import cardsJson from '../data/packs/base/cards.json';
 import enemiesJson from '../data/packs/base/enemies.json';
 import blessingsJson from '../data/packs/base/blessings.json';
+import EQUIP_LIST from '../data/packs/base/equipment.json';
 
 type CardJson = CardData & { starter?: number; inRewards?: boolean; inShop?: boolean };
 type EnemyJson = EnemyState & { tier: 'normal'|'elite'|'boss' };
@@ -75,3 +76,21 @@ export const BLESSINGS_BY_RARITY: Record<Rarity, BlessingDef[]> = {
   Uncommon: BLESSING_POOL.filter(b => b.rarity === 'Uncommon'),
   Rare:     BLESSING_POOL.filter(b => b.rarity === 'Rare'),
 };
+
+// === Equipment (base pack) ===
+// NOTE: path นี้สัมพันธ์กับไฟล์จริงใน repo: src/data/packs/base/equipment.json
+// pack.ts อยู่ใต้ src/core → ขึ้นหนึ่งชั้นแล้วค่อยเข้า data
+// หากโปรเจกต์คุณตั้ง resolve ต่างไป ให้ปรับ path ให้ตรง
+// @ts-ignore
+
+const EQUIPMENT_BY_ID: Record<string, EquipmentData> =
+  Object.fromEntries((EQUIP_LIST as EquipmentData[]).map(e => [e.id, e]));
+
+export function getEquipmentById(id: string): EquipmentData | undefined {
+  const e = EQUIPMENT_BY_ID[id];
+  return e ? JSON.parse(JSON.stringify(e)) : undefined;
+}
+
+export function listAllEquipment(): EquipmentData[] {
+  return JSON.parse(JSON.stringify(EQUIP_LIST as EquipmentData[]));
+}

@@ -1,3 +1,4 @@
+// Map — generate, query nodes, and advance
 import type { RNG } from './rng';
 import { int } from './rng';
 

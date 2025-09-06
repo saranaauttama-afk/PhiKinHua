@@ -42,6 +42,16 @@ export type DeckPiles = {
   exhaust: CardData[];
 };
 
+// === Equipment ===
+export type EquipmentData = {
+  id: string;
+  name?: string;
+  rarity?: Rarity;
+  desc?: string;
+  slotCost?: number; // ดีฟอลต์ 1
+  tags?: string[];
+};
+
 export type Phase = 'menu'|'map'|'combat'|'victory'|'defeat'|'reward'|'event'|'shop'|'levelup'|'starter';
 export type Bucket = 'max_hp'|'max_energy'|'max_hand'|'cards'|'blessing'|'remove'|'upgrade'|'gold';
 
@@ -77,7 +87,12 @@ export type GameState = {
   // ธงต่อเทิร์น (กัน once-per-turn และ re-entrancy win)
   turnFlags: {
     blessingOnce: Record<string, boolean>;
+    equipmentOnce?: Record<string, boolean>;
   };
+  // === Equipment slots & inventory (เบื้องต้น) ===
+  equipmentSlotsMax?: number;     // จำนวนช่องสูงสุด
+  equipped?: EquipmentData[];     // อุปกรณ์ที่สวมอยู่ (ใช้งานได้เมื่อรวม slotCost <= slots)
+  backpack?: EquipmentData[];     // เก็บของที่ยังไม่สวม (ยังไม่ใช้ใน v1)  
   runCounters?: { removed: number };        // นับ remove ต่อ run
   combatVictoryLock?: boolean; // ✅ กัน re-entrancy “ชนะคอมแบต”  
   masterDeck: CardData[];
@@ -120,6 +135,7 @@ export type Command =
   | { type: 'QA_Draw'; count: number }
   | { type: 'QA_SetEnergy'; value: number }
   | { type: 'QA_AddBlessingDemo' }
+  | { type: 'QA_AddEquipmentDemo' }
   | { type: 'QA_OpenShopHere' }
   | { type: 'QA_OpenShrine' }
   | { type: 'QA_OpenRemove' }

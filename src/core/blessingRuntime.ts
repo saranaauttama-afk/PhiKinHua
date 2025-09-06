@@ -6,11 +6,17 @@ import type {
 // ================= Behavior Registry =================
 // ใส่เฉพาะ "ฟังก์ชัน" ที่นิยามไม่ได้ใน JSON เช่น regen_1: จบเทิร์นฮีล 1
 const BLESSING_BEHAVIOR: Record<string, Partial<BlessingDef>> = {
-  regen_1: {
+  bl_end_heal: {
     on_turn_end: (tc) => {
       const s = tc.state;
+      const before = s.player.hp;
       s.player.hp = Math.min(s.player.maxHp, s.player.hp + 1);
-      s.log.push('Blessing: Regeneration I heals 1.');
+      const healed = s.player.hp - before;
+      s.log.push(
+        healed > 0
+          ? `Blessing: Regeneration I heals ${healed}.`
+          : 'Blessing: Regeneration I (no effect; at max HP).'
+      );
     },
   },
   // เพิ่ม behavior ใหม่ ๆ ได้ตามต้องการ

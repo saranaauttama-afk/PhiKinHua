@@ -1,3 +1,6 @@
+// Reducer — applyCommand(state, cmd, rng) → { state, rng }
+// - Deterministic/pure: no Math.random; RNG is threaded
+// - Phases: menu → starter → map → combat → victory/defeat → (CompleteNode)
 import type { CardData, Command, GameState } from './types';
 import { applyCardEffect, baseNewState, buildAndShuffleDeck, drawUpTo, endEnemyTurn, isDefeat, isVictory, startPlayerTurn } from './commands';
 import type { RNG } from './rng';
@@ -5,10 +8,11 @@ import { rollRewardOptionsByTier } from './reward';
 import { rollShopStock } from './shop';
 import { availableNodes, completeAndAdvance, generateMap, findNode } from './map';
 import { getCardPlayedFns, resetBlessingTurnFlags, runBlessingsTurnHook } from './blessingRuntime';
+import { resetEquipmentTurnFlags, runEquipmentOnEquip, runEquipmentTurnHook, runEquipmentCardPlayed } from './equipmentRuntime';
 import { openRemoveEvent, pickEventKind, rollGamble, rollShrine, rollTreasure, applyRemoveCard } from './events';
 import { START_ENERGY, EXP_KILL_NORMAL, EXP_KILL_ELITE, EXP_KILL_BOSS, nextExpForLevel } from './balance';
 import { rollLevelUpBucket, rollTwoCards, rollTwoBlessings, LevelBucket } from './level';
-import { pickEnemy } from './pack';
+import { getEquipmentById, pickEnemy } from './pack';
 
 // ช่วยให้รองรับได้ทั้ง currentNodeId และ currentId (โค้ดเก่าบางสาขาใช้คนละชื่อ)
 function getCurrentNodeId(map?: any): string | undefined {
@@ -73,15 +77,22 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
   let r = rng;
   // ✅ กัน state รูปร่างไม่ครบ (เช่นมาจาก save เก่า/entry ทางลัด)
   s.blessings = s.blessings ?? [];
-  s.turnFlags = s.turnFlags ?? { blessingOnce: {} };
+  s.turnFlags = s.turnFlags ?? { blessingOnce: {}, equipmentOnce: {} };
+  s.equipmentSlotsMax = s.equipmentSlotsMax ?? 2;
+  s.equipped = s.equipped ?? [];
+  s.backpack = s.backpack ?? [];
 
   switch (cmd.type) {
     case 'NewRun': {
       s = baseNewState(cmd.seed);
+      s.combatVictoryLock = false; // ✅ รันใหม่ต้องเริ่มจากปลดล็อกเสมอ
       // init blessing storage
       s.blessings = s.blessings ?? [];
-      s.turnFlags = s.turnFlags ?? { blessingOnce: {} };
+      s.turnFlags = { blessingOnce: {}, equipmentOnce: {} };
       s.runCounters = { removed: 0 };
+      s.equipmentSlotsMax = 2;
+      s.equipped = [];
+      s.backpack = [];
       // ✅ ก๊อปเด็คตั้งต้นเข้า masterDeck
       const { START_DECK } = require('./balance');
       s.masterDeck = JSON.parse(JSON.stringify(START_DECK));
@@ -111,14 +122,23 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       return { state: s, rng: r };
     }
     case 'StartCombat': {
-      if (s.phase === 'combat') return { state: s, rng: r };
+      // ถ้าเริ่มคอมแบตไปแล้ว (มือ/กองจั่วมีการ์ด หรือ turn ตั้งแล้ว) ให้ข้าม
+      if ((s.piles?.hand?.length ?? 0) > 0 || (s.piles?.draw?.length ?? 0) > 0 || (s.turn ?? 0) > 0) {
+        return { state: s, rng: r };
+      }
+      s.combatVictoryLock = false; // ✅ ปลดล็อกก่อนเริ่มไฟต์ใหม่
       s.phase = 'combat';
       s.turn = 1;
       {
         const res = pickEnemy(r, 'normal'); r = res.rng;
         s.enemy = res.enemy;
       }
+      resetBlessingTurnFlags(s);
+      resetEquipmentTurnFlags(s);
+      // อุปกรณ์บางชิ้นยิงผลเมื่อ "ติดตั้ง" ตอนเริ่มไฟต์
+      runEquipmentOnEquip(s);
       r = (runBlessingsTurnHook(s, 'on_turn_start'), r);
+      runEquipmentTurnHook(s, 'on_turn_start');
       s.player.energy = s.player.maxEnergy ?? START_ENERGY;
       ({ state: s, rng: r } = buildAndShuffleDeck(s, r));
       ({ state: s, rng: r } = drawUpTo(s, r));
@@ -149,6 +169,8 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
             }
           }
         }
+        // === Equipment on_card_played ===
+        runEquipmentCardPlayed(s, played);
       } catch (e: any) {
         s.log.push(`Blessing error: ${e?.message ?? String(e)}`);
       }
@@ -163,22 +185,6 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
         ({ state: s, rng: r } = drawUpTo(s, r, target));
       }
       if (isVictory(s)) {
-        //  // ชนะแล้ว: ให้ EXP + คิว LevelUp (อย่าเปิด modal ตรงนี้)
-        //   r = grantExpAndQueueLevelUp(s, r);
-        // // ไปหน้ารางวัล (ขึ้นกับชนิดโหนด: normal/elite/boss)
-        // s.combatVictoryLock = true; // ✅ ล็อกไม่ให้ PlayCard ยิงซ้ำ        
-        // s.phase = 'reward';
-        // let tier: 'normal' | 'elite' | 'boss' = 'normal';
-        // if (s.map) {
-        //   const node = findNode(s.map, s.map.currentNodeId);
-        //   if (node?.kind === 'elite') tier = 'elite';
-        //   if (node?.kind === 'boss') tier = 'boss';
-        // }
-        // const rolled = rollRewardOptionsByTier(r, tier);
-        // r = rolled.rng;
-        // s.rewardOptions = rolled.options;
-        // s.log.push(`Victory! Choose a card (${tier}).`);
-        // ชนะ → คิว LevelUp (ถ้ามี) และแสดง Victory banner เฉย ๆ
         r = grantExpAndQueueLevelUp(s, r);
         s.combatVictoryLock = true;
         s.phase = 'victory';
@@ -190,20 +196,21 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       if (s.phase !== 'map' || !s.map) return { state: s, rng: r };
       // ตรวจว่า node ที่เลือกอยู่ในคอลัมน์ปัจจุบัน
       const avail = availableNodes(s.map);
-      const ok = avail.find(n => n.id === cmd.nodeId);
+      const nodeId = (cmd as any).id ?? (cmd as any).nodeId;
+      const ok = avail.find(n => n.id === nodeId);
       if (!ok) return { state: s, rng: r };
-      s.map.currentNodeId = cmd.nodeId;
+      s.map.currentNodeId = nodeId;
       // เริ่มคอมแบต (ตอนนี้มีแต่ monster/boss ตัวอย่างเดียว)
       // แตกตามชนิดโหนด
       if (ok.kind === 'shop') {
         const stock = rollShopStock(r, 6, 1); r = stock.rng;
         s.shopStock = stock.items;
         s.phase = 'shop';
-        s.log.push(`Enter node ${cmd.nodeId} -> Shop`);
+        s.log.push(`Enter node ${nodeId} -> Shop`);
       } else if (ok.kind === 'bonfire') {
         s.event = { type: 'bonfire', healed: false };
         s.phase = 'event';
-        s.log.push(`Enter node ${cmd.nodeId} -> Bonfire`);
+        s.log.push(`Enter node ${nodeId} -> Bonfire`);
       } else if (ok.kind === 'event') {
         // pick event kind
         const pk = pickEventKind(r); r = pk.rng;
@@ -211,23 +218,24 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
           const sh = rollShrine(r, s, 3); r = sh.rng;
           s.event = sh.event;
           s.phase = 'event';
-          s.log.push(`Enter node ${cmd.nodeId} -> Shrine`);
+          s.log.push(`Enter node ${nodeId} -> Shrine`);
         } else if (pk.kind === 'remove') {
           s.event = openRemoveEvent();
           s.phase = 'event';
-          s.log.push(`Enter node ${cmd.nodeId} -> Remove`);
+          s.log.push(`Enter node ${nodeId} -> Remove`);
         } else if (pk.kind === 'gamble') {
           s.event = { type: 'gamble' };
           s.phase = 'event';
-          s.log.push(`Enter node ${cmd.nodeId} -> Gamble`);
+          s.log.push(`Enter node ${nodeId} -> Gamble`);
         } else {
           s.event = { type: 'treasure' };
           s.phase = 'event';
-          s.log.push(`Enter node ${cmd.nodeId} -> Treasure`);
+          s.log.push(`Enter node ${nodeId} -> Treasure`);
         }
       }
       else {
         // combat: monster/elite/boss
+        s.combatVictoryLock = false; // ✅ ปลดล็อกเมื่อเข้าไฟต์ใหม่ผ่าน EnterNode
         s.phase = 'combat';
         s.turn = 1;
         {
@@ -242,17 +250,17 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
         ({ state: s, rng: r } = buildAndShuffleDeck(s, r));
         ({ state: s, rng: r } = drawUpTo(s, r));
         resetBlessingTurnFlags(s);
-        runBlessingsTurnHook(s, 'on_turn_start'); // ✅ เรียก on_turn_start ของพร        
-        s.log.push(`Enter node ${cmd.nodeId} -> Combat vs ${s.enemy?.name ?? 'Enemy'}`);
+        resetEquipmentTurnFlags(s);
+        // ติดตั้ง/ยิงผลอุปกรณ์ทันทีเมื่อเข้าสู่คอมแบตใหม่
+        runEquipmentOnEquip(s);
+        runBlessingsTurnHook(s, 'on_turn_start');
+        runEquipmentTurnHook(s, 'on_turn_start'); // ✅ อุปกรณ์ต้นเทิร์น       
+        s.log.push(`Enter node ${nodeId} -> Combat vs ${s.enemy?.name ?? 'Enemy'}`);
       }
       return { state: s, rng: r };
     }
     case 'EndTurn': {
       if (s.phase !== 'combat') return { state: s, rng: r };
-      // ✅ on_turn_end
-      //runBlessingsTurnHook(s, 'on_turn_end');
-      r = (runBlessingsTurnHook(s, 'on_turn_end'), r);
-      // Enemy turn
       endEnemyTurn(s);
       if (isDefeat(s)) {
         s.phase = 'defeat';
@@ -260,10 +268,14 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
         return { state: s, rng: r };
       }
       // Next player turn
+      r = (runBlessingsTurnHook(s, 'on_turn_end'), r);
+      runEquipmentTurnHook(s, 'on_turn_end');
       s.turn = 1;
       ({ state: s, rng: r } = startPlayerTurn(s, r));
       resetBlessingTurnFlags(s);
-      runBlessingsTurnHook(s, 'on_turn_start'); // ✅ เทิร์นใหม่      
+      resetEquipmentTurnFlags(s);
+      runBlessingsTurnHook(s, 'on_turn_start'); // เทิร์นใหม่   
+      runEquipmentTurnHook(s, 'on_turn_start'); 
       return { state: s, rng: r };
     }
     case 'TakeReward': {
@@ -432,6 +444,7 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
         const curId = getCurrentNodeId(s.map);
         if (s.map && curId) s.map = completeAndAdvance(s.map, curId);
         s.phase = 'map';
+        s.combatVictoryLock = false; // ✅ ปลดล็อกเมื่อออกจากไฟต์
         s.enemy = undefined;
         s.player.block = 0;
         s.player.energy = s.player.maxEnergy ?? START_ENERGY;
@@ -446,6 +459,7 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
         const curId = getCurrentNodeId(s.map);
         if (s.map && curId) s.map = completeAndAdvance(s.map, curId);
         s.phase = 'map';
+        s.combatVictoryLock = false; // ✅ กันไว้ให้ครบทางออก
         s.enemy = undefined;
         s.player.block = 0;
         s.player.energy = s.player.maxEnergy ?? START_ENERGY;
@@ -458,6 +472,7 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
         const curId = getCurrentNodeId(s.map);
         if (curId) s.map = completeAndAdvance(s.map, curId);
         s.phase = 'map';
+        s.combatVictoryLock = false; // ✅ เช่นกัน
         s.enemy = undefined;
         s.player.block = 0;
         s.player.energy = START_ENERGY;
@@ -609,6 +624,18 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       s.log.push('QA: opened Treasure');
       return { state: s, rng: r };
     }
+    // ===== QA: ใส่อุปกรณ์ตัวอย่างเพื่อเทส flow เร็ว ๆ =====
+    case 'QA_AddEquipmentDemo': {
+      // ติดตั้งสองชิ้น: เริ่มไฟต์ Block +5 และใบแรก +1 energy
+      s.equipmentSlotsMax = 2;
+      const a = getEquipmentById('start_shield');
+      const b = getEquipmentById('battle_rhythm_band');
+      s.equipped = s.equipped ?? [];
+      if (a && !s.equipped.find(x => x.id === a.id)) s.equipped.push(a);
+      if (b && !s.equipped.find(x => x.id === b.id)) s.equipped.push(b);
+      s.log.push('QA: Equipped [Start Shield, Battle Rhythm].');
+      return { state: s, rng: r };
+    }    
     default:
       return { state: s, rng: r };
   }
