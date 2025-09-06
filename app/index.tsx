@@ -500,7 +500,7 @@ export default function Home() {
         <Text className="text-white font-semibold mb-2">Hand</Text>
         <View className="flex-row gap-2 flex-wrap">
           {hand.map((c, i) => {
-            const disabled = !inCombat || state.player.energy < c.cost;
+            const disabled = !inCombat || state.player.energy < (c.cost ?? 0);
             return (
               <Pressable
                 key={i}
@@ -508,7 +508,7 @@ export default function Home() {
                 className={`px-3 py-2 rounded-2xl border ${disabled ? 'opacity-50' : 'active:opacity-70'} bg-zinc-800 border-white/10`}
               >
                 <Text className="text-white font-semibold">{c.name}</Text>
-                <Text className="text-white/70">Cost {c.cost}</Text>
+                <Text className="text-white/70">Cost {c.cost ?? 0}</Text>
                 {c.dmg ? <Text className="text-red-300">DMG {c.dmg}</Text> : null}
                 {c.block ? <Text className="text-sky-300">Block {c.block}</Text> : null}
                 {c.energyGain ? <Text className="text-amber-300">Energy {c.energyGain}</Text> : null}

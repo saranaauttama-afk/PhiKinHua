@@ -150,6 +150,21 @@ export function applyCommand(state: GameState, cmd: Command, rng: RNG): { state:
       const idx = cmd.index;
       if (idx < 0 || idx >= s.piles.hand.length) return { state: s, rng: r };
       const played = s.piles.hand[idx];
+
+      // --- Energy paywall (แบบเบาสุด: basic=0, special=1+) ---
+      const base = (typeof (played as any).cost === 'number') ? (played as any).cost : 0;
+      const cost = Math.max(0, Math.floor(base));
+      if (cost > 0) {
+        const cur = s.player.energy ?? 0;
+        if (cur < cost) {
+          s.log.push(`Not enough energy (need ${cost}).`);
+          return { state: s, rng: r };
+        }
+        s.player.energy = cur - cost;
+      }
+      // --- end energy check ---
+
+      
       // Apply effect & move card to discard
       applyCardEffect(s, idx);
 

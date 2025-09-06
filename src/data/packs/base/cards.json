@@ -1,14 +1,577 @@
 [
-  { "id": "strike", "name": "Strike", "type": "attack", "cost": 1, "dmg": 6, "rarity": "Common",   "starter": 3, "tags": ["attack"] },
-  { "id": "defend", "name": "Defend", "type": "skill",  "cost": 1, "block": 5, "rarity": "Common",   "starter": 1, "tags": ["block"] },
-  { "id": "focus",  "name": "Focus",  "type": "skill",  "cost": 0, "draw": 1, "energyGain": 1, "rarity": "Uncommon", "starter": 1 },
-  { "id": "bash",   "name": "Bash",   "type": "attack", "cost": 2, "dmg": 10, "rarity": "Rare", "tags": ["attack"] },
-  { "id": "guard",  "name": "Guard",  "type": "skill",  "cost": 1, "block": 8, "rarity": "Uncommon" },
-  { "id": "slice",         "name": "Slice",         "type": "attack", "cost": 1, "dmg": 5,  "draw": 1,               "rarity": "Common",   "inShop": true,  "tags": ["attack"] },
-  { "id": "brace",         "name": "Brace",         "type": "skill",  "cost": 1, "block": 9,                          "rarity": "Common",   "inShop": true,  "tags": ["block"] },
-  { "id": "quickshot",     "name": "Quick Shot",    "type": "attack", "cost": 0, "dmg": 3,  "draw": 1,               "rarity": "Uncommon", "inShop": true,  "tags": ["attack"] },
-  { "id": "fortify",       "name": "Fortify",       "type": "skill",  "cost": 1, "block": 12,                         "rarity": "Uncommon", "inShop": true,  "tags": ["block"] },
-  { "id": "adrenaline",    "name": "Adrenaline",    "type": "skill",  "cost": 0, "draw": 2, "energyGain": 1,         "rarity": "Rare",     "inShop": true },
-  { "id": "shield_bash",   "name": "Shield Bash",   "type": "attack", "cost": 2, "dmg": 8,  "block": 6,              "rarity": "Uncommon", "inShop": true,  "tags": ["attack","block"] },
-  { "id": "heavy_blade",   "name": "Heavy Blade",   "type": "attack", "cost": 2, "dmg": 14,                           "rarity": "Rare",     "inShop": true,  "tags": ["attack"] }  
+  {
+    "id": "strike",
+    "name": "Strike",
+    "type": "attack",
+    "cost": 0,
+    "dmg": 5,
+    "rarity": "Common",
+    "starter": 4,
+    "inShop": true,
+    "tags": [
+      "attack"
+    ]
+  },
+  {
+    "id": "defend",
+    "name": "Defend",
+    "type": "skill",
+    "cost": 0,
+    "block": 5,
+    "rarity": "Common",
+    "starter": 4,
+    "inShop": true,
+    "tags": [
+      "block"
+    ]
+  },
+  {
+    "id": "focus",
+    "name": "Focus",
+    "type": "skill",
+    "cost": 0,
+    "draw": 1,
+    "energyGain": 1,
+    "rarity": "Uncommon",
+    "starter": 1,
+    "tags": []
+  },
+  {
+    "id": "slice",
+    "name": "Slice",
+    "type": "attack",
+    "cost": 0,
+    "dmg": 4,
+    "draw": 1,
+    "rarity": "Common",
+    "inShop": true,
+    "tags": [
+      "attack"
+    ]
+  },
+  {
+    "id": "brace",
+    "name": "Brace",
+    "type": "skill",
+    "cost": 1,
+    "block": 9,
+    "rarity": "Common",
+    "inShop": true,
+    "tags": [
+      "block"
+    ]
+  },
+  {
+    "id": "jab",
+    "name": "Jab",
+    "type": "attack",
+    "cost": 0,
+    "dmg": 3,
+    "rarity": "Common",
+    "inShop": true,
+    "tags": [
+      "attack"
+    ]
+  },
+  {
+    "id": "guard",
+    "name": "Guard",
+    "type": "skill",
+    "cost": 1,
+    "block": 8,
+    "rarity": "Uncommon",
+    "inShop": true,
+    "tags": [
+      "block"
+    ]
+  },
+  {
+    "id": "quickshot",
+    "name": "Quick Shot",
+    "type": "attack",
+    "cost": 0,
+    "dmg": 3,
+    "draw": 1,
+    "rarity": "Uncommon",
+    "inShop": true,
+    "tags": [
+      "attack"
+    ]
+  },
+  {
+    "id": "rally",
+    "name": "Rally",
+    "type": "skill",
+    "cost": 1,
+    "draw": 2,
+    "rarity": "Common",
+    "inShop": true,
+    "tags": []
+  },
+  {
+    "id": "second_wind",
+    "name": "Second Wind",
+    "type": "skill",
+    "cost": 1,
+    "draw": 1,
+    "energyGain": 1,
+    "rarity": "Uncommon",
+    "inShop": true,
+    "tags": []
+  },
+  {
+    "id": "feint",
+    "name": "Feint",
+    "type": "attack",
+    "cost": 0,
+    "dmg": 2,
+    "draw": 1,
+    "rarity": "Common",
+    "inShop": true,
+    "tags": [
+      "attack"
+    ]
+  },
+  {
+    "id": "steady_breath",
+    "name": "Steady Breath",
+    "type": "skill",
+    "cost": 0,
+    "block": 4,
+    "rarity": "Common",
+    "inShop": true,
+    "tags": [
+      "block"
+    ]
+  },
+  {
+    "id": "lunge",
+    "name": "Lunge",
+    "type": "attack",
+    "cost": 1,
+    "dmg": 7,
+    "draw": 1,
+    "rarity": "Common",
+    "inShop": true,
+    "tags": [
+      "attack"
+    ]
+  },
+  {
+    "id": "parry",
+    "name": "Parry",
+    "type": "skill",
+    "cost": 1,
+    "block": 6,
+    "draw": 1,
+    "rarity": "Common",
+    "inShop": true,
+    "tags": [
+      "block",
+      "attack"
+    ]
+  },
+  {
+    "id": "quick_block",
+    "name": "Quick Block",
+    "type": "skill",
+    "cost": 0,
+    "block": 3,
+    "rarity": "Common",
+    "inShop": true,
+    "tags": [
+      "block"
+    ]
+  },
+  {
+    "id": "poke",
+    "name": "Poke",
+    "type": "attack",
+    "cost": 0,
+    "dmg": 2,
+    "rarity": "Common",
+    "inShop": true,
+    "tags": [
+      "attack"
+    ]
+  },
+  {
+    "id": "twin_slash",
+    "name": "Twin Slash",
+    "type": "attack",
+    "cost": 1,
+    "dmg": 5,
+    "draw": 1,
+    "rarity": "Common",
+    "inShop": true,
+    "tags": [
+      "attack"
+    ]
+  },
+  {
+    "id": "nimble",
+    "name": "Nimble Footing",
+    "type": "skill",
+    "cost": 0,
+    "block": 2,
+    "draw": 1,
+    "rarity": "Common",
+    "inShop": true,
+    "tags": [
+      "block"
+    ]
+  },
+  {
+    "id": "focus_burst",
+    "name": "Focus Burst",
+    "type": "skill",
+    "cost": 1,
+    "draw": 3,
+    "rarity": "Uncommon",
+    "inShop": true,
+    "tags": []
+  },
+  {
+    "id": "bash",
+    "name": "Bash",
+    "type": "attack",
+    "cost": 2,
+    "dmg": 12,
+    "rarity": "Rare",
+    "inShop": true,
+    "tags": [
+      "attack"
+    ]
+  },
+  {
+    "id": "smite",
+    "name": "Smite",
+    "type": "attack",
+    "cost": 1,
+    "dmg": 10,
+    "rarity": "Uncommon",
+    "inShop": true,
+    "tags": [
+      "attack"
+    ]
+  },
+  {
+    "id": "piercing_stab",
+    "name": "Piercing Stab",
+    "type": "attack",
+    "cost": 1,
+    "dmg": 9,
+    "draw": 1,
+    "rarity": "Uncommon",
+    "inShop": true,
+    "tags": [
+      "attack"
+    ]
+  },
+  {
+    "id": "heavy_blade",
+    "name": "Heavy Blade",
+    "type": "attack",
+    "cost": 2,
+    "dmg": 16,
+    "rarity": "Rare",
+    "inShop": true,
+    "tags": [
+      "attack"
+    ]
+  },
+  {
+    "id": "blazing_strike",
+    "name": "Blazing Strike",
+    "type": "attack",
+    "cost": 2,
+    "dmg": 18,
+    "draw": 1,
+    "rarity": "Rare",
+    "inShop": true,
+    "tags": [
+      "attack"
+    ]
+  },
+  {
+    "id": "meteor_slam",
+    "name": "Meteor Slam",
+    "type": "attack",
+    "cost": 3,
+    "dmg": 30,
+    "rarity": "Rare",
+    "inShop": true,
+    "tags": [
+      "attack"
+    ]
+  },
+  {
+    "id": "fortify",
+    "name": "Fortify",
+    "type": "skill",
+    "cost": 1,
+    "block": 12,
+    "rarity": "Uncommon",
+    "inShop": true,
+    "tags": [
+      "block"
+    ]
+  },
+  {
+    "id": "iron_wall",
+    "name": "Iron Wall",
+    "type": "skill",
+    "cost": 2,
+    "block": 18,
+    "rarity": "Rare",
+    "inShop": true,
+    "tags": [
+      "block"
+    ]
+  },
+  {
+    "id": "sanctuary",
+    "name": "Sanctuary",
+    "type": "skill",
+    "cost": 3,
+    "block": 20,
+    "draw": 1,
+    "rarity": "Rare",
+    "inShop": true,
+    "tags": [
+      "block"
+    ]
+  },
+  {
+    "id": "adrenaline",
+    "name": "Adrenaline",
+    "type": "skill",
+    "cost": 0,
+    "draw": 2,
+    "energyGain": 1,
+    "rarity": "Rare",
+    "inShop": true,
+    "tags": []
+  },
+  {
+    "id": "battle_plan",
+    "name": "Battle Plan",
+    "type": "skill",
+    "cost": 2,
+    "block": 6,
+    "draw": 3,
+    "rarity": "Rare",
+    "inShop": true,
+    "tags": [
+      "block"
+    ]
+  },
+  {
+    "id": "chip_strike",
+    "name": "Chip Strike",
+    "type": "attack",
+    "cost": 0,
+    "dmg": 3,
+    "rarity": "Common",
+    "inShop": true,
+    "tags": [
+      "attack"
+    ]
+  },
+  {
+    "id": "sweep",
+    "name": "Sweep",
+    "type": "attack",
+    "cost": 1,
+    "dmg": 7,
+    "rarity": "Common",
+    "inShop": true,
+    "tags": [
+      "attack"
+    ]
+  },
+  {
+    "id": "hammer_fall",
+    "name": "Hammer Fall",
+    "type": "attack",
+    "cost": 2,
+    "dmg": 20,
+    "rarity": "Rare",
+    "inShop": true,
+    "tags": [
+      "attack"
+    ]
+  },
+  {
+    "id": "sun_strike",
+    "name": "Sun Strike",
+    "type": "attack",
+    "cost": 2,
+    "dmg": 17,
+    "draw": 1,
+    "rarity": "Rare",
+    "inShop": true,
+    "tags": [
+      "attack"
+    ]
+  },
+  {
+    "id": "aegis",
+    "name": "Aegis",
+    "type": "skill",
+    "cost": 2,
+    "block": 19,
+    "rarity": "Rare",
+    "inShop": true,
+    "tags": [
+      "block"
+    ]
+  },
+  {
+    "id": "zen_breath",
+    "name": "Zen Breath",
+    "type": "skill",
+    "cost": 0,
+    "block": 2,
+    "draw": 1,
+    "rarity": "Common",
+    "inShop": true,
+    "tags": [
+      "block"
+    ]
+  },
+  {
+    "id": "counter_cut",
+    "name": "Counter Cut",
+    "type": "attack",
+    "cost": 1,
+    "dmg": 6,
+    "rarity": "Uncommon",
+    "inShop": true,
+    "tags": [
+      "attack",
+      "block"
+    ]
+  },
+  {
+    "id": "steel_nerves",
+    "name": "Steel Nerves",
+    "type": "skill",
+    "cost": 2,
+    "block": 14,
+    "draw": 1,
+    "rarity": "Uncommon",
+    "inShop": true,
+    "tags": [
+      "block"
+    ]
+  },
+  {
+    "id": "stone_skin",
+    "name": "Stone Skin",
+    "type": "skill",
+    "cost": 2,
+    "block": 16,
+    "rarity": "Uncommon",
+    "inShop": true,
+    "tags": [
+      "block"
+    ]
+  },
+  {
+    "id": "blade_dance",
+    "name": "Blade Dance",
+    "type": "attack",
+    "cost": 1,
+    "dmg": 6,
+    "draw": 2,
+    "rarity": "Rare",
+    "inShop": true,
+    "tags": [
+      "attack"
+    ]
+  },
+  {
+    "id": "overcharge",
+    "name": "Overcharge",
+    "type": "skill",
+    "cost": 3,
+    "draw": 2,
+    "energyGain": 2,
+    "rarity": "Rare",
+    "inShop": true,
+    "tags": []
+  },
+  {
+    "id": "riposte",
+    "name": "Riposte",
+    "type": "attack",
+    "cost": 1,
+    "dmg": 6,
+    "rarity": "Uncommon",
+    "inShop": true,
+    "tags": [
+      "attack",
+      "block"
+    ]
+  },
+  {
+    "id": "steady_guard",
+    "name": "Steady Guard",
+    "type": "skill",
+    "cost": 1,
+    "block": 7,
+    "draw": 1,
+    "rarity": "Common",
+    "inShop": true,
+    "tags": [
+      "block"
+    ]
+  },
+  {
+    "id": "quick_cut",
+    "name": "Quick Cut",
+    "type": "attack",
+    "cost": 0,
+    "dmg": 4,
+    "rarity": "Common",
+    "inShop": true,
+    "tags": [
+      "attack"
+    ]
+  },
+  {
+    "id": "recenter",
+    "name": "Recenter",
+    "type": "skill",
+    "cost": 0,
+    "draw": 2,
+    "rarity": "Common",
+    "inShop": true,
+    "tags": []
+  },
+  {
+    "id": "precise_shot",
+    "name": "Precise Shot",
+    "type": "attack",
+    "cost": 2,
+    "dmg": 18,
+    "rarity": "Uncommon",
+    "inShop": true,
+    "tags": [
+      "attack"
+    ]
+  },
+  {
+    "id": "cleave",
+    "name": "Cleave",
+    "type": "attack",
+    "cost": 2,
+    "dmg": 16,
+    "rarity": "Uncommon",
+    "inShop": true,
+    "tags": [
+      "attack"
+    ]
+  }
 ]
