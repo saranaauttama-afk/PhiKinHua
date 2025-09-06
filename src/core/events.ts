@@ -2,7 +2,7 @@
 import type { BlessingDef, CardData, EventState, GameState, Rarity } from './types';
 import type { RNG } from './rng';
 import { int, shuffle } from './rng';
-import { GAMBLE_LOSE_HP, GAMBLE_WIN_GOLD, REMOVE_CAP_PER_RUN, TREASURE_MAX, TREASURE_MIN } from './balance';
+import { GAMBLE_LOSE_HP, GAMBLE_WIN_GOLD, REMOVE_CAP_PER_RUN, TREASURE_MAX, TREASURE_MIN } from './balance/events';
 import { BLESSINGS_BY_RARITY } from './pack';
 
 // ===== Blessings pool (ตัวอย่างเล็ก ๆ ใช้งานได้เลย)

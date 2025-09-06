@@ -1,75 +1,95 @@
-//*** UPDATED: src/core/blessingRuntime.ts
-import type {
-  BlessingCardHookConfig, BlessingDef, BlessingFn, CardData, GameState, TurnCtx
-} from './types';
+// src/core/blessingRuntime.ts
+import type { BlessingDef, BlessingFn, CardData, GameState } from './types';
+import { getBlessingBehavior } from './blessing/registry';
 
-// ================= Behavior Registry =================
-// ใส่เฉพาะ "ฟังก์ชัน" ที่นิยามไม่ได้ใน JSON เช่น regen_1: จบเทิร์นฮีล 1
-const BLESSING_BEHAVIOR: Record<string, Partial<BlessingDef>> = {
-  bl_end_heal: {
-    on_turn_end: (tc) => {
-      const s = tc.state;
-      const before = s.player.hp;
-      s.player.hp = Math.min(s.player.maxHp, s.player.hp + 1);
-      const healed = s.player.hp - before;
-      s.log.push(
-        healed > 0
-          ? `Blessing: Regeneration I heals ${healed}.`
-          : 'Blessing: Regeneration I (no effect; at max HP).'
-      );
-    },
-  },
-  // เพิ่ม behavior ใหม่ ๆ ได้ตามต้องการ
-};
-
-// รวม def จาก JSON เข้ากับ behavior ที่ผูกตาม id (behavior > json)
-function mergeBlessing(def: BlessingDef): BlessingDef {
-  const extra = BLESSING_BEHAVIOR[def.id];
-  return extra ? { ...def, ...extra } : def;
-}
-
-// ================= Flags: once-per-turn =================
 export function resetBlessingTurnFlags(s: GameState) {
+  s.turnFlags = s.turnFlags ?? { blessingOnce: {} as Record<string, boolean> };
   s.turnFlags.blessingOnce = {};
 }
 
-function wrapOncePerTurn(id: string, fn: BlessingFn): BlessingFn {
-  return (tc, card, target) => {
-    const already = tc.state.turnFlags.blessingOnce[id];
-    if (already) return;
-    tc.state.turnFlags.blessingOnce[id] = true;
-    fn(tc, card, target);
-  };
+function onceGate(s: GameState, key: string, fn: () => void) {
+  s.turnFlags = s.turnFlags ?? { blessingOnce: {} as Record<string, boolean> };
+  const bag = s.turnFlags.blessingOnce || (s.turnFlags.blessingOnce = {});
+  if (bag[key]) return;
+  fn();
+  bag[key] = true;
 }
 
-// ================= Hooks: on_card_played =================
-export function getCardPlayedFns(defRaw: BlessingDef, card: CardData): BlessingFn[] {
-  const def = mergeBlessing(defRaw);
-  const hook = def.on_card_played;
-  if (!hook) return [];
+// ---------- Turn hooks ----------
+export function runBlessingsTurnHook(s: GameState, hook: 'on_turn_start'|'on_turn_end') {
+  for (const b of s.blessings ?? []) {
+    // 1) inline (ของเดิม)
+    const inline = (hook === 'on_turn_start' ? b.on_turn_start : b.on_turn_end) as BlessingFn | undefined;
+    if (inline) inline({ state: s } as any);
 
-  const needsWrap = (cfgOnce?: boolean) => cfgOnce || def.oncePerTurn;
-
-  if (typeof hook === 'function') {
-    const fn = hook as BlessingFn;
-    return [needsWrap() ? wrapOncePerTurn(def.id, fn) : fn];
+    // 2) registry
+    const reg = getBlessingBehavior(b.id);
+    if (reg) {
+      const fx = reg[hook];
+      if (fx) fx(s);
+    }
   }
-  // เป็น config: { tag?, once_per_turn?, effects[] }
-  const cfg = hook as BlessingCardHookConfig;
-  if (cfg.tag && !(card.tags ?? []).includes(cfg.tag)) return [];
-  const fns = cfg.effects ?? [];
-  if (needsWrap(cfg.once_per_turn)) {
-    return fns.map((f, i) => wrapOncePerTurn(`${def.id}#${cfg.tag ?? 'any'}#${i}`, f));
-  }
-  return fns;
 }
 
-// ================= Hooks: turn start / turn end =================
-export function runBlessingsTurnHook(s: GameState, which: 'on_turn_start' | 'on_turn_end') {
-  const tc = { state: s } as TurnCtx; // เผื่อ TurnCtx มี field อื่นในอนาคต
-  for (const b0 of s.blessings) {
-    const b = mergeBlessing(b0);
-    const fn = b[which] as BlessingFn | undefined;
-    if (fn) fn(tc);
+// ---------- Card played ----------
+export type BlessingPlayedFn = (tc: { state: GameState }, card: CardData) => void;
+
+export function getCardPlayedFns(def: BlessingDef, card: CardData): BlessingPlayedFn[] {
+  const out: BlessingPlayedFn[] = [];
+
+  // 1) inline (รองรับทั้ง function และ config object แบบเดิม)
+  if (def.on_card_played) {
+    const maybeFn = def.on_card_played as any;
+
+    // แบบ function ตรง ๆ
+    if (typeof maybeFn === 'function') {
+      if (def.oncePerTurn) {
+        const k = `${def.id}:inline`;
+        out.push(({ state }) => onceGate(state, k, () => maybeFn({ state })));
+      } else {
+        out.push(({ state }) => maybeFn({ state }));
+      }
+    } else if (typeof maybeFn === 'object') {
+      // แบบ config เดิม: รองรับฟิลด์กว้าง ๆ: effect/fn, oncePerTurn, tag/hasTag, type
+      const effect: BlessingFn | undefined = (maybeFn.effect || maybeFn.fn) as any;
+      const once = !!(maybeFn.oncePerTurn ?? def.oncePerTurn);
+      const tag = maybeFn.tag ?? maybeFn.hasTag ?? maybeFn.cardTag;
+      const type = maybeFn.type as CardData['type'] | undefined;
+
+      // เงื่อนไข
+      if (effect) {
+        const condOk =
+          (!type || card.type === type) &&
+          (!tag || (card.tags ?? []).includes(tag));
+
+        if (condOk) {
+          if (once) {
+            const k = `${def.id}:cfg:${tag ?? ''}:${type ?? ''}`;
+            out.push(({ state }) => onceGate(state, k, () => effect({ state })));
+          } else {
+            out.push(({ state }) => effect({ state }));
+          }
+        }
+      }
+    }
   }
+
+  // 2) registry (spec array)
+  const reg = getBlessingBehavior(def.id);
+  if (reg?.on_card_played?.length) {
+    for (const spec of reg.on_card_played) {
+      // เงื่อนไข
+      if (spec.when?.type && card.type !== spec.when.type) continue;
+      if (spec.when?.hasTag && !(card.tags ?? []).includes(spec.when.hasTag)) continue;
+
+      if (spec.oncePerTurnKey) {
+        const key = `${def.id}:${spec.oncePerTurnKey}`;
+        out.push(({ state }, played) => onceGate(state, key, () => spec.effect(state, played)));
+      } else {
+        out.push(({ state }, played) => spec.effect(state, played));
+      }
+    }
+  }
+
+  return out;
 }

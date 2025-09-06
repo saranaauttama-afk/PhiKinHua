@@ -61,13 +61,20 @@ export type PlayerState = {     // ✅ ทอง
     maxEnergy: number; maxHandSize: number;  
 };
 
+export type RunCounters = {
+  removed: number;
+  removeShopCount?: number;
+  upgradeShopCount?: number;
+};
+
 // ===== Events =====
 export type EventState =
   | { type: 'bonfire'; healed?: boolean }
   | { type: 'shrine'; options: BlessingDef[]; chosenId?: string }          // เลือกพร (no-dup)
   | { type: 'remove'; capPerRun: number }                                   // ลบการ์ด (จำกัดต่อ run)
   | { type: 'gamble'; resolved?: { outcome: 'win' | 'lose'; gold?: number; hpLoss?: number } }
-  | { type: 'treasure'; amount?: number };                                  // กล่องสมบัติ (สุ่มช่วง)
+  | { type: 'treasure'; amount?: number }                                 // กล่องสมบัติ (สุ่มช่วง)
+  | { type: 'well'; used: boolean; dismissed: boolean };
 
 export type ShopItem = { card: CardData; price: number }; // ✅ รายการขายในร้าน
 
@@ -93,7 +100,7 @@ export type GameState = {
   equipmentSlotsMax?: number;     // จำนวนช่องสูงสุด
   equipped?: EquipmentData[];     // อุปกรณ์ที่สวมอยู่ (ใช้งานได้เมื่อรวม slotCost <= slots)
   backpack?: EquipmentData[];     // เก็บของที่ยังไม่สวม (ยังไม่ใช้ใน v1)  
-  runCounters?: { removed: number };        // นับ remove ต่อ run
+  runCounters?: RunCounters;        // นับ remove ต่อ run
   combatVictoryLock?: boolean; // ✅ กัน re-entrancy “ชนะคอมแบต”  
   masterDeck: CardData[];
   deckOpen?: boolean;
@@ -107,6 +114,9 @@ export type GameState = {
     consumed?: boolean; // กดเลือกแล้ว แต่รอ CompleteNode ปิด modal
   } | null;  
   starter?: { choices: BlessingDef[]; consumed?: boolean } | null;
+  mapMode?: 'grid' | 'pages';
+  pages?: import('./map/pages').MapStatePages;  
+  shopKind?: 'card' | 'remove' | 'upgrade';
 };
 
 export type Command =
@@ -127,9 +137,18 @@ export type Command =
   | { type: 'EventGambleRoll' }
   | { type: 'EventTreasureOpen' }  
   | { type: 'ChooseStarterBlessing'; index: number } // ✅ เลือกพรเริ่มเกม (ไม่มี skip/gold)
+  | { type: 'OpenPage' }
+  | { type: 'ChooseOffer'; index: number }
+  | { type: 'DismissOffer'; index: number }
+  | { type: 'Proceed' }  
   // เลเวลอัพ
   | { type: 'ChooseLevelUp'; index?: number } // index: สำหรับเลือกการ์ด/พร | สำหรับ remove/upgrade จะเป็น index ของ masterDeck
   | { type: 'SkipLevelUp' }
+  | { type: 'ShopRemoveBuy'; index: number }   // index ใน masterDeck
+  | { type: 'ShopUpgradeBuy'; index: number }  // index ใน masterDeck
+  | { type: 'DoWellUse' }
+  | { type: 'DoWellDismiss' }
+
   // QA/Debug (ผ่าน commands เท่านั้น)
   | { type: 'QA_KillEnemy' }
   | { type: 'QA_Draw'; count: number }
@@ -140,6 +159,9 @@ export type Command =
   | { type: 'QA_OpenShrine' }
   | { type: 'QA_OpenRemove' }
   | { type: 'QA_OpenGamble' }
-  | { type: 'QA_OpenTreasure' };
+  | { type: 'QA_OpenTreasure' }
+  // QA สำหรับ pages
+  | { type: 'QA_InitPages' }
+  | { type: 'QA_PrintPage' };  
 
   export type TurnCtx = { state: GameState };

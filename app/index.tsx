@@ -8,9 +8,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { create } from 'zustand';
 import type { Command, GameState } from '../src/core/types';
 import { applyCommand } from '../src/core/reducer';
-import { HAND_SIZE, nextExpForLevel, START_ENERGY, START_HP } from '../src/core/balance';
+import { HAND_SIZE, START_ENERGY, START_HP } from '../src/core/balance/core';
+import { nextExpForLevel } from '../src/core/balance/progression';
 import { makeRng, seedFromString, type RNG } from '../src/core/rng';
 import { START_GOLD } from '../src/core/balance'; // path ตามโปรเจกต์คุณ
+import { removeCostForCount, upgradeCostForCount } from '../src/core/balance/economy';
 
 type Store = {
   state: GameState;
@@ -79,8 +81,17 @@ export default function Home() {
   const inMap = state.phase === 'map';
   const inVictory = state.phase === 'victory';
   const inShop = state.phase === 'shop';
+  const shopKind = state.shopKind ?? ((state.shopStock?.length ?? 0) > 0 ? 'card' : undefined);
   const inEvent = state.phase === 'event';
   const canStartCombat = state.phase === 'menu';
+  const isPages = state.mapMode === 'pages';
+  const page = state.pages?.current;
+  const canProceedPage = !!(page && page.resolved.every(Boolean));
+   // ราคา dynamic ตามจำนวนครั้งในรัน
+  const removeCount = state.runCounters?.removeShopCount ?? 0;
+  const upgradeCount = state.runCounters?.upgradeShopCount ?? 0;
+  const priceRemove = removeCostForCount(removeCount);
+  const priceUpgrade = upgradeCostForCount(upgradeCount);
 
   // Helper หา node ปัจจุบัน แล้วบอกว่าเป็นบอสรึเปล่า
   const isBossVictory = useMemo(() => {
@@ -469,7 +480,7 @@ export default function Home() {
         </View>
 
         {/* === Map View (เลือกโหนด) === */}
-        {inMap && (
+        {inMap && !isPages && (
           <View className="rounded-2xl p-4 bg-zinc-800/70 border border-white/10 mb-4">
             <Text className="text-white text-lg font-semibold">Map</Text>
             <Text className="text-white/60 mb-2">Depth {state.map?.depth ?? 0}/{state.map?.totalCols ?? 0}</Text>
@@ -491,6 +502,88 @@ export default function Home() {
               ))}
               {((state.map?.cols[state.map?.depth ?? 0] ?? []).length === 0) && (
                 <Text className="text-white/60">Act complete — (จะต่อยอดใน M1.2)</Text>
+              )}
+            </View>
+          </View>
+        )}
+
+        {/* === Pages (DEV) — ทดสอบ MTOM mode === */}
+        {inMap && isPages && (
+          <View className="rounded-2xl p-4 bg-zinc-800/70 border border-white/10 mb-4">
+            <Text className="text-white text-lg font-semibold">Pages (dev)</Text>
+            <Text className="text-white/60 mb-2">
+              Page { (state.pages?.pageIndex ?? 0) + 1 } / { state.pages?.totalPages ?? 0 }
+            </Text>
+
+            {page ? (
+              <>
+                <View className="flex-col gap-2">
+                  {page.offers.map((o, i) => (
+                    <View key={i} className="flex-row items-center justify-between mb-2">
+                      <Text className="text-white">
+                        {o.kind === 'monster' ? `monster:${o.tier}` : o.kind}
+                        {page.resolved[i] ? '  ✅' : ''}
+                      </Text>
+                      <View className="flex-row gap-2">
+                        <Pressable
+                          onPress={() => dispatch({ type: 'ChooseOffer', index: i })}
+                          className="px-3 py-2 rounded-2xl border bg-zinc-900 border-white/10 active:opacity-70"
+                        >
+                          <Text className="text-white font-semibold">Choose {i}</Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => dispatch({ type: 'DismissOffer', index: i })}
+                          className="px-3 py-2 rounded-2xl border bg-zinc-900 border-white/10 active:opacity-70"
+                          disabled={page.resolved[i]}
+                        >
+                          <Text className="text-white/90">Dismiss</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+
+                <View className="flex-row gap-2 mt-3">
+                  <Pressable
+                    onPress={() => dispatch({ type: 'Proceed' })}
+                    className={`px-4 py-2 rounded-2xl border ${canProceedPage ? 'bg-white/5 active:opacity-70' : 'bg-white/5 opacity-50'} border-white/20`}
+                    disabled={!canProceedPage}
+                  >
+                    <Text className="text-white font-semibold">Proceed (เมื่อเคลียร์ครบ)</Text>
+                  </Pressable>
+                </View>
+              </>
+            ) : (
+              <View className="flex-row gap-2 mt-2">
+                <Pressable
+                  onPress={() => dispatch({ type: 'OpenPage' })}
+                  className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"
+                >
+                  <Text className="text-white font-semibold">Open Page</Text>
+                </Pressable>
+              </View>
+            )}
+
+            <View className="flex-row gap-2 mt-3">
+              <Pressable
+                onPress={() => dispatch({ type: 'QA_InitPages' })}
+                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"
+              >
+                <Text className="text-white font-semibold">QA: Init Pages</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => dispatch({ type: 'QA_PrintPage' })}
+                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"
+              >
+                <Text className="text-white font-semibold">QA: Print Offers</Text>
+              </Pressable>
+              {page ? null : (
+                <Pressable
+                  onPress={() => dispatch({ type: 'OpenPage' })}
+                  className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"
+                >
+                  <Text className="text-white font-semibold">Open Page</Text>
+                </Pressable>
               )}
             </View>
           </View>
@@ -553,32 +646,108 @@ export default function Home() {
         {/* === Shop Modal (ซื้อได้หลายใบ + รีโรล) === */}
         {inShop && (
           <View className="mt-6 rounded-2xl p-4 bg-zinc-800/80 border border-white/10">
-            <Text className="text-white text-lg font-semibold mb-2">Shop 🛒</Text>
+            <Text className="text-white text-lg font-semibold mb-2">
+              {shopKind === 'remove' ? 'Shop: Remove 🗑️' :
+               state.shopKind === 'upgrade' ? 'Shop: Upgrade 🔧' : 'Shop 🛒'}
+            </Text>
             <Text className="text-white/80 mb-2">Gold: {state.player.gold}g</Text>
-            <View className="flex-row gap-2 flex-wrap">
-              {(state.shopStock ?? []).map((item, i) => (
-                <Pressable
-                  key={i}
-                  onPress={() => dispatch({ type: 'TakeShop', index: i })}
-                  className="px-3 py-2 rounded-2xl border bg-zinc-900 border-white/10 active:opacity-70 disabled:opacity-40"
-                  disabled={state.player.gold < item.price}
-                >
-                  <Text className="text-white font-semibold">
-                    {item.card.name} {item.card.rarity ? `(${item.card.rarity})` : ''}
-                  </Text>
-                  <Text className="text-white/70">Price: {item.price}g</Text>
-                  <Text className="text-white/70">Card Cost: {item.card.cost}</Text>
-                  {item.card.dmg ? <Text className="text-red-300">DMG {item.card.dmg}</Text> : null}
-                  {item.card.block ? <Text className="text-sky-300">Block {item.card.block}</Text> : null}
-                </Pressable>
-              ))}
-            </View>
+            {shopKind === 'remove' && (
+              <Text className="text-white/70 mb-2">Current price: {priceRemove}g</Text>
+            )}
+            {shopKind === 'upgrade' && (
+              <Text className="text-white/70 mb-2">Current price: {priceUpgrade}g</Text>
+            )}            
+            {shopKind === 'card' && (
+              <View className="flex-row gap-2 flex-wrap">
+                {(state.shopStock ?? []).map((item, i) => (
+                  <Pressable
+                    key={i}
+                    onPress={() => dispatch({ type: 'TakeShop', index: i })}
+                    className="px-3 py-2 rounded-2xl border bg-zinc-900 border-white/10 active:opacity-70 disabled:opacity-40"
+                    disabled={state.player.gold < item.price}
+                  >
+                    <Text className="text-white font-semibold">
+                      {item.card.name} {item.card.rarity ? `(${item.card.rarity})` : ''}
+                    </Text>
+                    <Text className="text-white/70">Price: {item.price}g</Text>
+                    <Text className="text-white/70">Card Cost: {item.card.cost}</Text>
+                    {item.card.dmg ? <Text className="text-red-300">DMG {item.card.dmg}</Text> : null}
+                    {item.card.block ? <Text className="text-sky-300">Block {item.card.block}</Text> : null}
+                  </Pressable>
+                ))}
+              </View>
+            )}
+
+            {shopKind === 'remove' && (
+              <View className="flex-row gap-2 flex-wrap">
+                {(state.masterDeck ?? []).map((c, i) => (
+                  <Pressable
+                    key={i}
+                    onPress={() => dispatch({ type: 'ShopRemoveBuy', index: i })}
+                    className={`px-3 py-2 rounded-2xl border bg-zinc-900 border-white/10 ${state.player.gold < priceRemove ? 'opacity-50' : 'active:opacity-70'}`}
+                    disabled={state.player.gold < priceRemove}
+                  >
+                    <Text className="text-white font-semibold">{c.name ?? c.id}</Text>
+                    <Text className="text-white/60">Price: {priceRemove}g</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+
+            {shopKind === 'upgrade' && (
+              <View className="flex-row gap-2 flex-wrap">
+                {(state.masterDeck ?? []).map((c, i) => (
+                  <Pressable
+                    key={i}
+                    onPress={() => dispatch({ type: 'ShopUpgradeBuy', index: i })}
+                    className={`px-3 py-2 rounded-2xl border bg-zinc-900 border-white/10 ${state.player.gold < priceUpgrade ? 'opacity-50' : 'active:opacity-70'}`}
+                    disabled={state.player.gold < priceUpgrade}
+                  >
+                    <Text className="text-white font-semibold">
+                      {c.name ?? c.id}
+                      {c.dmg ? `  DMG ${c.dmg}` : ''}{c.block ? `  Block ${c.block}` : ''}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+
             <View className="flex-row gap-2 mt-3">
+              {shopKind === 'card' && (
+                <Pressable
+                  onPress={() => dispatch({ type: 'ShopReroll' })}
+                  className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"
+                >
+                  <Text className="text-white font-semibold">Reroll (-20g)</Text>
+                </Pressable>
+              )}
               <Pressable
-                onPress={() => dispatch({ type: 'ShopReroll' })}
+                onPress={() => dispatch({ type: 'CompleteNode' })}
                 className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"
               >
-                <Text className="text-white font-semibold">Reroll (-20g)</Text>
+                <Text className="text-white font-semibold">CompleteNode</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {/* === Well Event === */}
+        {inEvent && state.event?.type === 'well' && (
+          <View className="mt-6 rounded-2xl p-4 bg-zinc-800/80 border border-white/10">
+            <Text className="text-white text-lg font-semibold mb-2">Well ⛲</Text>
+            <Text className="text-white/80">HP {state.player.hp}/{state.player.maxHp}</Text>
+            <View className="flex-row gap-2 mt-3">
+              <Pressable
+                onPress={() => dispatch({ type: 'DoWellUse' })}
+                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"
+              >
+                <Text className="text-white font-semibold">Use (+10 HP)</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => dispatch({ type: 'DoWellDismiss' })}
+                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70"
+              >
+                <Text className="text-white font-semibold">Dismiss</Text>
               </Pressable>
               <Pressable
                 onPress={() => dispatch({ type: 'CompleteNode' })}
@@ -781,6 +950,9 @@ export default function Home() {
             <Button title="QA: Remove" onPress={() => dispatch({ type: 'QA_OpenRemove' })} />
             <Button title="QA: Gamble" onPress={() => dispatch({ type: 'QA_OpenGamble' })} />
             <Button title="QA: Treasure" onPress={() => dispatch({ type: 'QA_OpenTreasure' })} />
+
+              <Button title="QA: InitPages" onPress={() => dispatch({ type: 'QA_InitPages' })} />
+                <Button title="QA: PrintPage" onPress={() => dispatch({ type: 'QA_PrintPage' })} />
           </View>
         </View>
 
