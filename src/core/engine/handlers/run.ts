@@ -22,6 +22,11 @@ export function newRun(
   const { START_DECK } = require('../../balance/core');
   s.masterDeck = JSON.parse(JSON.stringify(START_DECK));
 
+  // ✅ Equipment defaults
+  s.equipmentSlotsMax = s.equipmentSlotsMax ?? 2;
+  s.equipped = s.equipped ?? [];
+  s.backpack = s.backpack ?? [];
+
   // ✅ ใช้ PAGES MODE เสมอ (ตัดระบบ Map เดิมทิ้ง)
   s.mapMode = 'pages';
   //s.map = undefined; // กันหลงเหลือค่าเก่า

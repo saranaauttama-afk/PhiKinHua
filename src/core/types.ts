@@ -25,6 +25,18 @@ export type CardData = {
   rarity?: Rarity;
 };
 
+// Enemy
+export type EnemyCard = {
+  id: string;
+  name?: string;
+  type: 'attack' | 'skill';
+  dmg?: number;
+  block?: number;
+  energyCost?: number; // ถ้าไม่ใส่ จะ default = 1
+  owner?: string | 'global';
+  tags?: string[];
+};
+
 export type EnemyState = {
   id: string;
   name: string;
@@ -35,6 +47,8 @@ export type EnemyState = {
   // ↓ เพิ่มใหม่ (E1)
   ai?: { cycle: string[]; index: number }; // อ้างถึง enemy card id
   intentCardId?: string;                    // ใบที่จะเล่น “เทิร์นนี้”
+  maxEnergy?: number;  // ค่าพลังงานสูงสุดของศัตรู (ต่อเทิร์น)
+  handSize?: number;   // จำนวนการ์ดที่จั่วตอนเริ่มเทิร์นศัตรู
 };
 
 export type DeckPiles = {
@@ -96,6 +110,12 @@ export type GameState = {
 
   player: PlayerState;
   enemy?: EnemyState;
+  enemyPiles?: {
+    draw: string[];
+    hand: string[];
+    discard: string[];
+  };
+  enemyEnergy?: number;  
 
   piles: DeckPiles;
   masterDeck: CardData[];
@@ -121,6 +141,9 @@ export type GameState = {
   runCounters?: RunCounters;
   combatVictoryLock?: boolean;
 
+  equipmentSlotsMax?: number;
+  equipped?: EquipmentData[];
+  backpack?: EquipmentData[];
   // Level up
   levelUp?: {
     bucket: Bucket;
@@ -131,16 +154,6 @@ export type GameState = {
 
   // Starter
   starter?: { choices: BlessingDef[]; consumed?: boolean } | null;
-};
-
-// Enemy
-export type EnemyCard = {
-  id: string;
-  name?: string;
-  type: 'attack' | 'skill';
-  dmg?: number;
-  block?: number;
-  // เผื่ออนาคต: energyCost/draw/debuff ฯลฯ
 };
 
 // ===== Commands =====

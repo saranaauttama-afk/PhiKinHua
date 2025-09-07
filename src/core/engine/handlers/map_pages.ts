@@ -15,6 +15,7 @@ import { pickEnemy } from '../../pack';
 import { buildAndShuffleDeck, drawUpTo, startPlayerTurn } from '../../commands';
 import { resetBlessingTurnFlags, runBlessingsTurnHook } from '../../blessingRuntime';
 import { START_ENERGY } from '../../balance/core';
+import { buildAndShuffleEnemyDeck } from './enemy';
 
 type ShopOpenFn = (s: GameState, r: RNG) => { state: GameState; rng: RNG };
 
@@ -132,6 +133,7 @@ export function choose(s: GameState, cmd: Extract<Command, { type: 'ChooseOffer'
       const res = pickEnemy(rng, offer.tier);
       rng = res.rng;
       s.enemy = res.enemy;
+      ({ state: s, rng: r } = buildAndShuffleEnemyDeck(s, r));
 
       s.player.energy = START_ENERGY;
       ({ state: s, rng } = buildAndShuffleDeck(s, rng));
@@ -153,6 +155,7 @@ export function choose(s: GameState, cmd: Extract<Command, { type: 'ChooseOffer'
       const res = pickEnemy(rng, 'boss');
       rng = res.rng;
       s.enemy = res.enemy;
+      ({ state: s, rng: r } = buildAndShuffleEnemyDeck(s, r));
 
       s.player.energy = START_ENERGY;
       ({ state: s, rng } = buildAndShuffleDeck(s, rng));

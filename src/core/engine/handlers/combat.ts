@@ -7,25 +7,6 @@ import { resetBlessingTurnFlags, runBlessingsTurnHook, getCardPlayedFns } from '
 import { START_ENERGY } from '../../balance/core';
 import { grantExpAndQueueLevelUp } from '../shared';
 
-export function start(s: GameState, _cmd: Extract<Command, { type: 'StartCombat' }>, r: RNG) {
-  if ((s.piles?.hand?.length ?? 0) > 0 || (s.piles?.draw?.length ?? 0) > 0 || (s.turn ?? 0) > 0) {
-    return { state: s, rng: r };
-  }
-  s.phase = 'combat';
-  s.turn = 1;
-  {
-    const res = pickEnemy(r, 'normal'); r = res.rng;
-    s.enemy = res.enemy;
-  }
-  resetBlessingTurnFlags(s);
-  runBlessingsTurnHook(s, 'on_turn_start');
-  s.player.energy = s.player.maxEnergy ?? START_ENERGY;
-  ({ state: s, rng: r } = buildAndShuffleDeck(s, r));
-  ({ state: s, rng: r } = drawUpTo(s, r));
-  s.log.push(`Combat started vs ${s.enemy?.name ?? 'Enemy'}`);
-  return { state: s, rng: r };
-}
-
 export function play(s: GameState, cmd: Extract<Command, { type: 'PlayCard' }>, r: RNG) {
   if (s.phase !== 'combat' || s.combatVictoryLock) return { state: s, rng: r };
   const idx = cmd.index;

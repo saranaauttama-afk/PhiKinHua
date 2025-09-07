@@ -1,7 +1,10 @@
 [
-  { "id": "claw",   "name": "Claw",   "type": "attack", "dmg": 6,  "desc": "Attack 6" },
-  { "id": "swipe",  "name": "Swipe",  "type": "attack", "dmg": 9,  "desc": "Attack 9" },
-  { "id": "maul",   "name": "Maul",   "type": "attack", "dmg": 12, "desc": "Attack 12" },
-  { "id": "guard",  "name": "Guard",  "type": "skill",  "block": 6, "desc": "Gain 6 Block" },
-  { "id": "brace",  "name": "Brace",  "type": "skill",  "block": 8, "desc": "Gain 8 Block" }
+  { "id": "claw",        "owner": "global", "type": "attack", "energyCost": 1, "dmg": 6,  "name": "Claw" },
+  { "id": "swipe",       "owner": "global", "type": "attack", "energyCost": 1, "dmg": 8,  "name": "Swipe" },
+  { "id": "maul",        "owner": "global", "type": "attack", "energyCost": 2, "dmg": 13, "name": "Maul" },
+  { "id": "guard",       "owner": "global", "type": "skill",  "energyCost": 1, "block": 7, "name": "Guard" },
+  { "id": "brace",       "owner": "global", "type": "skill",  "energyCost": 2, "block": 12,"name": "Brace" },
+
+  { "id": "slime_poke",  "owner": "slime",  "type": "attack", "energyCost": 1, "dmg": 6,  "name": "Poke" },
+  { "id": "slime_guard", "owner": "slime",  "type": "skill",  "energyCost": 1, "block": 5, "name": "Sticky Guard" }
 ]

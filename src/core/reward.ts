@@ -1,7 +1,6 @@
 // Rewards — weighted draws for cards (used by shop/rewards)
 import type { CardData, Rarity } from './types';
 import { int, shuffle, next, type RNG } from './rng';
-import { POOL_COMMON, POOL_UNCOMMON, POOL_RARE } from './balance';
 //import { BY_RARITY } from './pack';
 import cardsJson from '../data/packs/base/cards.json';
 

@@ -1,5 +1,286 @@
 [
-  { "id": "slime",       "name": "Slime",       "hp": 35, "maxHp": 35, "dmg": 6,  "block": 0, "tier": "normal"  },
-  { "id": "slime_elite", "name": "Elite Slime", "hp": 55, "maxHp": 55, "dmg": 10, "block": 0, "tier": "elite"   },
-  { "id": "slime_king",  "name": "King Slime",  "hp": 90, "maxHp": 90, "dmg": 14, "block": 0, "tier": "boss"    }
+  {
+    "id": "slime",
+    "name": "Green Slime",
+    "tier": "normal",
+    "hp": 42,
+    "maxHp": 42,
+    "block": 0,
+    "deck": {
+      "lists": [
+        {
+          "id": "poke",
+          "weight": 70,
+          "cards": ["slime_poke","slime_poke","slime_guard","slime_poke","slime_guard","slime_poke","slime_poke","slime_poke","slime_guard","slime_poke","slime_poke","slime_guard"]
+        },
+        {
+          "id": "sticky",
+          "weight": 30,
+          "cards": ["slime_poke","slime_guard","slime_guard","slime_poke","slime_guard","slime_guard","slime_poke","slime_guard","slime_guard","slime_poke","slime_guard","slime_guard"]
+        }
+      ],
+      "pool": {
+        "allowOwners": ["global","slime"],
+        "include": [
+          { "id": "slime_poke",  "w": 6 },
+          { "id": "slime_guard", "w": 4 }
+        ],
+        "minAttack": 6,
+        "minBlock": 3
+      },
+      "handSize": 2,
+      "maxEnergy": 2
+    },
+    "ai": { "playOrder": "cheap_first" },
+    "scaling": { "dmgPerAct": 1, "blockPerAct": 1 }
+  },
+
+  {
+    "id": "wolf",
+    "name": "Forest Wolf",
+    "tier": "normal",
+    "hp": 34,
+    "maxHp": 34,
+    "block": 0,
+    "deck": {
+      "lists": [
+        { "id": "hunt", "weight": 100, "cards": ["swipe","swipe","guard","swipe","guard","swipe","swipe","guard","swipe","swipe","guard","swipe"] }
+      ],
+      "pool": {
+        "allowOwners": ["global","wolf"],
+        "include": [
+          { "id": "swipe", "w": 6 },
+          { "id": "guard", "w": 3 }
+        ],
+        "minAttack": 6,
+        "minBlock": 3
+      },
+      "handSize": 3,
+      "maxEnergy": 2
+    },
+    "ai": { "playOrder": "cheap_first" },
+    "scaling": { "dmgPerAct": 1, "blockPerAct": 1 }
+  },
+
+  {
+    "id": "bandit",
+    "name": "Street Bandit",
+    "tier": "normal",
+    "hp": 36,
+    "maxHp": 36,
+    "block": 0,
+    "deck": {
+      "lists": [
+        { "id": "ambush", "weight": 100, "cards": ["claw","swipe","guard","claw","claw","guard","swipe","claw","guard","claw","swipe","guard"] }
+      ],
+      "pool": {
+        "allowOwners": ["global","bandit"],
+        "include": [
+          { "id": "claw",  "w": 5 },
+          { "id": "swipe", "w": 4 },
+          { "id": "guard", "w": 3 }
+        ],
+        "minAttack": 6,
+        "minBlock": 3
+      },
+      "handSize": 3,
+      "maxEnergy": 2
+    },
+    "ai": { "playOrder": "cheap_first" },
+    "scaling": { "dmgPerAct": 1, "blockPerAct": 1 }
+  },
+
+  {
+    "id": "sentry",
+    "name": "Rusty Sentry",
+    "tier": "normal",
+    "hp": 38,
+    "maxHp": 38,
+    "block": 0,
+    "deck": {
+      "lists": [
+        { "id": "patrol", "weight": 100, "cards": ["guard","claw","guard","claw","guard","claw","guard","claw","guard","claw","guard","claw"] }
+      ],
+      "pool": {
+        "allowOwners": ["global","sentry"],
+        "include": [
+          { "id": "guard", "w": 6 },
+          { "id": "claw",  "w": 4 }
+        ],
+        "minAttack": 5,
+        "minBlock": 4
+      },
+      "handSize": 3,
+      "maxEnergy": 2
+    },
+    "ai": { "playOrder": "cheap_first" },
+    "scaling": { "dmgPerAct": 1, "blockPerAct": 1 }
+  },
+
+  {
+    "id": "boar",
+    "name": "Wild Boar",
+    "tier": "normal",
+    "hp": 40,
+    "maxHp": 40,
+    "block": 0,
+    "deck": {
+      "lists": [
+        { "id": "charge", "weight": 100, "cards": ["claw","claw","guard","claw","claw","guard","claw","claw","guard","claw","claw","guard"] }
+      ],
+      "pool": {
+        "allowOwners": ["global","boar"],
+        "include": [
+          { "id": "claw",  "w": 6 },
+          { "id": "guard", "w": 3 }
+        ],
+        "minAttack": 6,
+        "minBlock": 2
+      },
+      "handSize": 3,
+      "maxEnergy": 2
+    },
+    "ai": { "playOrder": "atk_first" },
+    "scaling": { "dmgPerAct": 1, "blockPerAct": 1 }
+  },
+
+  {
+    "id": "ogre_elite",
+    "name": "Ogre Brute",
+    "tier": "elite",
+    "hp": 90,
+    "maxHp": 90,
+    "block": 0,
+    "deck": {
+      "lists": [
+        { "id": "bruiser", "weight": 100, "cards": ["maul","guard","brace","maul","guard","maul","brace","guard","maul","guard","brace","maul"] }
+      ],
+      "pool": {
+        "allowOwners": ["global","ogre_elite"],
+        "include": [
+          { "id": "maul",  "w": 6 },
+          { "id": "brace", "w": 3 },
+          { "id": "guard", "w": 2 }
+        ],
+        "minAttack": 10,
+        "minBlock": 6
+      },
+      "handSize": 4,
+      "maxEnergy": 3
+    },
+    "ai": { "playOrder": "atk_first" },
+    "scaling": { "dmgPerAct": 2, "blockPerAct": 1 }
+  },
+
+  {
+    "id": "knight_elite",
+    "name": "Black Knight",
+    "tier": "elite",
+    "hp": 80,
+    "maxHp": 80,
+    "block": 0,
+    "deck": {
+      "lists": [
+        { "id": "discipline", "weight": 100, "cards": ["swipe","brace","guard","swipe","guard","brace","swipe","brace","guard","swipe","guard","brace"] }
+      ],
+      "pool": {
+        "allowOwners": ["global","knight_elite"],
+        "include": [
+          { "id": "swipe", "w": 5 },
+          { "id": "brace", "w": 4 },
+          { "id": "guard", "w": 3 }
+        ],
+        "minAttack": 9,
+        "minBlock": 7
+      },
+      "handSize": 4,
+      "maxEnergy": 3
+    },
+    "ai": { "playOrder": "cheap_first" },
+    "scaling": { "dmgPerAct": 2, "blockPerAct": 2 }
+  },
+
+  {
+    "id": "witch_elite",
+    "name": "Hex Witch",
+    "tier": "elite",
+    "hp": 70,
+    "maxHp": 70,
+    "block": 0,
+    "deck": {
+      "lists": [
+        { "id": "hexing", "weight": 100, "cards": ["swipe","guard","brace","swipe","guard","brace","swipe","guard","brace","swipe","guard","brace"] }
+      ],
+      "pool": {
+        "allowOwners": ["global","witch_elite"],
+        "include": [
+          { "id": "swipe", "w": 5 },
+          { "id": "guard", "w": 4 },
+          { "id": "brace", "w": 3 }
+        ],
+        "minAttack": 8,
+        "minBlock": 8
+      },
+      "handSize": 4,
+      "maxEnergy": 3
+    },
+    "ai": { "playOrder": "cheap_first" },
+    "scaling": { "dmgPerAct": 2, "blockPerAct": 2 }
+  },
+
+  {
+    "id": "lich_boss",
+    "name": "Lich Lord",
+    "tier": "boss",
+    "hp": 170,
+    "maxHp": 170,
+    "block": 0,
+    "deck": {
+      "lists": [
+        { "id": "necromancy", "weight": 100, "cards": ["maul","brace","maul","guard","maul","brace","guard","maul","brace","guard","maul","brace"] }
+      ],
+      "pool": {
+        "allowOwners": ["global","lich_boss"],
+        "include": [
+          { "id": "maul",  "w": 7 },
+          { "id": "brace", "w": 4 },
+          { "id": "guard", "w": 3 }
+        ],
+        "minAttack": 12,
+        "minBlock": 8
+      },
+      "handSize": 4,
+      "maxEnergy": 3
+    },
+    "ai": { "playOrder": "atk_first" },
+    "scaling": { "dmgPerAct": 3, "blockPerAct": 2 }
+  },
+
+  {
+    "id": "dragon_boss",
+    "name": "Cave Dragon",
+    "tier": "boss",
+    "hp": 190,
+    "maxHp": 190,
+    "block": 0,
+    "deck": {
+      "lists": [
+        { "id": "inferno", "weight": 100, "cards": ["maul","maul","brace","guard","maul","brace","maul","guard","maul","brace","maul","guard"] }
+      ],
+      "pool": {
+        "allowOwners": ["global","dragon_boss"],
+        "include": [
+          { "id": "maul",  "w": 8 },
+          { "id": "brace", "w": 4 },
+          { "id": "guard", "w": 3 }
+        ],
+        "minAttack": 13,
+        "minBlock": 7
+      },
+      "handSize": 4,
+      "maxEnergy": 3
+    },
+    "ai": { "playOrder": "atk_first" },
+    "scaling": { "dmgPerAct": 3, "blockPerAct": 2 }
+  }
 ]
