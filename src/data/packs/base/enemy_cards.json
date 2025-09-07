@@ -1,0 +1,7 @@
+[
+  { "id": "claw",   "name": "Claw",   "type": "attack", "dmg": 6,  "desc": "Attack 6" },
+  { "id": "swipe",  "name": "Swipe",  "type": "attack", "dmg": 9,  "desc": "Attack 9" },
+  { "id": "maul",   "name": "Maul",   "type": "attack", "dmg": 12, "desc": "Attack 12" },
+  { "id": "guard",  "name": "Guard",  "type": "skill",  "block": 6, "desc": "Gain 6 Block" },
+  { "id": "brace",  "name": "Brace",  "type": "skill",  "block": 8, "desc": "Gain 8 Block" }
+]

@@ -245,7 +245,9 @@ export default function Home() {
               <>
                 <Text className="text-white text-lg font-semibold">{enemy.name}</Text>
                 <Text className="text-white/80 mt-1">HP {enemy.hp}/{enemy.maxHp}</Text>
-                <Text className="text-white/70 mt-1">Intent: Attack {enemy.dmg}</Text>
+                <Text className="text-white/70 mt-1">
+                  Intent: {enemy.intentCardId ?? '...'}
+                </Text>
               </>
             ) : (
               <Text className="text-white/60">No enemy</Text>

@@ -5,6 +5,8 @@ import type { CardData, GameState } from './types';
 import { HAND_SIZE, START_ENERGY, START_DECK, START_GOLD, START_HP, nextExpForLevel } from './balance';
 import { shuffle, type RNG } from './rng';
 import { resetBlessingTurnFlags } from './blessingRuntime';
+import { enemyCardById } from './pack_enemy_cards';
+import type { EnemyCard } from './types';
 
 // NOTE: We keep state updates pure by working on shallow copies of containers.
 const clone = <T,>(x: T): T => JSON.parse(JSON.stringify(x));
@@ -27,8 +29,8 @@ export function baseNewState(seed: string): GameState {
     blessings: [],
     turnFlags: { blessingOnce: {} },
     runCounters: { removed: 0 },
-    rewardOptions: undefined,
-    map: undefined,
+    // rewardOptions: undefined,
+    // map: undefined,
     shopStock: undefined,
     event: undefined,
     combatVictoryLock: false,    
@@ -130,9 +132,39 @@ export function isDefeat(state: GameState): boolean {
   return state.player.hp <= 0;
 }
 
+function playEnemyCard(s: GameState) {
+  if (!s.enemy || !s.enemy.intentCardId) return;
+  const card: EnemyCard | undefined = enemyCardById(s.enemy.intentCardId);
+  if (!card) { s.log.push(`Enemy tries unknown card: ${s.enemy.intentCardId}`); return; }
+
+  if (card.type === 'attack' && (card.dmg ?? 0) > 0) {
+    const atk = Math.max(0, card.dmg!);
+    const blockAfter = Math.max(0, s.player.block - atk);
+    const hpLoss = Math.max(0, atk - s.player.block);
+    s.player.block = blockAfter;
+    s.player.hp = Math.max(0, s.player.hp - hpLoss);
+    s.log.push(`Enemy plays ${card.name ?? card.id}: Attack ${atk} (${hpLoss} dmg).`);
+  } else if (card.type === 'skill' && (card.block ?? 0) > 0) {
+    s.enemy.block = (s.enemy.block ?? 0) + (card.block ?? 0);
+    s.log.push(`Enemy plays ${card.name ?? card.id}: Block +${card.block}.`);
+  } else {
+    s.log.push(`Enemy plays ${card.name ?? card.id}.`);
+  }
+}
+
+// helper เดิน pointer ไปไพ่ถัดไป
+function stepNextEnemyCard(s: GameState) {
+  const ai = s.enemy?.ai;
+  if (!s.enemy || !ai || ai.cycle.length === 0) return;
+  ai.index = (ai.index + 1) % ai.cycle.length;
+  s.enemy.intentCardId = ai.cycle[ai.index];
+}
+
 export function endEnemyTurn(state: GameState) {
-  if (!state.enemy) return;
-  const dmg = Math.max(0, state.enemy.dmg - state.player.block);
-  state.player.hp = Math.max(0, state.player.hp - dmg);
-  state.player.block = 0;
+  // if (!state.enemy) return;
+  // const dmg = Math.max(0, state.enemy.dmg - state.player.block);
+  // state.player.hp = Math.max(0, state.player.hp - dmg);
+  // state.player.block = 0;
+  playEnemyCard(state);
+  stepNextEnemyCard(state);
 }

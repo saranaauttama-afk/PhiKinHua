@@ -32,7 +32,9 @@ export type EnemyState = {
   maxHp: number;
   dmg: number;
   block: number;
-  // TODO: intent?: { kind: 'attack'|'block'|'buff'; value?: number }
+  // ↓ เพิ่มใหม่ (E1)
+  ai?: { cycle: string[]; index: number }; // อ้างถึง enemy card id
+  intentCardId?: string;                    // ใบที่จะเล่น “เทิร์นนี้”
 };
 
 export type DeckPiles = {
@@ -129,6 +131,16 @@ export type GameState = {
 
   // Starter
   starter?: { choices: BlessingDef[]; consumed?: boolean } | null;
+};
+
+// Enemy
+export type EnemyCard = {
+  id: string;
+  name?: string;
+  type: 'attack' | 'skill';
+  dmg?: number;
+  block?: number;
+  // เผื่ออนาคต: energyCost/draw/debuff ฯลฯ
 };
 
 // ===== Commands =====

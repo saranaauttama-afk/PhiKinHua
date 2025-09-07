@@ -13,7 +13,7 @@ import blessingsJson from '../data/packs/base/blessings.json';
 import EQUIP_LIST from '../data/packs/base/equipment.json';
 
 type CardJson = CardData & { starter?: number; inRewards?: boolean; inShop?: boolean };
-type EnemyJson = EnemyState & { tier: 'normal'|'elite'|'boss' };
+type EnemyJson = EnemyState & { tier: 'normal' | 'elite' | 'boss' };
 type BlessingMeta = { id: string; name: string; rarity: Rarity; desc?: string; oncePerTurn?: boolean };
 
 const CARD_LIST: CardJson[] = cardsJson as any;
@@ -33,18 +33,29 @@ export const START_DECK: CardData[] = CARD_LIST.flatMap(c =>
 
 // พูลตาม rarity (ใช้ทำ rewards/shop)
 export const BY_RARITY: Record<Rarity, CardData[]> = {
-  Common:   ALL_CARDS.filter(c => c.rarity === 'Common'   && (CARD_LIST.find(x => x.id === c.id)?.inRewards ?? true)),
+  Common: ALL_CARDS.filter(c => c.rarity === 'Common' && (CARD_LIST.find(x => x.id === c.id)?.inRewards ?? true)),
   Uncommon: ALL_CARDS.filter(c => c.rarity === 'Uncommon' && (CARD_LIST.find(x => x.id === c.id)?.inRewards ?? true)),
-  Rare:     ALL_CARDS.filter(c => c.rarity === 'Rare'     && (CARD_LIST.find(x => x.id === c.id)?.inRewards ?? true)),
+  Rare: ALL_CARDS.filter(c => c.rarity === 'Rare' && (CARD_LIST.find(x => x.id === c.id)?.inRewards ?? true)),
 };
 
 // สุ่มศัตรูตาม tier ด้วย RNG (deterministic)
-export function pickEnemy(rng: RNG, tier: 'normal'|'elite'|'boss'): { rng: RNG; enemy: EnemyState } {
+export function pickEnemy(rng: RNG, tier: 'normal' | 'elite' | 'boss'): { rng: RNG; enemy: EnemyState } {
   let r = rng;
   const pool = ENEMY_LIST.filter(e => e.tier === tier);
   const src = pool.length ? pool : ENEMY_LIST;
   const roll = int(r, 0, src.length - 1); r = roll.rng;
   const chosen = src[roll.value];
+  const cycleFromData: string[] | undefined = (chosen as any).cycle;
+  let defaultCycle: string[] = ['claw', 'guard', 'claw']; // ดีฟอลต์พื้นฐาน
+  if (tier === 'elite') defaultCycle = ['swipe', 'swipe', 'brace'];
+  if (tier === 'boss') defaultCycle = ['maul', 'brace', 'maul', 'guard'];
+
+  const cycle = Array.isArray(cycleFromData) && cycleFromData.length > 0
+    ? cycleFromData.slice()
+    : defaultCycle;
+
+  chosen.ai = { cycle, index: 0 };
+  chosen.intentCardId = cycle[0];
   return { rng: r, enemy: JSON.parse(JSON.stringify(chosen)) };
 }
 
@@ -58,7 +69,7 @@ export function materializeBlessing(id: string): BlessingDef | undefined {
     case 'bl_start_block':
       return { ...meta, on_turn_start: (tc) => { tc.state.player.block += 3; } };
     case 'bl_attack_block':
-      return { ...meta, on_card_played: { tag: 'attack', once_per_turn: false, effects: [ (tc) => { tc.state.player.block += 2; } ] } };
+      return { ...meta, on_card_played: { tag: 'attack', once_per_turn: false, effects: [(tc) => { tc.state.player.block += 2; }] } };
     case 'bl_end_heal':
       return { ...meta, on_turn_end: (tc) => { tc.state.player.hp = Math.min(tc.state.player.maxHp, tc.state.player.hp + 1); } };
     case 'bl_big_energy_first':
@@ -72,9 +83,9 @@ export const BLESSING_POOL: BlessingDef[] =
   BLESSING_LIST.map(b => materializeBlessing(b.id)).filter((x): x is BlessingDef => !!x);
 
 export const BLESSINGS_BY_RARITY: Record<Rarity, BlessingDef[]> = {
-  Common:   BLESSING_POOL.filter(b => b.rarity === 'Common'),
+  Common: BLESSING_POOL.filter(b => b.rarity === 'Common'),
   Uncommon: BLESSING_POOL.filter(b => b.rarity === 'Uncommon'),
-  Rare:     BLESSING_POOL.filter(b => b.rarity === 'Rare'),
+  Rare: BLESSING_POOL.filter(b => b.rarity === 'Rare'),
 };
 
 // === Equipment (base pack) ===
