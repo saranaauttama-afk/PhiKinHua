@@ -1,13 +1,13 @@
 [
-  { "id": "bl_energy_first",     "name": "Battle Rhythm", "rarity": "Common",   "desc": "First card each turn grants +1 energy." },
-  { "id": "bl_start_block",      "name": "Guarded Start", "rarity": "Common",   "desc": "+3 Block at turn start." },
-  { "id": "bl_attack_block",     "name": "Counter Edge",  "rarity": "Uncommon", "desc": "When playing an attack, gain +2 Block." },
-  
-  { "id": "bl_big_energy_first", "name": "Battle Frenzy", "rarity": "Rare",     "desc": "First card each turn grants +2 energy." },
-    {
-    "id": "regen_1",
-    "name": "Regeneration I",
-    "rarity": "Common",
-    "desc": "At the end of your turn, heal 1."
-  }
+  { "id": "regen_1",            "name": "Gentle Regeneration",   "rarity": "Common",   "desc": "Heal 1 at end of your turn." },
+  { "id": "bl_energy_first",    "name": "Battle Rhythm",          "rarity": "Uncommon","desc": "+1 energy on the first card each turn." },
+  { "id": "block_on_attack_2",  "name": "Deflecting Strikes",     "rarity": "Common",   "desc": "Gain 2 Block whenever you play an Attack." },
+  { "id": "start_block_3",      "name": "Steady Stance",          "rarity": "Uncommon","desc": "At the start of your turn, gain 3 Block." },
+  { "id": "energy_on_skill_first","name": "Tactical Flow",        "rarity": "Uncommon","desc": "The first Skill each turn gives +1 energy." },
+
+  { "id": "steel_skin_1",       "name": "Steel Skin",             "rarity": "Common",   "desc": "Gain 1 Block at end of turn." },
+  { "id": "blood_thirst_1",     "name": "Blood Thirst",           "rarity": "Uncommon","desc": "Heal 1 whenever you play an Attack." },
+  { "id": "attack_first_energy","name": "Opening Strike",         "rarity": "Uncommon","desc": "Your first Attack each turn gives +1 energy." },
+  { "id": "skill_shield_1",     "name": "Sage's Guard",           "rarity": "Common",   "desc": "Gain 1 Block whenever you play a Skill." },
+  { "id": "special_refund_1",   "name": "Refund Tactics",         "rarity": "Rare",    "desc": "First card with cost ≥1 each turn refunds +1 energy." }
 ]

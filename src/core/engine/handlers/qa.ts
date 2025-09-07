@@ -34,14 +34,8 @@ export function qaSetEnergy(s: GameState, cmd: Extract<Command, { type: 'QA_SetE
 }
 
 export function qaAddBlessingDemo(s: GameState, _cmd: Extract<Command, { type: 'QA_AddBlessingDemo' }>, r: RNG) {
-  const demo = {
-    id: 'bl_energy_first',
-    name: 'Battle Rhythm',
-    desc: 'First card each turn grants +1 energy.',
-    oncePerTurn: true,
-    on_card_played: (tc: any) => { tc.state.player.energy += 1; },
-  };
-  if (!s.blessings.find(b => b.id === demo.id)) s.blessings.push(demo as any);
+  const demo = { id: 'bl_energy_first', name: 'Battle Rhythm', desc: '+1 energy on the first card each turn.' };
+     if (!s.blessings.find(b => b.id === demo.id)) s.blessings.push(demo);
   s.log.push('QA: added blessing "Battle Rhythm"');
   return { state: s, rng: r };
 }

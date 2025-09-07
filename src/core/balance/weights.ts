@@ -24,3 +24,13 @@ export const WEIGHTS = {
   nextEvent: 1,
   boss: 10, // ใช้เมื่อถึงเวลา spawn บอส (inject)
 };
+
+// ===== Pages / MTOM-style =====
+export const PAGES_OFFERS_PER_PAGE = 3;
+
+// จำนวนมอนที่ต้องสู้ทั้งรัน (normal ก่อน, หมดแล้วค่อยปล่อย elite)
+export const RUN_NORMAL_MONSTERS = 6;
+export const RUN_ELITE_MONSTERS  = 2;
+
+// โอกาสใส่ next_event เป็น “ช่องทางลัด” บางหน้า (0..1)
+export const NEXT_EVENT_RATE = 0.25;
