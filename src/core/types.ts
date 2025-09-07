@@ -1,6 +1,5 @@
-import type { MapState } from './map';
+// src/core/types.ts — CLEAN (Pages-first, no StartCombat, no reward)
 
-// Blessings runtime types (ตามคอนแทรกต์)
 export type BlessingFn = (tc: TurnCtx, card?: CardData, target?: any) => void;
 export type BlessingCardHookConfig = { tag?: string; once_per_turn?: boolean; effects: BlessingFn[] };
 export type BlessingDef = {
@@ -18,12 +17,12 @@ export type CardData = {
   name: string;
   type: CardType;
   cost: number;
-  dmg?: number;    // for attacks
-  block?: number;  // for skills
-  draw?: number;   // draw N
-  energyGain?: number; // gain N energy
-  tags?: string[]; // สำหรับ match blessing hook (เช่น tag: 'attack')
-  rarity?: Rarity; // ✅ ใช้สำหรับ bias rewards/shop
+  dmg?: number;
+  block?: number;
+  draw?: number;
+  energyGain?: number;
+  tags?: string[];
+  rarity?: Rarity;
 };
 
 export type EnemyState = {
@@ -31,8 +30,9 @@ export type EnemyState = {
   name: string;
   hp: number;
   maxHp: number;
-  dmg: number;   // basic attack damage per turn
-  block: number; // (reserved for later)
+  dmg: number;
+  block: number;
+  // TODO: intent?: { kind: 'attack'|'block'|'buff'; value?: number }
 };
 
 export type DeckPiles = {
@@ -42,23 +42,27 @@ export type DeckPiles = {
   exhaust: CardData[];
 };
 
-// === Equipment ===
 export type EquipmentData = {
   id: string;
   name?: string;
   rarity?: Rarity;
   desc?: string;
-  slotCost?: number; // ดีฟอลต์ 1
+  slotCost?: number; // default 1
   tags?: string[];
 };
 
-export type Phase = 'menu'|'map'|'combat'|'victory'|'defeat'|'reward'|'event'|'shop'|'levelup'|'starter';
-export type Bucket = 'max_hp'|'max_energy'|'max_hand'|'cards'|'blessing'|'remove'|'upgrade'|'gold';
+export type Phase =
+  | 'menu' | 'map' | 'combat' | 'victory' | 'defeat'
+  | 'event' | 'shop' | 'levelup' | 'starter'; // ← ตัด 'reward' ออก
 
-export type PlayerState = {     // ✅ ทอง
-    hp: number; maxHp: number; block: number; energy: number; gold: number;
-    level: number; exp: number; expToNext: number;
-    maxEnergy: number; maxHandSize: number;  
+export type Bucket =
+  | 'max_hp' | 'max_energy' | 'max_hand'
+  | 'cards' | 'blessing' | 'remove' | 'upgrade' | 'gold';
+
+export type PlayerState = {
+  hp: number; maxHp: number; block: number; energy: number; gold: number;
+  level: number; exp: number; expToNext: number;
+  maxEnergy: number; maxHandSize: number;
 };
 
 export type RunCounters = {
@@ -70,86 +74,106 @@ export type RunCounters = {
 // ===== Events =====
 export type EventState =
   | { type: 'bonfire'; healed?: boolean }
-  | { type: 'shrine'; options: BlessingDef[]; chosenId?: string }          // เลือกพร (no-dup)
-  | { type: 'remove'; capPerRun: number }                                   // ลบการ์ด (จำกัดต่อ run)
+  | { type: 'shrine'; options: BlessingDef[]; chosenId?: string }
+  | { type: 'remove'; capPerRun: number }
   | { type: 'gamble'; resolved?: { outcome: 'win' | 'lose'; gold?: number; hpLoss?: number } }
-  | { type: 'treasure'; amount?: number }                                 // กล่องสมบัติ (สุ่มช่วง)
+  | { type: 'treasure'; amount?: number }
   | { type: 'well'; used: boolean; dismissed: boolean };
 
-export type ShopItem = { card: CardData; price: number }; // ✅ รายการขายในร้าน
+// ===== Shop / Pages =====
+export type ShopItem = { card: CardData; price: number };
+export type ShopKind = 'card' | 'remove' | 'upgrade';
+
+export type MapMode = 'pages';
+export type MapStatePages = import('./map/pages').MapStatePages;
 
 export type GameState = {
   seed: string;
   phase: Phase;
   turn: number;
+
   player: PlayerState;
   enemy?: EnemyState;
+
   piles: DeckPiles;
+  masterDeck: CardData[];
+  deckOpen?: boolean;
+
+  blessings: BlessingDef[];
   log: string[];
-  rewardOptions?: CardData[]; // ตัวเลือกการ์ดตอนชนะคอมแบต
-  map?: MapState;
-  shopStock?: ShopItem[];     // ✅ สต็อกร้าน (มีราคา)
+
+  // Pages mode only
+  mapMode?: MapMode;
+  pages?: MapStatePages;
+
+  // Shop / Events
+  shopKind?: ShopKind;
+  shopStock?: ShopItem[];
   event?: EventState;
-  blessings: BlessingDef[];   // ✅ รายการพรที่ถืออยู่
-  // ธงต่อเทิร์น (กัน once-per-turn และ re-entrancy win)
+
+  // flags & counters
   turnFlags: {
     blessingOnce: Record<string, boolean>;
     equipmentOnce?: Record<string, boolean>;
   };
-  // === Equipment slots & inventory (เบื้องต้น) ===
-  equipmentSlotsMax?: number;     // จำนวนช่องสูงสุด
-  equipped?: EquipmentData[];     // อุปกรณ์ที่สวมอยู่ (ใช้งานได้เมื่อรวม slotCost <= slots)
-  backpack?: EquipmentData[];     // เก็บของที่ยังไม่สวม (ยังไม่ใช้ใน v1)  
-  runCounters?: RunCounters;        // นับ remove ต่อ run
-  combatVictoryLock?: boolean; // ✅ กัน re-entrancy “ชนะคอมแบต”  
-  masterDeck: CardData[];
-  deckOpen?: boolean;
+  runCounters?: RunCounters;
+  combatVictoryLock?: boolean;
+
+  // Level up
   levelUp?: {
-    // กล่องสุ่มหมวด (หนึ่งหมวดต่อการเลเวล)
     bucket: Bucket;
-    // ตัวเลือกย่อย (สำหรับ cards/blessing)
     cardChoices?: CardData[];
     blessingChoices?: BlessingDef[];
-    // สำหรับ remove/upgrade ต้องเลือกการ์ดจาก masterDeck → UI จะส่ง index กลับมาในคำสั่ง
-    consumed?: boolean; // กดเลือกแล้ว แต่รอ CompleteNode ปิด modal
-  } | null;  
+    consumed?: boolean;
+  } | null;
+
+  // Starter
   starter?: { choices: BlessingDef[]; consumed?: boolean } | null;
-  mapMode?: 'grid' | 'pages';
-  pages?: import('./map/pages').MapStatePages;  
-  shopKind?: 'card' | 'remove' | 'upgrade';
 };
 
+// ===== Commands =====
 export type Command =
+  // Run / Flow
   | { type: 'NewRun'; seed: string }
-  | { type: 'StartCombat' }
+  | { type: 'ChooseStarterBlessing'; index: number }
+  | { type: 'CompleteNode' }
+
+  // Combat (no StartCombat)
   | { type: 'PlayCard'; index: number }
   | { type: 'EndTurn' }
-  | { type: 'TakeReward'; index: number }
-  | { type: 'CompleteNode' }
-  | { type: 'EnterNode'; nodeId: string }
+
+  // Level Up
+  | { type: 'ChooseLevelUp'; index?: number }
+  | { type: 'SkipLevelUp' }
+
+  // UI
+  | { type: 'OpenDeck' }
+  | { type: 'CloseDeck' }  
+
+  // Shop (card)
   | { type: 'TakeShop'; index: number }
-  | { type: 'OpenDeck' }       // ✅ เปิดดูเด็ค
-  | { type: 'CloseDeck' }     // ✅ ปิดดูเด็ค  
-  | { type: 'ShopReroll' }                 // ✅ รีโรลสต็อก (เสียทอง)  
+  | { type: 'ShopReroll' }
+
+  // Shop (remove/upgrade)
+  | { type: 'ShopRemoveBuy'; index: number }
+  | { type: 'ShopUpgradeBuy'; index: number }
+
+  // Events
   | { type: 'DoBonfireHeal' }
   | { type: 'EventChooseBlessing'; index: number }
   | { type: 'EventRemoveCard'; pile: keyof DeckPiles; index: number }
   | { type: 'EventGambleRoll' }
-  | { type: 'EventTreasureOpen' }  
-  | { type: 'ChooseStarterBlessing'; index: number } // ✅ เลือกพรเริ่มเกม (ไม่มี skip/gold)
-  | { type: 'OpenPage' }
-  | { type: 'ChooseOffer'; index: number }
-  | { type: 'DismissOffer'; index: number }
-  | { type: 'Proceed' }  
-  // เลเวลอัพ
-  | { type: 'ChooseLevelUp'; index?: number } // index: สำหรับเลือกการ์ด/พร | สำหรับ remove/upgrade จะเป็น index ของ masterDeck
-  | { type: 'SkipLevelUp' }
-  | { type: 'ShopRemoveBuy'; index: number }   // index ใน masterDeck
-  | { type: 'ShopUpgradeBuy'; index: number }  // index ใน masterDeck
+  | { type: 'EventTreasureOpen' }
   | { type: 'DoWellUse' }
   | { type: 'DoWellDismiss' }
 
-  // QA/Debug (ผ่าน commands เท่านั้น)
+  // Pages
+  | { type: 'OpenPage' }
+  | { type: 'ChooseOffer'; index: number }
+  | { type: 'DismissOffer'; index: number }
+  | { type: 'Proceed' }
+
+  // QA / Debug
   | { type: 'QA_KillEnemy' }
   | { type: 'QA_Draw'; count: number }
   | { type: 'QA_SetEnergy'; value: number }
@@ -160,8 +184,7 @@ export type Command =
   | { type: 'QA_OpenRemove' }
   | { type: 'QA_OpenGamble' }
   | { type: 'QA_OpenTreasure' }
-  // QA สำหรับ pages
   | { type: 'QA_InitPages' }
-  | { type: 'QA_PrintPage' };  
+  | { type: 'QA_PrintPage' };
 
-  export type TurnCtx = { state: GameState };
+export type TurnCtx = { state: GameState };

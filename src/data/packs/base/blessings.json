@@ -1,13 +1,62 @@
 [
-  { "id": "regen_1",            "name": "Gentle Regeneration",   "rarity": "Common",   "desc": "Heal 1 at end of your turn." },
-  { "id": "bl_energy_first",    "name": "Battle Rhythm",          "rarity": "Uncommon","desc": "+1 energy on the first card each turn." },
-  { "id": "block_on_attack_2",  "name": "Deflecting Strikes",     "rarity": "Common",   "desc": "Gain 2 Block whenever you play an Attack." },
-  { "id": "start_block_3",      "name": "Steady Stance",          "rarity": "Uncommon","desc": "At the start of your turn, gain 3 Block." },
-  { "id": "energy_on_skill_first","name": "Tactical Flow",        "rarity": "Uncommon","desc": "The first Skill each turn gives +1 energy." },
-
-  { "id": "steel_skin_1",       "name": "Steel Skin",             "rarity": "Common",   "desc": "Gain 1 Block at end of turn." },
-  { "id": "blood_thirst_1",     "name": "Blood Thirst",           "rarity": "Uncommon","desc": "Heal 1 whenever you play an Attack." },
-  { "id": "attack_first_energy","name": "Opening Strike",         "rarity": "Uncommon","desc": "Your first Attack each turn gives +1 energy." },
-  { "id": "skill_shield_1",     "name": "Sage's Guard",           "rarity": "Common",   "desc": "Gain 1 Block whenever you play a Skill." },
-  { "id": "special_refund_1",   "name": "Refund Tactics",         "rarity": "Rare",    "desc": "First card with cost ≥1 each turn refunds +1 energy." }
+  {
+    "id": "regen_1",
+    "name": "Gentle Regeneration",
+    "rarity": "Common",
+    "desc": "Heal 1 at end of your turn."
+  },
+  {
+    "id": "bl_energy_first",
+    "name": "Battle Rhythm",
+    "rarity": "Uncommon",
+    "desc": "+1 energy on the first card each turn."
+  },
+  {
+    "id": "block_on_attack_2",
+    "name": "Deflecting Strikes",
+    "rarity": "Common",
+    "desc": "Gain 2 Block whenever you play an Attack."
+  },
+  {
+    "id": "start_block_3",
+    "name": "Steady Stance",
+    "rarity": "Uncommon",
+    "desc": "At the start of your turn, gain 3 Block."
+  },
+  {
+    "id": "energy_on_skill_first",
+    "name": "Tactical Flow",
+    "rarity": "Uncommon",
+    "desc": "The first Skill each turn gives +1 energy."
+  },
+  {
+    "id": "steel_skin_1",
+    "name": "Steel Skin",
+    "rarity": "Common",
+    "desc": "Gain 1 Block at end of turn."
+  },
+  {
+    "id": "blood_thirst_1",
+    "name": "Blood Thirst",
+    "rarity": "Uncommon",
+    "desc": "Heal 1 whenever you play an Attack."
+  },
+  {
+    "id": "attack_first_energy",
+    "name": "Opening Strike",
+    "rarity": "Common",
+    "desc": "Your first Attack each turn gives +1 energy."
+  },
+  {
+    "id": "skill_shield_1",
+    "name": "Sage's Guard",
+    "rarity": "Common",
+    "desc": "Gain 1 Block whenever you play a Skill."
+  },
+  {
+    "id": "special_refund_1",
+    "name": "Refund Tactics",
+    "rarity": "Uncommon",
+    "desc": "First card with cost \u22651 each turn refunds +1 energy."
+  }
 ]

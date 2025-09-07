@@ -73,16 +73,16 @@ export function qaOpenShopHere(s: GameState, _cmd: Extract<Command, { type: 'QA_
   return { state: s, rng: r };
 }
 
-export function takeReward(s: GameState, cmd: Extract<Command, { type: 'TakeReward' }>, r: RNG) {
-  if (s.phase !== 'reward' || !s.rewardOptions) return { state: s, rng: r };
-  const idx = cmd.index;
-  const chosen = s.rewardOptions[idx];
-  if (!chosen) return { state: s, rng: r };
-  s.masterDeck.push(JSON.parse(JSON.stringify(chosen)));
-  s.log.push(`Took reward: ${chosen.name}`);
-  s.rewardOptions = undefined;
-  return { state: s, rng: r };
-}
+// export function takeReward(s: GameState, cmd: Extract<Command, { type: 'TakeReward' }>, r: RNG) {
+//   if (s.phase !== 'reward' || !s.rewardOptions) return { state: s, rng: r };
+//   const idx = cmd.index;
+//   const chosen = s.rewardOptions[idx];
+//   if (!chosen) return { state: s, rng: r };
+//   s.masterDeck.push(JSON.parse(JSON.stringify(chosen)));
+//   s.log.push(`Took reward: ${chosen.name}`);
+//   s.rewardOptions = undefined;
+//   return { state: s, rng: r };
+// }
 
 export function takeShop(s: GameState, cmd: Extract<Command, { type: 'TakeShop' }>, r: RNG) {
   if (s.phase !== 'shop' || !s.shopStock) return { state: s, rng: r };
@@ -103,21 +103,6 @@ export function takeShop(s: GameState, cmd: Extract<Command, { type: 'TakeShop' 
   }  
   return { state: s, rng: r };
 }
-
-// export function shopReroll(s: GameState, _cmd: Extract<Command, { type: 'ShopReroll' }>, r: RNG) {
-//   if (s.phase !== 'shop') return { state: s, rng: r };
-//   const { SHOP_REROLL_COST } = require('../../balance/economy');
-//   if (s.player.gold < SHOP_REROLL_COST) {
-//     s.log.push('Shop: Not enough gold to reroll');
-//     return { state: s, rng: r };
-//   }
-//   s.player.gold -= SHOP_REROLL_COST;
-//   const { SHOP_STOCK_SIZE, SHOP_POWER_BIAS } = require('../../balance/weights');
-//   const stock = rollShopStock(r, SHOP_STOCK_SIZE, SHOP_POWER_BIAS); r = stock.rng;
-//   s.shopStock = stock.items;
-//   s.log.push(`Shop: rerolled (-${SHOP_REROLL_COST}g)`);
-//   return { state: s, rng: r };
-// }
 
 export function shopRemoveBuy(s: GameState, cmd: Extract<Command, { type: 'ShopRemoveBuy' }>, r: RNG) {
   if (s.phase !== 'shop' || s.shopKind !== 'remove') return { state: s, rng: r };
@@ -235,3 +220,46 @@ export function eventTreasureOpen(s: GameState, _cmd: Extract<Command, { type: '
   }
   return { state: s, rng: r };
 }
+
+// === Openers used by map_pages ==============================================
+export function openShopCard(s: GameState, r: RNG): { state: GameState; rng: RNG } {
+  try {
+    const { rollShopStock } = require('../../shop');
+    const out = rollShopStock(r, SHOP_STOCK_SIZE, SHOP_POWER_BIAS);
+    r = out.rng;
+    s.shopStock = out.items;
+  } catch {
+    const fb = fallbackShopStock(r, SHOP_STOCK_SIZE);
+    r = fb.rng;
+    s.shopStock = fb.items;
+    s.log.push('Shop(card): fallback stock.');
+  }
+  s.shopKind = 'card';
+  s.phase = 'shop';
+  s.log.push(`Shop(card): ${s.shopStock?.length ?? 0} items`);
+  return { state: s, rng: r };
+}
+
+export function openShopRemove(s: GameState, r: RNG): { state: GameState; rng: RNG } {
+  s.shopKind = 'remove';
+  s.phase = 'shop';
+  // ไม่จำเป็นต้องคำนวณราคา ณ จุดเปิดร้าน เพราะ UI อาจอ่านจาก removeCostForCount ตอนกดซื้อ
+  s.log.push(`Shop(remove): cost now = ${removeCostForCount(s.runCounters?.removeShopCount ?? 0)}g`);
+  return { state: s, rng: r };
+}
+
+export function openShopUpgrade(s: GameState, r: RNG): { state: GameState; rng: RNG } {
+  s.shopKind = 'upgrade';
+  s.phase = 'shop';
+  s.log.push(`Shop(upgrade): cost now = ${upgradeCostForCount(s.runCounters?.upgradeShopCount ?? 0)}g`);
+  return { state: s, rng: r };
+}
+
+export function openWell(s: GameState, r: RNG): { state: GameState; rng: RNG } {
+  // event แบบ well (ใช้/ปฏิเสธได้ 1 ครั้ง)
+  s.event = { type: 'well', used: false, dismissed: false } as any;
+  s.phase = 'event';
+  s.log.push('Event: well open');
+  return { state: s, rng: r };
+}
+// ============================================================================

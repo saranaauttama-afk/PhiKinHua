@@ -1,10 +1,9 @@
 // Pure functional RNG (mulberry32) — no Math.random
-// All ops are deterministic and state-threaded: functions return { rng, ... }
 
 export type RNG = { s: number }; // 32-bit state
 
 export function seedFromString(str: string): number {
-  // Simple 32-bit hash (xorshift-like) — deterministic for a given string
+  // Simple 32-bit hash (FNV-1a style) — deterministic for a given string
   let h = 2166136261 >>> 0;
   for (let i = 0; i < str.length; i++) {
     h ^= str.charCodeAt(i);
@@ -14,24 +13,26 @@ export function seedFromString(str: string): number {
   return (h || 0x9e3779b9) >>> 0;
 }
 
-export function makeRng(seed: number): RNG {
-  return { s: seed >>> 0 };
+export function makeRng(seed: number | string): RNG {
+  const s = typeof seed === 'string' ? seedFromString(seed) : (seed >>> 0);
+  return { s };
 }
 
-/** mulberry32 step: returns next float in [0,1) and advanced RNG */
+// mulberry32 step → returns a float in [0,1)
 export function next(rng: RNG): { rng: RNG; value: number } {
-  let a = (rng.s + 0x6d2b79f5) >>> 0;
-  let t = a;
-  t = Math.imul(t ^ (t >>> 15), t | 1);
-  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-  const v = ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  return { rng: { s: a }, value: v };
+  let t = (rng.s + 0x6D2B79F5) >>> 0;
+  let x = t;
+  x = Math.imul(x ^ (x >>> 15), x | 1);
+  x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
+  const v = ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  return { rng: { s: t >>> 0 }, value: v };
 }
 
 export function int(rng: RNG, min: number, max: number): { rng: RNG; value: number } {
-  const { rng: r2, value } = next(rng);
-  const span = max - min + 1;
-  return { rng: r2, value: min + Math.floor(value * span) };
+  if (max < min) max = min;
+  const span = (max - min + 1) >>> 0;
+  const n = next(rng);
+  return { rng: n.rng, value: min + Math.floor(n.value * span) };
 }
 
 export function shuffle<T>(rng: RNG, arr: T[]): { rng: RNG; array: T[] } {

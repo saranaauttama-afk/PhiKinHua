@@ -83,7 +83,7 @@ export function endTurn(s: GameState, _cmd: Extract<Command, { type: 'EndTurn' }
   endEnemyTurn(s);
   if (isDefeat(s)) {
     s.phase = 'defeat';
-    s.log.push('Defeat...');
+    s.log.push('Defeat..');
     return { state: s, rng: r };
   }
   runBlessingsTurnHook(s, 'on_turn_end');
