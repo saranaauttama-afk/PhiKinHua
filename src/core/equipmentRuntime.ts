@@ -51,7 +51,7 @@ const REGISTRY: Record<string, EquipBehavior> = {
   battle_rhythm_band: {
     oncePerTurn: true,
     on_card_played: ({ state: s /*, side */ }) => {
-      s.player.energy += 10;
+      s.player.energy += 1;
       s.log.push('Equip: Battle Rhythm (+1 energy on first play).');
     },
   },
