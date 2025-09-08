@@ -16,6 +16,7 @@ import { buildAndShuffleDeck, drawUpTo, startPlayerTurn } from '../../commands';
 import { resetBlessingTurnFlags, runBlessingsTurnHook } from '../../blessingRuntime';
 import { START_ENERGY } from '../../balance/core';
 import { buildAndShuffleEnemyDeck } from './enemy';
+import { runEquipmentOnEquip } from '../../equipmentRuntime';
 
 type ShopOpenFn = (s: GameState, r: RNG) => { state: GameState; rng: RNG };
 
@@ -73,6 +74,7 @@ function openPageInternal(s: GameState, mp: MapStatePages, r: RNG) {
   mp._activeOfferIndex = undefined;
   mp._shopUsed = false;
   s.phase = 'map';
+  (s as any).nodePhase = 'map_ready';
   s.log.push(
     `Page ${mp.pageIndex + 1}/${mp.totalPages}: ${offers
       .map((o: PageOffer) => formatOffer(o))
@@ -129,15 +131,29 @@ export function choose(s: GameState, cmd: Extract<Command, { type: 'ChooseOffer'
     case 'monster': {
       // เริ่มคอมแบต (normal/elite)
       s.phase = 'combat';
+      (s as any).nodePhase = 'in_combat';
       s.turn = 1;
+      // เคลียร์สเตตคอมแบตก่อนทุกครั้ง (ป้องกันหลงเหลือจากไฟต์ก่อน)
+      (s as any).enemyPiles = undefined;
+      (s as any).playerPiles = undefined;
+      (s as any).enemyIntentCardId = null;
+      s.player.block = 0;
+      s.player.energy = s.player.maxEnergy ?? START_ENERGY;
+
+      // เลือกศัตรู + สร้างเด็คศัตรู
       const res = pickEnemy(rng, offer.tier);
       rng = res.rng;
       s.enemy = res.enemy;
-      ({ state: s, rng: r } = buildAndShuffleEnemyDeck(s, r));
+      ({ state: s, rng } = buildAndShuffleEnemyDeck(s, rng));
+      // ตั้ง intent แสดงล่วงหน้า (ไพ่บนสุดของ draw)
+      (s as any).enemyIntentCardId = (s as any).enemyPiles?.draw?.[0] ?? null;
 
-      s.player.energy = START_ENERGY;
+      // สร้างเด็คผู้เล่น + จั่วมือแรก
       ({ state: s, rng } = buildAndShuffleDeck(s, rng));
       ({ state: s, rng } = drawUpTo(s, rng));
+
+      // ★ Equipment: battle-start hook (NOTM-style)
+      runEquipmentOnEquip(s); // ← จุดนี้
 
       // start-of-turn blessing hooks
       resetBlessingTurnFlags(s);
@@ -145,21 +161,31 @@ export function choose(s: GameState, cmd: Extract<Command, { type: 'ChooseOffer'
 
       mp._activeOfferIndex = ix;
       mp._shopUsed = false;
-      s.log.push(`ChooseOffer → combat (${offer.tier}) vs ${s.enemy?.name ?? 'Enemy'}`);
+      s.log.push(`ChooseOffer → combat (${offer.tier}) vs ${s.enemy?.id ?? s.enemy?.name ?? 'Enemy'}`);
       return { state: s, rng };
     }
 
     case 'boss': {
       s.phase = 'combat';
+      (s as any).nodePhase = 'in_combat';
       s.turn = 1;
+      (s as any).enemyPiles = undefined;
+      (s as any).playerPiles = undefined;
+      (s as any).enemyIntentCardId = null;
+      s.player.block = 0;
+      s.player.energy = s.player.maxEnergy ?? START_ENERGY;
+
       const res = pickEnemy(rng, 'boss');
       rng = res.rng;
       s.enemy = res.enemy;
-      ({ state: s, rng: r } = buildAndShuffleEnemyDeck(s, r));
+      ({ state: s, rng } = buildAndShuffleEnemyDeck(s, rng));
+      (s as any).enemyIntentCardId = (s as any).enemyPiles?.draw?.[0] ?? null;
 
-      s.player.energy = START_ENERGY;
       ({ state: s, rng } = buildAndShuffleDeck(s, rng));
       ({ state: s, rng } = drawUpTo(s, rng));
+
+      // ★ Equipment: battle-start hook (NOTM-style)
+      runEquipmentOnEquip(s); // ← จุดนี้      
 
       resetBlessingTurnFlags(s);
       runBlessingsTurnHook(s, 'on_turn_start');
@@ -282,7 +308,11 @@ export function completeNode(s: GameState, _cmd: Extract<Command, { type: 'Compl
 
       // คอมแบตธรรมดา → กลับหน้า map
       s.phase = 'map';
+      (s as any).nodePhase = 'map_ready';
       s.enemy = undefined;
+      (s as any).enemyPiles = undefined;
+      (s as any).playerPiles = undefined;
+      (s as any).enemyIntentCardId = null;
       s.player.block = 0;
       s.player.energy = s.player.maxEnergy ?? START_ENERGY;
     }

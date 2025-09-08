@@ -6,34 +6,75 @@ import { rollTwoBlessings } from '../../level';
 import { START_ENERGY } from '../../balance/core';
 import { initPageMap, rollPageOffers } from '../../map/pages';
 
+// export function newRun(
+//   s: GameState,
+//   cmd: Extract<Command, { type: 'NewRun' }>,
+//   r: RNG
+// ) {
+//   // สร้าง state ใหม่ตามปกติ
+//   s = baseNewState(cmd.seed);
+//   s.blessings = s.blessings ?? [];
+//   s.turnFlags = s.turnFlags ?? { blessingOnce: {} };
+//   // นับรอบร้านลบ/อัปเกรดไว้ที่นี่ตั้งแต่ต้น run
+//   s.runCounters = { removed: 0, removeShopCount: 0, upgradeShopCount: 0 };
+
+//   // เด็คตั้งต้น → masterDeck
+//   const { START_DECK } = require('../../balance/core');
+//   s.masterDeck = JSON.parse(JSON.stringify(START_DECK));
+
+//   // ✅ Equipment defaults
+//   s.equipmentSlotsMax = s.equipmentSlotsMax ?? 1;
+//   s.equipped = s.equipped ?? [];
+//   s.backpack = s.backpack ?? [];
+
+//   // ✅ ใช้ PAGES MODE เสมอ (ตัดระบบ Map เดิมทิ้ง)
+//   s.mapMode = 'pages';
+//   //s.map = undefined; // กันหลงเหลือค่าเก่า
+//   const init = initPageMap(r); r = init.rng;
+//   s.pages = init.map;
+
+//   // Starter blessing (เลือกก่อนเข้าเพจแรก)
+//   s.levelUp = null;
+//   const bb = rollTwoBlessings(r); r = bb.rng;
+//   s.starter = { choices: bb.list, consumed: false };
+//   s.phase = 'starter';
+//   return { state: s, rng: r };
+// }
 export function newRun(
   s: GameState,
   cmd: Extract<Command, { type: 'NewRun' }>,
   r: RNG
 ) {
-  // สร้าง state ใหม่ตามปกติ
   s = baseNewState(cmd.seed);
   s.blessings = s.blessings ?? [];
   s.turnFlags = s.turnFlags ?? { blessingOnce: {} };
-  // นับรอบร้านลบ/อัปเกรดไว้ที่นี่ตั้งแต่ต้น run
   s.runCounters = { removed: 0, removeShopCount: 0, upgradeShopCount: 0 };
+  s.turnFlags.equipmentOnce = {};
 
-  // เด็คตั้งต้น → masterDeck
   const { START_DECK } = require('../../balance/core');
   s.masterDeck = JSON.parse(JSON.stringify(START_DECK));
 
-  // ✅ Equipment defaults
-  s.equipmentSlotsMax = s.equipmentSlotsMax ?? 2;
+  // ✅ Equipment defaults (ปรับเป็น 1 ช่องสำหรับการทดสอบ)
+  s.equipmentSlotsMax = 1;              // <— เปลี่ยนจาก 2 เป็น 1 (test)
   s.equipped = s.equipped ?? [];
   s.backpack = s.backpack ?? [];
 
-  // ✅ ใช้ PAGES MODE เสมอ (ตัดระบบ Map เดิมทิ้ง)
+  // ✅ แจกอุปกรณ์ทดสอบ 1 ชิ้น ถ้ายังว่าง
+  if (s.equipped.length === 0) {
+    s.equipped.push({
+      id: 'battle_rhythm_band',
+      name: 'Battle Rhythm Band',
+      slotCost: 1,
+    } as any);
+    s.log?.push?.('[dev] Granted test equipment: Battle Rhythm Band (slot 1/1).');
+  }
+
+  // ✅ ใช้ PAGES MODE เสมอ
   s.mapMode = 'pages';
-  //s.map = undefined; // กันหลงเหลือค่าเก่า
   const init = initPageMap(r); r = init.rng;
   s.pages = init.map;
 
-  // Starter blessing (เลือกก่อนเข้าเพจแรก)
+  // Starter blessing
   s.levelUp = null;
   const bb = rollTwoBlessings(r); r = bb.rng;
   s.starter = { choices: bb.list, consumed: false };

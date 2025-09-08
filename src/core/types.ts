@@ -103,6 +103,27 @@ export type ShopKind = 'card' | 'remove' | 'upgrade';
 export type MapMode = 'pages';
 export type MapStatePages = import('./map/pages').MapStatePages;
 
+// Equipment
+export type TurnSide = 'player' | 'enemy';
+
+export type EquipmentHookEvent =
+  | { type: 'battle_start' }
+  | { type: 'turn_start'; side: TurnSide }
+  | { type: 'turn_end'; side: TurnSide }
+  | { type: 'card_played'; side: TurnSide; cardId: string; amount?: number }
+  | { type: 'damage_dealt'; side: TurnSide; amount: number; target: 'player' | 'enemy' };
+
+export interface EquipmentInstance {
+  id: string; // unique per run
+  modifierId: string; // refers to effect/behavior id (data-driven)
+  oncePerTurn?: boolean; // simple gate; advanced rates can extend
+}
+
+export interface EquipmentRuntimeState {
+  items: EquipmentInstance[];
+  turnStamp: number; // increases every turn (player + enemy turns)
+  onceGate: Record<string, number>; // equipment.id -> lastTurnStampUsed
+}
 export type GameState = {
   seed: string;
   phase: Phase;
@@ -115,7 +136,7 @@ export type GameState = {
     hand: string[];
     discard: string[];
   };
-  enemyEnergy?: number;  
+  enemyEnergy?: number;
 
   piles: DeckPiles;
   masterDeck: CardData[];
@@ -154,6 +175,10 @@ export type GameState = {
 
   // Starter
   starter?: { choices: BlessingDef[]; consumed?: boolean } | null;
+
+  runtime?: {
+    equipment?: EquipmentRuntimeState;
+  };
 };
 
 // ===== Commands =====
@@ -173,7 +198,7 @@ export type Command =
 
   // UI
   | { type: 'OpenDeck' }
-  | { type: 'CloseDeck' }  
+  | { type: 'CloseDeck' }
 
   // Shop (card)
   | { type: 'TakeShop'; index: number }

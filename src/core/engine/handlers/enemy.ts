@@ -207,17 +207,34 @@ export function runEnemyTurn(s: GameState) {
   // จั่วถึงขนาดมือ
   enemyDrawUpToHand(s);
 
-  // เล่นการ์ดจากซ้ายไปขวา (ง่าย ๆ) เท่าที่พลังงานพอ
+  const piles = (s as any).enemyPiles as { draw: string[]; hand: string[]; discard: string[] };
+  const startHand = piles?.hand?.length ?? 0;
+  const maxPlays = startHand; // จำกัดจำนวนเล่นไม่เกินขนาดมือเริ่มเทิร์น
+  let plays = 0;
+
+  // Log เริ่มเทิร์น
+  s.log.push(`Enemy turn: hand=${startHand}, energy=${(s as any).enemyEnergy}`);
+
+  // เล่นการ์ดจากซ้ายไปขวา เท่าที่พลังงานพอ / ไม่เกินขนาดมือเริ่มต้น
   while (true) {
-    let played = false;
+    let playedThisScan = false;
     for (let i = 0; i < ((s as any).enemyPiles?.hand.length ?? 0); i++) {
-      if (enemyPlayCardId(s, i)) { played = true; break; }
+      if (plays >= maxPlays) break;
+      if (enemyPlayCardId(s, i)) {
+        plays++;
+        playedThisScan = true;
+        break;
+      }
     }
-    if (!played) break;
+    if (plays >= maxPlays) break;
+    if (!playedThisScan) break;
   }
 
-  // จบท้าย: ทิ้งการ์ดที่เหลือในมือ
+   // จบท้าย: ทิ้งการ์ดที่เหลือในมือ
+  const endHandBeforeDiscard = (s as any).enemyPiles?.hand?.length ?? 0;
   enemyDiscardHand(s);
+  s.log.push(`Enemy end turn: played ${plays}/${startHand}, leftover=${endHandBeforeDiscard - plays}`);
+
 
   // ตั้ง intent preview สำหรับเทิร์นถัดไป = ไพ่บนสุดของ draw (ถ้ามี)
   (s as any).enemyIntentCardId = (s as any).enemyPiles.draw[0];

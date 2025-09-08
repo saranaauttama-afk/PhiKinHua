@@ -7,6 +7,7 @@ import { shuffle, type RNG } from './rng';
 import { resetBlessingTurnFlags } from './blessingRuntime';
 import { enemyCardById } from './pack_enemy_cards';
 import type { EnemyCard } from './types';
+import { resetEquipmentTurnFlags, runEquipmentTurnHook } from './equipmentRuntime';
 
 // NOTE: We keep state updates pure by working on shallow copies of containers.
 const clone = <T,>(x: T): T => JSON.parse(JSON.stringify(x));
@@ -96,10 +97,29 @@ export function buildAndShuffleDeck(_state: GameState, _rng: RNG): { state: Game
 }
 
 export function startPlayerTurn(state: GameState, rng: RNG): { state: GameState; rng: RNG } {
+  // resetEquipmentTurnFlags(state);
+  // state.player.energy = state.player.maxEnergy ?? START_ENERGY;
+  // state.player.block = 0;
+  // resetBlessingTurnFlags(state); // ✅ ให้พรแบบ once-per-turn ยิงได้ใหม่
+  // return drawUpTo(state,rng ,state.player.maxHandSize ?? HAND_SIZE);
+  // ★ รีเซ็ต once-per-turn ของอุปกรณ์สำหรับเทิร์นใหม่นี้
+  resetEquipmentTurnFlags(state);
+
+  // ขั้นตอนพื้นฐาน
   state.player.energy = state.player.maxEnergy ?? START_ENERGY;
   state.player.block = 0;
-  resetBlessingTurnFlags(state); // ✅ ให้พรแบบ once-per-turn ยิงได้ใหม่
-  return drawUpTo(state,rng ,state.player.maxHandSize ?? HAND_SIZE);
+
+  // จั่วให้ครบมือก่อน (ถ้าต้องการให้เอฟเฟกต์ start-turn รู้จักมือใหม่)
+  const out = drawUpTo(state, rng, state.player.maxHandSize ?? HAND_SIZE);
+  state = out.state; rng = out.rng;
+
+  // ★ ยิง on_turn_start (ฝั่งผู้เล่น)
+  runEquipmentTurnHook(state, 'on_turn_start', 'player');
+
+  // เดิม: ให้พร reset ที่อื่นด้วย แต่ถ้าจะคงไว้ตรงนี้ก็ได้
+  resetBlessingTurnFlags(state);
+
+  return { state, rng };  
 }
 
 export function applyCardEffect(state: GameState, idxInHand: number) {
@@ -161,10 +181,6 @@ function stepNextEnemyCard(s: GameState) {
 }
 
 export function endEnemyTurn(state: GameState) {
-  // if (!state.enemy) return;
-  // const dmg = Math.max(0, state.enemy.dmg - state.player.block);
-  // state.player.hp = Math.max(0, state.player.hp - dmg);
-  // state.player.block = 0;
-  playEnemyCard(state);
-  stepNextEnemyCard(state);
+  const { runEnemyTurn } = require('./engine/handlers/enemy');
+  runEnemyTurn(state);  
 }

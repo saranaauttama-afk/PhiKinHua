@@ -6,6 +6,7 @@ import { buildAndShuffleDeck, drawUpTo, applyCardEffect, endEnemyTurn, isVictory
 import { resetBlessingTurnFlags, runBlessingsTurnHook, getCardPlayedFns } from '../../blessingRuntime';
 import { START_ENERGY } from '../../balance/core';
 import { grantExpAndQueueLevelUp } from '../shared';
+import { runEquipmentCardPlayed, runEquipmentTurnHook } from '../../equipmentRuntime';
 
 export function play(s: GameState, cmd: Extract<Command, { type: 'PlayCard' }>, r: RNG) {
   if (s.phase !== 'combat' || s.combatVictoryLock) return { state: s, rng: r };
@@ -27,7 +28,8 @@ export function play(s: GameState, cmd: Extract<Command, { type: 'PlayCard' }>, 
 
   // effect
   applyCardEffect(s, idx);
-
+// ★ แจ้งอุปกรณ์ว่า “ผู้เล่นเล่นการ์ด”
+runEquipmentCardPlayed(s, played, 'player');
   // blessings on_card_played
   try {
     for (const b of (s.blessings ?? [])) {
@@ -61,6 +63,10 @@ export function play(s: GameState, cmd: Extract<Command, { type: 'PlayCard' }>, 
 
 export function endTurn(s: GameState, _cmd: Extract<Command, { type: 'EndTurn' }>, r: RNG) {
   if (s.phase !== 'combat') return { state: s, rng: r };
+
+  // ★ ปลายเทิร์นผู้เล่น → ยิงอุปกรณ์ก่อนสลับฝั่ง
+runEquipmentTurnHook(s, 'on_turn_end', 'player');
+
   endEnemyTurn(s);
   if (isDefeat(s)) {
     s.phase = 'defeat';

@@ -94,6 +94,11 @@ export default function Home() {
   const hand = state.piles.hand;
   const enemy = state.enemy;
 
+  // ---- NEW: ข้อมูลอุปกรณ์สำหรับ UI
+  const equipped = state.equipped ?? [];
+  const equipSlotsMax = state.equipmentSlotsMax ?? 0;
+  const equipDisplayName = (e: any) => e?.name ?? e?.id ?? 'Unknown';
+
   const header = useMemo(() => {
     return `${state.phase.toUpperCase()}  •  Turn ${state.turn || 0}`;
   }, [state.phase, state.turn]);
@@ -119,6 +124,27 @@ export default function Home() {
           <View className="px-3 py-2 rounded-xl bg-fuchsia-700/40">
             <Text className="text-white">Hand {hand.length}/{HAND_SIZE}</Text>
           </View>
+        </View>
+
+        <View className="mb-3 p-3 rounded-2xl bg-fuchsia-900/20 border border-fuchsia-700/30">
+          <View className="flex-row items-center justify-between mb-2">
+            <Text className="text-white font-semibold">Equipment</Text>
+            <Text className="text-white/80 text-xs">
+              {equipped.length}/{equipSlotsMax} slot{equipSlotsMax === 1 ? '' : 's'}
+            </Text>
+          </View>
+
+          {equipped.length === 0 ? (
+            <Text className="text-white/70 text-xs">No equipment equipped.</Text>
+          ) : (
+            <View className="flex-row flex-wrap gap-2">
+              {equipped.map((eq: any, idx: number) => (
+                <View key={`${eq.id}-${idx}`} className="px-2 py-1 rounded-xl bg-fuchsia-700/40">
+                  <Text className="text-white text-xs">{equipDisplayName(eq)}</Text>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* ===== Blessings ===== */}
@@ -201,11 +227,11 @@ export default function Home() {
                       ))}
                     </View>
                   );
-                case 'max_hp':     return <Btn label="+5 Max HP" onPress={() => dispatch({ type: 'ChooseLevelUp' })} />;
+                case 'max_hp': return <Btn label="+5 Max HP" onPress={() => dispatch({ type: 'ChooseLevelUp' })} />;
                 case 'max_energy': return <Btn label="+1 Max Energy" onPress={() => dispatch({ type: 'ChooseLevelUp' })} />;
-                case 'max_hand':   return <Btn label="+1 Max Hand Size" onPress={() => dispatch({ type: 'ChooseLevelUp' })} />;
+                case 'max_hand': return <Btn label="+1 Max Hand Size" onPress={() => dispatch({ type: 'ChooseLevelUp' })} />;
                 case 'gold':
-                default:           return <Btn label="+25 Gold" onPress={() => dispatch({ type: 'ChooseLevelUp' })} />;
+                default: return <Btn label="+25 Gold" onPress={() => dispatch({ type: 'ChooseLevelUp' })} />;
               }
             })()}
 
