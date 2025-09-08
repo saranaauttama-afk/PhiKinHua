@@ -11,8 +11,15 @@ export function qaKillEnemy(s: GameState, _cmd: Extract<Command, { type: 'QA_Kil
   if (s.enemy.hp <= 0) {
     r = grantExpAndQueueLevelUp(s, r);
     s.combatVictoryLock = true;
-    s.phase = 'victory';
-    s.log.push('Victory!');
+    
+    // Check if level up is pending - go to levelup phase first
+    if (s.levelUp && !s.levelUp.consumed) {
+      s.phase = 'levelup';
+      s.log.push('Level Up!');
+    } else {
+      s.phase = 'victory';
+      s.log.push('Victory!');
+    }
   }
   return { state: s, rng: r };
 }

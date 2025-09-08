@@ -5,6 +5,93 @@ import { baseNewState } from '../../commands';
 import { rollTwoBlessings } from '../../level';
 import { START_ENERGY } from '../../balance/core';
 import { initPageMap, rollPageOffers } from '../../map/pages';
+import { getEquipmentById } from '../../pack';
+
+// Auto-equip equipment cards from starting deck and remove equipped cards from deck
+function autoEquipStartingCards(s: GameState) {
+  if (!s.masterDeck) return;
+
+  const equipmentCards = s.masterDeck.filter(card => card.type === 'equipment');
+  const equippedCardIds: string[] = [];
+  
+  for (const card of equipmentCards) {
+    if (!card.equipmentId) continue;
+    
+    // Get equipment data from pack
+    const equipmentData = getEquipmentById(card.equipmentId);
+    if (!equipmentData) continue;
+    
+    // Check if we have slot space
+    const currentSlotUsage = (s.equipped || []).reduce((sum, eq) => sum + (eq.slotCost || 1), 0);
+    const maxSlots = s.equipmentSlotsMax || 1;
+    const cardSlotCost = card.slotCost || equipmentData.slotCost || 1;
+    
+    if (currentSlotUsage + cardSlotCost <= maxSlots) {
+      // Check if this equipment is not already equipped
+      const alreadyEquipped = (s.equipped || []).some(eq => eq.id === card.equipmentId);
+      if (!alreadyEquipped) {
+        // Auto-equip the equipment
+        s.equipped = s.equipped || [];
+        s.equipped.push({
+          id: equipmentData.id,
+          name: equipmentData.name,
+          rarity: equipmentData.rarity,
+          slotCost: equipmentData.slotCost,
+          desc: equipmentData.desc,
+          tags: equipmentData.tags,
+          sourceCardId: card.id, // Track which card this came from
+          sourceCard: { ...card } // Keep full card data for returning later
+        } as any);
+        
+        // Mark card for removal from deck
+        equippedCardIds.push(card.id);
+        
+        s.log = s.log || [];
+        s.log.push(`Starting equipment: ${equipmentData.name || equipmentData.id}`);
+      }
+    } else {
+      // Put excess equipment in backpack
+      const equipmentData = getEquipmentById(card.equipmentId);
+      if (equipmentData) {
+        const alreadyInBackpack = (s.backpack || []).some(eq => eq.id === card.equipmentId);
+        if (!alreadyInBackpack) {
+          s.backpack = s.backpack || [];
+          s.backpack.push({
+            id: equipmentData.id,
+            name: equipmentData.name,
+            rarity: equipmentData.rarity,
+            slotCost: equipmentData.slotCost,
+            desc: equipmentData.desc,
+            tags: equipmentData.tags
+          });
+          
+          s.log = s.log || [];
+          s.log.push(`Equipment in backpack: ${equipmentData.name || equipmentData.id}`);
+        }
+      }
+    }
+  }
+
+  // Remove equipped equipment cards from masterDeck
+  if (equippedCardIds.length > 0) {
+    // Remove only the first instance of each equipped card
+    const remainingDeck: typeof s.masterDeck = [];
+    const toRemove = [...equippedCardIds];
+    
+    for (const card of s.masterDeck) {
+      const removeIndex = toRemove.indexOf(card.id);
+      if (removeIndex !== -1) {
+        toRemove.splice(removeIndex, 1); // Remove from removal list (only remove first occurrence)
+      } else {
+        remainingDeck.push(card);
+      }
+    }
+    
+    s.masterDeck = remainingDeck;
+    s.log = s.log || [];
+    s.log.push(`Removed ${equippedCardIds.length} equipped card(s) from deck`);
+  }
+}
 
 // export function newRun(
 //   s: GameState,
@@ -54,20 +141,13 @@ export function newRun(
   const { START_DECK } = require('../../balance/core');
   s.masterDeck = JSON.parse(JSON.stringify(START_DECK));
 
-  // ✅ Equipment defaults (ปรับเป็น 1 ช่องสำหรับการทดสอบ)
-  s.equipmentSlotsMax = 1;              // <— เปลี่ยนจาก 2 เป็น 1 (test)
+  // ✅ Equipment defaults
+  s.equipmentSlotsMax = 1;
   s.equipped = s.equipped ?? [];
   s.backpack = s.backpack ?? [];
 
-  // ✅ แจกอุปกรณ์ทดสอบ 1 ชิ้น ถ้ายังว่าง
-  if (s.equipped.length === 0) {
-    s.equipped.push({
-      id: 'battle_rhythm_band',
-      name: 'Battle Rhythm Band',
-      slotCost: 1,
-    } as any);
-    s.log?.push?.('[dev] Granted test equipment: Battle Rhythm Band (slot 1/1).');
-  }
+  // ✅ Auto-equip equipment cards from starting deck
+  autoEquipStartingCards(s);
 
   // ✅ ใช้ PAGES MODE เสมอ
   s.mapMode = 'pages';

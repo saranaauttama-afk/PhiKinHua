@@ -11,7 +11,7 @@
     "name": "Start Shield",
     "rarity": "Uncommon",
     "slotCost": 1,
-    "desc": "Gain 5 Block when combat begins."
+    "desc": "Gain 5 Block at the start of each turn."
   },
   {
     "id": "battle_rhythm_band",

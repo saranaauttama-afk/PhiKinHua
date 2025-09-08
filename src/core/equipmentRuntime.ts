@@ -36,11 +36,15 @@ const REGISTRY: Record<string, EquipBehavior> = {
       s.log.push(healed > 0 ? 'Equip: Regen Charm heals 1.' : 'Equip: Regen Charm (no effect).');
     },
   },
-  // ได้ Block 5 เมื่อเข้าคอมแบต
+  // ได้ Block 5 ตอนเริ่มไฟต์และทุกเทิร์น
   start_shield: {
-    on_equip: ({ state: s /*, side */ }) => {
+    on_battle_start: ({ state: s /*, side */ }) => {
       s.player.block = (s.player.block ?? 0) + 5;
-      s.log.push('Equip: Start Shield gives Block +5.');
+      s.log.push('Equip: Start Shield gives Block +5 (battle start).');
+    },
+    on_turn_start: ({ state: s /*, side */ }) => {
+      s.player.block = (s.player.block ?? 0) + 5;
+      s.log.push('Equip: Start Shield gives Block +5 (turn start).');
     },
   },
   // ใบแรกที่เล่นแต่ละเทิร์น +1 Energy (ทั้ง player/enemy ถ้าต้องการ ให้คุมด้วย side ใน call site)

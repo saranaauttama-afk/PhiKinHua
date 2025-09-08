@@ -17,8 +17,23 @@ import { resetBlessingTurnFlags, runBlessingsTurnHook } from '../../blessingRunt
 import { START_ENERGY } from '../../balance/core';
 import { buildAndShuffleEnemyDeck } from './enemy';
 import { runEquipmentOnEquip } from '../../equipmentRuntime';
+import { getEquipmentById } from '../../pack';
 
 type ShopOpenFn = (s: GameState, r: RNG) => { state: GameState; rng: RNG };
+
+// Remove temporary equipment after combat
+function removeTemporaryEquipment(s: GameState) {
+  if (!s.equipped) return;
+  
+  const permanentEquipment = s.equipped.filter(eq => !eq.temporary);
+  const removedCount = s.equipped.length - permanentEquipment.length;
+  
+  s.equipped = permanentEquipment;
+  
+  if (removedCount > 0) {
+    s.log.push(`Removed ${removedCount} temporary equipment`);
+  }
+}
 
 function resolveShops(): {
   openShopCard?: ShopOpenFn;
@@ -133,12 +148,17 @@ export function choose(s: GameState, cmd: Extract<Command, { type: 'ChooseOffer'
       s.phase = 'combat';
       (s as any).nodePhase = 'in_combat';
       s.turn = 1;
+      // PATCH: กัน PlayCard ไม่ทำงานเพราะ lock ค้างจากไฟต์ก่อน
+      s.combatVictoryLock = false;
       // เคลียร์สเตตคอมแบตก่อนทุกครั้ง (ป้องกันหลงเหลือจากไฟต์ก่อน)
       (s as any).enemyPiles = undefined;
       (s as any).playerPiles = undefined;
       (s as any).enemyIntentCardId = null;
       s.player.block = 0;
       s.player.energy = s.player.maxEnergy ?? START_ENERGY;
+      
+      // Set temporary equipment slots during combat  
+      s.equipmentTempSlots = 5; // Allow 5 additional equipment during combat
 
       // เลือกศัตรู + สร้างเด็คศัตรู
       const res = pickEnemy(rng, offer.tier);
@@ -169,11 +189,16 @@ export function choose(s: GameState, cmd: Extract<Command, { type: 'ChooseOffer'
       s.phase = 'combat';
       (s as any).nodePhase = 'in_combat';
       s.turn = 1;
+      // PATCH: กัน PlayCard ไม่ทำงานเพราะ lock ค้างจากไฟต์ก่อน
+      s.combatVictoryLock = false;
       (s as any).enemyPiles = undefined;
       (s as any).playerPiles = undefined;
       (s as any).enemyIntentCardId = null;
       s.player.block = 0;
       s.player.energy = s.player.maxEnergy ?? START_ENERGY;
+      
+      // Set temporary equipment slots during combat  
+      s.equipmentTempSlots = 5; // Allow 5 additional equipment during combat
 
       const res = pickEnemy(rng, 'boss');
       rng = res.rng;
@@ -302,6 +327,10 @@ export function completeNode(s: GameState, _cmd: Extract<Command, { type: 'Compl
 
       if (offer.kind === 'boss') {
         s.log.push('Boss defeated! Act cleared.');
+        // Clear temporary equipment slots
+        s.equipmentTempSlots = 0;
+        // Remove temporary equipment after boss combat too
+        removeTemporaryEquipment(s);
         // คง phase='victory' ให้ UI แสดงจบแอค
         return { state: s, rng };
       }
@@ -315,6 +344,12 @@ export function completeNode(s: GameState, _cmd: Extract<Command, { type: 'Compl
       (s as any).enemyIntentCardId = null;
       s.player.block = 0;
       s.player.energy = s.player.maxEnergy ?? START_ENERGY;
+      
+      // Clear temporary equipment slots
+      s.equipmentTempSlots = 0;
+      
+      // Remove temporary equipment after combat
+      removeTemporaryEquipment(s);
     }
     else if (s.phase === 'shop') {
       // ซื้อสำเร็จสักครั้งในร้านนี้ → ถือว่าใช้ช่องนี้

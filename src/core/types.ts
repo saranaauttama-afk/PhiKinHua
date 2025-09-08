@@ -10,7 +10,7 @@ export type BlessingDef = {
 };
 
 export type Rarity = 'Common' | 'Uncommon' | 'Rare';
-export type CardType = 'attack' | 'skill';
+export type CardType = 'attack' | 'skill' | 'equipment';
 
 export type CardData = {
   id: string;
@@ -23,6 +23,10 @@ export type CardData = {
   energyGain?: number;
   tags?: string[];
   rarity?: Rarity;
+  // Equipment card fields
+  equipmentId?: string;  // ID of equipment to install
+  slotCost?: number;     // Equipment slot cost
+  desc?: string;         // Equipment description
 };
 
 // Enemy
@@ -65,6 +69,9 @@ export type EquipmentData = {
   desc?: string;
   slotCost?: number; // default 1
   tags?: string[];
+  temporary?: boolean; // For equipment installed temporarily during combat
+  sourceCardId?: string; // ID of the equipment card that was consumed
+  sourceCard?: CardData; // Full card data of the consumed card
 };
 
 export type Phase =
@@ -163,6 +170,7 @@ export type GameState = {
   combatVictoryLock?: boolean;
 
   equipmentSlotsMax?: number;
+  equipmentTempSlots?: number; // Additional slots available during combat
   equipped?: EquipmentData[];
   backpack?: EquipmentData[];
   // Level up
@@ -222,6 +230,10 @@ export type Command =
   | { type: 'ChooseOffer'; index: number }
   | { type: 'DismissOffer'; index: number }
   | { type: 'Proceed' }
+
+  // Equipment Management
+  | { type: 'EquipFromDeck'; cardId: string }
+  | { type: 'UnequipToDeck'; equipmentId: string }
 
   // QA / Debug
   | { type: 'QA_KillEnemy' }

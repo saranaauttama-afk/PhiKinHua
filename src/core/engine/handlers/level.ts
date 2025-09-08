@@ -49,6 +49,9 @@ export function chooseLevelUp(s: GameState, cmd: Extract<Command, { type: 'Choos
       break;
   }
   s.levelUp.consumed = true;
+  
+  // After level up choice, go to victory phase
+  s.phase = 'victory';
   return { state: s, rng: r };
 }
 
@@ -56,5 +59,8 @@ export function skipLevelUp(s: GameState, _cmd: Extract<Command, { type: 'SkipLe
   if (s.phase !== 'levelup' || !s.levelUp || s.levelUp.consumed) return { state: s, rng: r };
   s.player.gold += 25;
   s.levelUp.consumed = true;
+  
+  // After skipping level up, go to victory phase
+  s.phase = 'victory';
   return { state: s, rng: r };
 }

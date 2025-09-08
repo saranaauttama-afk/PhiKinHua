@@ -4,6 +4,7 @@ import type { RNG } from '../rng';
 import { nextExpForLevel, EXP_KILL_NORMAL, EXP_KILL_ELITE, EXP_KILL_BOSS } from '../balance/progression';
 import { rollLevelUpBucket, rollTwoBlessings, rollTwoCards, type LevelBucket } from '../level';
 import { findNode } from '../map';
+import { goldRewardForVictory } from '../balance/economy';
 
 export function getCurrentNodeId(map?: any): string | undefined {
   if (!map) return undefined;
@@ -29,12 +30,32 @@ export function upgradeCard(c: CardData): CardData {
 
 export function grantExpAndQueueLevelUp(s: GameState, r: RNG): RNG {
   let gained = EXP_KILL_NORMAL;
+  let tier: 'normal' | 'elite' | 'boss' = 'normal';
+  
+  // Determine enemy tier for rewards
   if (s.map?.currentNodeId) {
+    // Old map mode
     const n = findNode(s.map, s.map.currentNodeId);
-    if (n?.kind === 'elite') gained = EXP_KILL_ELITE;
-    if (n?.kind === 'boss') gained = EXP_KILL_BOSS;
+    if (n?.kind === 'elite') { gained = EXP_KILL_ELITE; tier = 'elite'; }
+    if (n?.kind === 'boss') { gained = EXP_KILL_BOSS; tier = 'boss'; }
+  } else if (s.pages?.current && s.pages._activeOfferIndex != null) {
+    // Pages mode - get tier from active offer
+    const offer = s.pages.current.offers[s.pages._activeOfferIndex];
+    if (offer?.kind === 'monster') {
+      if (offer.tier === 'elite') { gained = EXP_KILL_ELITE; tier = 'elite'; }
+    } else if (offer?.kind === 'boss') {
+      gained = EXP_KILL_BOSS; tier = 'boss';
+    }
   }
+  
+  // Grant EXP
   s.player.exp += gained;
+  
+  // Grant Gold
+  const goldResult = goldRewardForVictory(tier, s.player.level, r);
+  if (goldResult.rng) r = goldResult.rng;
+  s.player.gold = (s.player.gold || 0) + goldResult.amount;
+  s.log.push(`Victory! +${gained} EXP, +${goldResult.amount} gold`);
 
   while (s.player.exp >= s.player.expToNext) {
     s.player.exp -= s.player.expToNext;

@@ -7,6 +7,8 @@ import {
   ENEMY_DECK_SIZE, ENEMY_HAND_SIZE,
   ENEMY_MAX_ENERGY_NORMAL, ENEMY_MAX_ENERGY_ELITE, ENEMY_MAX_ENERGY_BOSS
 } from '../../balance/core';
+import { runEquipmentTurnHook, runEquipmentCardPlayed, resetEquipmentTurnFlags } from '../../equipmentRuntime';
+// PATCH: import equipment hooks for enemy start/end & on_card_played
 
 type DeckConfig =
   | { lists: Array<{ id: string; weight: number; cards: string[] }>; handSize?: number; maxEnergy?: number }
@@ -157,8 +159,9 @@ function enemyPlayCardId(s: GameState, idx: number): boolean {
   const id = piles.hand[idx];
   const def = enemyCardById(id);
   if (!def) {
-    piles.discard.push(...piles.hand.splice(idx,1));
-    s.log.push(`Enemy discards unknown card ${id}.`);
+   // \1  // PATCH: notify equipment that ENEMY played a card
+  try { runEquipmentCardPlayed(s, { id }, 'enemy'); } catch (e) { /* ignore */ }
+s.log.push(`Enemy discards unknown card ${id}.`);
     return true;
   }
 
@@ -200,6 +203,10 @@ function enemyDiscardHand(s: GameState) {
 export function runEnemyTurn(s: GameState) {
   if (!s.enemy || !(s as any).enemyPiles) return;
 
+  // PATCH: equipment once-per-turn reset and start-turn hook for ENEMY
+  resetEquipmentTurnFlags(s);
+  runEquipmentTurnHook(s, 'on_turn_start', 'enemy');
+
   // เริ่มเทิร์นศัตรู
   s.enemy.block = 0;
   (s as any).enemyEnergy = (s as any).enemyMaxEnergy ?? ENEMY_MAX_ENERGY_NORMAL;
@@ -235,6 +242,8 @@ export function runEnemyTurn(s: GameState) {
   enemyDiscardHand(s);
   s.log.push(`Enemy end turn: played ${plays}/${startHand}, leftover=${endHandBeforeDiscard - plays}`);
 
+  // PATCH: equipment end-turn hook for ENEMY
+  runEquipmentTurnHook(s, 'on_turn_end', 'enemy');
 
   // ตั้ง intent preview สำหรับเทิร์นถัดไป = ไพ่บนสุดของ draw (ถ้ามี)
   (s as any).enemyIntentCardId = (s as any).enemyPiles.draw[0];

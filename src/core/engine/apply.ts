@@ -5,12 +5,12 @@ import { cloneForReducer } from './shared';
 
 import * as run from './handlers/run';
 import * as combat from './handlers/combat';
-// ❌ ลบ map_grid ออก
-// import * as mapgrid from './handlers/map_grid';
 import * as mappages from './handlers/map_pages';
 import * as lvl from './handlers/level';
 import * as se from './handlers/shops_events';
 import * as qa from './handlers/qa';
+import * as ui from './handlers/ui';
+import * as equipment from './handlers/equipment';
 
 type Handler<T extends Command['type']> =
   (s: GameState, cmd: Extract<Command, { type: T }>, r: RNG) => { state: GameState; rng: RNG };
@@ -32,6 +32,14 @@ const H: { [K in Command['type']]?: Handler<K> } = {
   // Level up
   ChooseLevelUp: lvl.chooseLevelUp,
   SkipLevelUp: lvl.skipLevelUp,
+
+  // UI
+  OpenDeck: ui.openDeck,
+  CloseDeck: ui.closeDeck,
+
+  // Equipment Management
+  EquipFromDeck: equipment.equipFromDeck,
+  UnequipToDeck: equipment.unequipToDeck,
 
   // Shops & Events
   // TakeReward: se.takeReward, // (เลิกใช้: reward-on-victory ถูกตัด)

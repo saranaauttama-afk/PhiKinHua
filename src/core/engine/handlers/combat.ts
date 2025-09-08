@@ -7,6 +7,7 @@ import { resetBlessingTurnFlags, runBlessingsTurnHook, getCardPlayedFns } from '
 import { START_ENERGY } from '../../balance/core';
 import { grantExpAndQueueLevelUp } from '../shared';
 import { runEquipmentCardPlayed, runEquipmentTurnHook } from '../../equipmentRuntime';
+import { getEquipmentById } from '../../pack';
 
 export function play(s: GameState, cmd: Extract<Command, { type: 'PlayCard' }>, r: RNG) {
   if (s.phase !== 'combat' || s.combatVictoryLock) return { state: s, rng: r };
@@ -14,7 +15,75 @@ export function play(s: GameState, cmd: Extract<Command, { type: 'PlayCard' }>, 
   if (idx < 0 || idx >= s.piles.hand.length) return { state: s, rng: r };
   const played = s.piles.hand[idx];
 
-  // energy paywall (basic=0, special>=1)
+  // Handle equipment cards - install temporarily
+  if (played.type === 'equipment' && played.equipmentId) {
+    s.log.push(`DEBUG: Attempting to play equipment card: ${played.name} (ID: ${played.id})`);
+    s.log.push(`DEBUG: Equipment ID to install: ${played.equipmentId}`);
+    
+    const equipmentData = getEquipmentById(played.equipmentId);
+    let equipmentInstalled = false;
+    
+    if (!equipmentData) {
+      s.log.push(`DEBUG: Equipment data not found for ID: ${played.equipmentId}`);
+    } else {
+      s.log.push(`DEBUG: Equipment data found: ${equipmentData.name} (ID: ${equipmentData.id})`);
+      
+      // Check if already equipped (either permanently or temporarily)
+      const alreadyEquipped = (s.equipped || []).some(eq => eq.id === equipmentData.id);
+      s.log.push(`DEBUG: Already equipped? ${alreadyEquipped}`);
+      s.log.push(`DEBUG: Current equipped: [${(s.equipped || []).map(eq => `${eq.name}(${eq.id})`).join(', ')}]`);
+      
+      if (!alreadyEquipped) {
+        // Calculate slot usage - during combat, we have additional temporary slots
+        const currentSlotUsage = (s.equipped || []).reduce((sum, eq) => sum + (eq.slotCost || 1), 0);
+        const baseSlots = s.equipmentSlotsMax || 1;
+        const tempSlots = s.equipmentTempSlots || 5; // Default 5 temp slots during combat
+        const maxSlots = baseSlots + tempSlots;
+        const cardSlotCost = played.slotCost || equipmentData.slotCost || 1;
+        
+        s.log.push(`DEBUG: Slot check - Current: ${currentSlotUsage}, Base: ${baseSlots}, Temp: ${tempSlots}, Total: ${maxSlots}, Need: ${cardSlotCost}`);
+        
+        if (currentSlotUsage + cardSlotCost <= maxSlots) {
+          // Install temporarily
+          s.equipped = s.equipped || [];
+          s.equipped.push({
+            id: equipmentData.id,
+            name: equipmentData.name,
+            rarity: equipmentData.rarity,
+            slotCost: equipmentData.slotCost,
+            desc: equipmentData.desc,
+            tags: equipmentData.tags,
+            temporary: true // Mark as temporary
+          } as any);
+          
+          equipmentInstalled = true;
+          s.log.push(`Temporarily equipped: ${equipmentData.name || equipmentData.id}`);
+          s.log.push(`DEBUG: Equipment count now ${s.equipped.length}, temp count: ${s.equipped.filter(eq => eq.temporary).length}`);
+        } else {
+          s.log.push(`DEBUG: Not enough equipment slots for ${equipmentData.name || equipmentData.id}`);
+          s.log.push(`Not enough equipment slots for ${equipmentData.name || equipmentData.id}`);
+        }
+      } else {
+        s.log.push(`DEBUG: ${equipmentData.name || equipmentData.id} is already equipped`);
+        s.log.push(`${equipmentData.name || equipmentData.id} is already equipped`);
+      }
+    }
+    
+    // Equipment cards are removed from hand
+    const [c] = s.piles.hand.splice(idx, 1);
+    
+    // If equipment was installed, remove the card completely (don't put in discard)
+    // If equipment couldn't be installed, put in discard as normal
+    if (!equipmentInstalled) {
+      s.piles.discard.push(c);
+    }
+    
+    s.log.push(`Played ${played.name}${equipmentInstalled ? ' (consumed)' : ' (failed)'}`);
+    s.log.push(`DEBUG: Card ${equipmentInstalled ? 'REMOVED from game' : 'went to discard'}`);
+    return { state: s, rng: r };
+  }
+
+  // energy paywall (basic=0, special>=1) - only for non-equipment cards
   const base = typeof (played as any).cost === 'number' ? (played as any).cost : 0;
   const cost = Math.max(0, Math.floor(base));
   if (cost > 0) {
@@ -55,8 +124,15 @@ runEquipmentCardPlayed(s, played, 'player');
   if (isVictory(s)) {
     r = grantExpAndQueueLevelUp(s, r);
     s.combatVictoryLock = true;
-    s.phase = 'victory';
-    s.log.push('Victory!');
+    
+    // Check if level up is pending - go to levelup phase first
+    if (s.levelUp && !s.levelUp.consumed) {
+      s.phase = 'levelup';
+      s.log.push('Level Up!');
+    } else {
+      s.phase = 'victory';
+      s.log.push('Victory!');
+    }
   }
   return { state: s, rng: r };
 }
@@ -71,6 +147,20 @@ runEquipmentTurnHook(s, 'on_turn_end', 'player');
   if (isDefeat(s)) {
     s.phase = 'defeat';
     s.log.push('Defeat..');
+    
+    // Clear temporary equipment slots
+    s.equipmentTempSlots = 0;
+    
+    // Remove temporary equipment on defeat
+    if (s.equipped) {
+      const permanentEquipment = s.equipped.filter(eq => !eq.temporary);
+      const removedCount = s.equipped.length - permanentEquipment.length;
+      s.equipped = permanentEquipment;
+      if (removedCount > 0) {
+        s.log.push(`Removed ${removedCount} temporary equipment`);
+      }
+    }
+    
     return { state: s, rng: r };
   }
   runBlessingsTurnHook(s, 'on_turn_end');

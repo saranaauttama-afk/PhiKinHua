@@ -1,7 +1,6 @@
 // Rewards — weighted draws for cards (used by shop/rewards)
 import type { CardData, Rarity } from './types';
 import { int, shuffle, next, type RNG } from './rng';
-//import { BY_RARITY } from './pack';
 import cardsJson from '../data/packs/base/cards.json';
 
 type CardJson = CardData & { starter?: number; inRewards?: boolean; inShop?: boolean };
@@ -96,8 +95,8 @@ export function rollRewardOptionsByTier(rng: RNG, tier: Tier): { rng: RNG; optio
   return { rng: r, options: out };
 }
 
-// ✅ เวอร์ชัน shop (เลือกรับฟรี 1 ใบ): bias inShop + ตัด starter ออก + ไม่ซ้ำในล็อต
-export function rollShopStock(rng: RNG, count = 5) {
+// ✅ เวอร์ชัน reward choices (เลือกรับฟรี 1 ใบ): bias inShop + ตัด starter ออก + ไม่ซ้ำในล็อต
+export function rollCardChoices(rng: RNG, count = 5) {
   let r = rng;
   const taken = new Set<string>();
   const out: CardData[] = [];

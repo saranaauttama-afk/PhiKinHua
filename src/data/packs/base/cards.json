@@ -26,6 +26,30 @@
     ]
   },
   {
+    "id": "equipment_regen_charm",
+    "name": "Regeneration Charm Card",
+    "type": "equipment",
+    "cost": 0,
+    "rarity": "Common",
+    "starter": 1,
+    "equipmentId": "regen_charm",
+    "slotCost": 1,
+    "desc": "Equipment Card: Install Regeneration Charm. Heal 1 HP at the end of your turn.",
+    "tags": ["equipment"]
+  },
+  {
+    "id": "equipment_start_shield",
+    "name": "Start Shield Card",
+    "type": "equipment",
+    "cost": 0,
+    "rarity": "Common",
+    "starter": 1,
+    "equipmentId": "start_shield",
+    "slotCost": 1,
+    "desc": "Equipment Card: Install Start Shield. Gain 5 Block at the start of each turn.",
+    "tags": ["equipment"]
+  },
+  {
     "id": "focus",
     "name": "Focus",
     "type": "skill",

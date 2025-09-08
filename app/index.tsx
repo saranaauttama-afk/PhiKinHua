@@ -2,23 +2,36 @@
 import 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import React, { useMemo, useState } from 'react';
-import { useCallback } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { create } from 'zustand';
 import type { Command, GameState } from '../src/core/types';
 import { applyCommand } from '../src/core/reducer';
+import { saveGame, loadGame, getSaveSlots, autoSave, type SaveSlotInfo } from '../src/core/storage';
 import { HAND_SIZE, START_ENERGY, START_HP } from '../src/core/balance/core';
 import { nextExpForLevel } from '../src/core/balance/progression';
 import { makeRng, seedFromString, type RNG } from '../src/core/rng';
 import { START_GOLD } from '../src/core/balance';
 import { removeCostForCount, upgradeCostForCount } from '../src/core/balance/economy';
 
+// Commands that should trigger auto-save
+function shouldAutoSave(cmdType: Command['type']): boolean {
+  const autoSaveCommands: Command['type'][] = [
+    'CompleteNode', 'ChooseLevelUp', 'TakeShop', 'EventChooseBlessing',
+    'ChooseOffer', 'Proceed', 'ShopRemoveBuy', 'ShopUpgradeBuy'
+  ];
+  return autoSaveCommands.includes(cmdType);
+}
+
 type Store = {
   state: GameState;
   rng: RNG;
   dispatch: (cmd: Command) => void;
   newRun: (seed: string) => void;
+  saveToSlot: (slot: number) => Promise<void>;
+  loadFromSlot: (slot: number) => Promise<void>;
+  getSaveSlots: () => Promise<SaveSlotInfo[]>;
+  autoSaveEnabled: boolean;
 };
 
 const makeEmptyState = (): GameState => ({
@@ -48,16 +61,32 @@ const makeEmptyState = (): GameState => ({
 const useGame = create<Store>((set, get) => ({
   state: makeEmptyState(),
   rng: makeRng(1),
+  autoSaveEnabled: true,
   dispatch: (cmd) => {
-    const { state, rng } = get();
+    const { state, rng, autoSaveEnabled } = get();
     const out = applyCommand(state, cmd, rng);
     set({ state: out.state, rng: out.rng });
+    
+    // Auto-save after important actions
+    if (autoSaveEnabled && shouldAutoSave(cmd.type)) {
+      autoSave(out.state).catch(err => console.warn('Auto-save failed:', err));
+    }
   },
   newRun: (seed: string) => {
     const r = makeRng(seedFromString(seed));
     const out = applyCommand(makeEmptyState(), { type: 'NewRun', seed }, r);
     set({ state: out.state, rng: out.rng });
   },
+  saveToSlot: async (slot: number) => {
+    const { state } = get();
+    await saveGame(state, slot);
+  },
+  loadFromSlot: async (slot: number) => {
+    const loadedState = await loadGame(slot);
+    const r = makeRng(seedFromString(loadedState.seed));
+    set({ state: loadedState, rng: r });
+  },
+  getSaveSlots: () => getSaveSlots(3),
 }));
 
 function Button({ title, onPress, disabled }: { title: string; onPress: () => void; disabled?: boolean }) {
@@ -72,8 +101,22 @@ function Button({ title, onPress, disabled }: { title: string; onPress: () => vo
 }
 
 export default function Home() {
-  const { state, dispatch, newRun } = useGame();
+  const { state, dispatch, newRun, saveToSlot, loadFromSlot, getSaveSlots } = useGame();
   const [seed, setSeed] = useState('demo-001');
+  const [saveSlots, setSaveSlots] = useState<SaveSlotInfo[]>([]);
+  const [showSaveLoad, setShowSaveLoad] = useState(false);
+  const [saveLoadError, setSaveLoadError] = useState<string>('');
+
+  // Load save slots when opening save/load panel
+  const refreshSaveSlots = async () => {
+    try {
+      const slots = await getSaveSlots();
+      setSaveSlots(slots);
+      setSaveLoadError('');
+    } catch (error) {
+      setSaveLoadError(`Failed to load save slots: ${error}`);
+    }
+  };
 
   const inCombat = state.phase === 'combat';
   const inMap = state.phase === 'map';
@@ -107,6 +150,7 @@ export default function Home() {
     <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
       <ScrollView contentContainerStyle={{ padding: 16, rowGap: 16 }}>
         <Text className="text-white/60 mb-2">Phase: {state.phase}</Text>
+        <Text className="text-white/60 mb-2">CombatLock: {state.combatVictoryLock ? 'LOCKED' : 'OK'}</Text>
         <Text className="text-white/60 mb-4">Log: {state.log.slice(-3).join(' | ')}</Text>
 
         {/* Header / HUD */}
@@ -274,6 +318,41 @@ export default function Home() {
                 <Text className="text-white/70 mt-1">
                   Intent: {enemy.intentCardId ?? '...'}
                 </Text>
+                
+                {/* Equipment Status During Combat */}
+                {(state.equipped && state.equipped.length > 0) && (
+                  <View className="mt-3 p-2 rounded-lg bg-amber-900/30 border border-amber-500/30">
+                    <Text className="text-amber-400 font-semibold text-sm mb-1">
+                      ⚔️ Active Equipment ({state.equipped.length}/{(state.equipmentSlotsMax || 1) + (state.equipmentTempSlots || 0)}):
+                    </Text>
+                    <View className="flex-row flex-wrap gap-1">
+                      {state.equipped.map((eq, i) => {
+                        const isTemp = eq.temporary;
+                        return (
+                          <View 
+                            key={`equipment-${eq.id}-${i}-${isTemp ? 'temp' : 'perm'}-${state.turn}`} 
+                            className={`px-2 py-1 rounded border ${
+                              isTemp 
+                                ? 'bg-orange-600/50 border-orange-400/60' 
+                                : 'bg-green-600/50 border-green-400/60'
+                            }`}
+                          >
+                            <Text className={`text-xs font-medium ${isTemp ? 'text-orange-100' : 'text-green-100'}`}>
+                              {eq.name || eq.id}{isTemp ? ' (TEMP)' : ''}
+                            </Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                    <Text className="text-amber-300/70 text-xs mt-1">
+                      Permanent: {state.equipped.filter(eq => !eq.temporary).length} | 
+                      Temporary: {state.equipped.filter(eq => eq.temporary).length}
+                    </Text>
+                    <Text className="text-amber-300/50 text-xs">
+                      Slots: Base({state.equipmentSlotsMax || 1}) + Temp({state.equipmentTempSlots || 0}) = {(state.equipmentSlotsMax || 1) + (state.equipmentTempSlots || 0)}
+                    </Text>
+                  </View>
+                )}
               </>
             ) : (
               <Text className="text-white/60">No enemy</Text>
@@ -284,17 +363,22 @@ export default function Home() {
         {/* ===== Deck toggle & list ===== */}
         <View style={{ marginTop: 8 }}>
           <Pressable
-            onPress={() => dispatch({ type: state.deckOpen ? 'CloseDeck' : 'OpenDeck' })}
-            style={{ alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: '#000', backgroundColor: 'rgba(0,0,0,0.35)' }}
+            onPress={inCombat ? undefined : () => dispatch({ type: state.deckOpen ? 'CloseDeck' : 'OpenDeck' })}
+            className={`px-4 py-2 rounded-2xl border self-start ${
+              inCombat 
+                ? 'bg-gray-600/50 border-gray-500/50 opacity-50' 
+                : 'bg-white/5 border-white/20 active:opacity-70'
+            }`}
           >
-            <Text style={{ color: '#000', fontWeight: '600' }}>
+            <Text className={`font-semibold ${inCombat ? 'text-gray-400' : 'text-white'}`}>
               {state.deckOpen ? 'Close Deck' : 'Open Deck'} ({state.masterDeck?.length ?? 0})
+              {inCombat && ' (Locked in Combat)'}
             </Text>
           </Pressable>
         </View>
 
         {state.deckOpen ? (
-          <View style={{ marginTop: 8, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#000', backgroundColor: 'rgba(0,0,0,0.25)' }}>
+          <View className="mt-4 p-4 rounded-2xl bg-zinc-800/70 border border-white/10">
             {(() => {
               const counts = new Map<string, { name: string; count: number }>();
               for (const c of state.masterDeck ?? []) {
@@ -304,12 +388,71 @@ export default function Home() {
                 counts.set(c.id, rec);
               }
               const list = Array.from(counts.values()).sort((a, b) => a.name.localeCompare(b.name));
-              if (!list.length) return <Text style={{ color: '#000' }}>Deck is empty.</Text>;
+              const equipmentCards = (state.masterDeck ?? []).filter(c => c.type === 'equipment');
+              
+              if (!list.length) return <Text className="text-white/60">Deck is empty.</Text>;
               return (
                 <View>
-                  <Text style={{ color: '#000', fontWeight: '700', marginBottom: 6 }}>Your Deck</Text>
+                  <Text className="text-white text-lg font-semibold mb-3">Your Deck ({state.masterDeck?.length} cards)</Text>
+                  
+                  {/* Equipment Management Section */}
+                  {(equipmentCards.length > 0 || (state.equipped && state.equipped.length > 0)) && (
+                    <View className="mb-4 p-3 rounded-lg bg-zinc-700/50 border border-amber-500/30">
+                      <Text className="text-amber-400 font-semibold mb-2">⚔️ Equipment ({(state.equipped ?? []).length}/{state.equipmentSlotsMax ?? 1})</Text>
+                      
+                      {/* Currently Equipped */}
+                      {(state.equipped ?? []).map((eq, i) => (
+                        <View key={i} className="flex-row justify-between items-center mb-2 p-2 rounded bg-green-900/30">
+                          <View>
+                            <Text className="text-green-300 font-semibold">{eq.name || eq.id}</Text>
+                            <Text className="text-green-300/70 text-sm">{eq.desc}</Text>
+                            {eq.temporary && <Text className="text-orange-300 text-xs">TEMPORARY</Text>}
+                          </View>
+                          {!eq.temporary && (
+                            <Pressable
+                              onPress={() => dispatch({ type: 'UnequipToDeck', equipmentId: eq.id })}
+                              className="px-2 py-1 rounded bg-red-600/50 active:opacity-70"
+                            >
+                              <Text className="text-red-200 text-sm">Unequip</Text>
+                            </Pressable>
+                          )}
+                        </View>
+                      ))}
+                      
+                      {/* Equipment Cards in Deck */}
+                      {equipmentCards.map((card, i) => {
+                        const isEquipped = (state.equipped ?? []).some(eq => eq.id === card.equipmentId);
+                        const currentSlotUsage = (state.equipped ?? []).reduce((sum, eq) => sum + (eq.slotCost || 1), 0);
+                        const maxSlots = state.equipmentSlotsMax || 1;
+                        const canEquip = !isEquipped && currentSlotUsage < maxSlots;
+                        
+                        return (
+                          <View key={card.id + i} className={`flex-row justify-between items-center mb-2 p-2 rounded ${isEquipped ? 'bg-gray-600/30' : 'bg-blue-900/30'}`}>
+                            <View>
+                              <Text className={`font-semibold ${isEquipped ? 'text-gray-400' : 'text-blue-300'}`}>{card.name || card.id}</Text>
+                              <Text className={`text-sm ${isEquipped ? 'text-gray-400' : 'text-blue-300/70'}`}>{card.desc}</Text>
+                              {isEquipped && <Text className="text-gray-400 text-xs">EQUIPPED</Text>}
+                            </View>
+                            {canEquip && (
+                              <Pressable
+                                onPress={() => dispatch({ type: 'EquipFromDeck', cardId: card.id })}
+                                className="px-2 py-1 rounded bg-blue-600/50 active:opacity-70"
+                              >
+                                <Text className="text-blue-200 text-sm">Equip</Text>
+                              </Pressable>
+                            )}
+                            {!canEquip && !isEquipped && (
+                              <Text className="text-red-400 text-xs">No Slots</Text>
+                            )}
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
+                  
+                  {/* Regular Deck List */}
                   {list.map((it, idx) => (
-                    <Text key={`${it.name}-${idx}`} style={{ color: '#000', lineHeight: 20 }}>
+                    <Text key={`${it.name}-${idx}`} className="text-white/80 mb-1">
                       {it.name} × {it.count}
                     </Text>
                   ))}
@@ -398,7 +541,7 @@ export default function Home() {
         <Text className="text-white font-semibold mb-2">Hand</Text>
         <View className="flex-row gap-2 flex-wrap">
           {hand.map((c, i) => {
-            const disabled = !inCombat || state.player.energy < (c.cost ?? 0);
+            const disabled = !inCombat || state.combatVictoryLock || state.player.energy < (c.cost ?? 0);
             return (
               <Pressable
                 key={i}
@@ -407,10 +550,16 @@ export default function Home() {
               >
                 <Text className="text-white font-semibold">{c.name}</Text>
                 <Text className="text-white/70">Cost {c.cost ?? 0}</Text>
-                {c.dmg ? <Text className="text-red-300">DMG {c.dmg}</Text> : null}
-                {c.block ? <Text className="text-sky-300">Block {c.block}</Text> : null}
-                {c.energyGain ? <Text className="text-amber-300">Energy {c.energyGain}</Text> : null}
-                {c.draw ? <Text className="text-emerald-300">Draw {c.draw}</Text> : null}
+                {c.type === 'equipment' ? (
+                  <Text className="text-amber-300">⚔️ Equipment</Text>
+                ) : (
+                  <>
+                    {c.dmg ? <Text className="text-red-300">DMG {c.dmg}</Text> : null}
+                    {c.block ? <Text className="text-sky-300">Block {c.block}</Text> : null}
+                    {c.energyGain ? <Text className="text-amber-300">Energy {c.energyGain}</Text> : null}
+                    {c.draw ? <Text className="text-emerald-300">Draw {c.draw}</Text> : null}
+                  </>
+                )}
               </Pressable>
             );
           })}
@@ -635,6 +784,89 @@ export default function Home() {
           </View>
         )}
 
+        {/* ===== Save/Load Panel ===== */}
+        {showSaveLoad && (
+          <View className="rounded-2xl p-4 bg-zinc-800/80 border border-white/10 mb-4">
+            <View className="flex-row items-center justify-between mb-3">
+              <Text className="text-white text-lg font-semibold">Save/Load Game</Text>
+              <Pressable 
+                onPress={() => setShowSaveLoad(false)}
+                className="px-3 py-1 rounded-xl bg-red-700/40"
+              >
+                <Text className="text-white font-semibold">✕</Text>
+              </Pressable>
+            </View>
+            
+            {saveLoadError ? (
+              <Text className="text-red-300 mb-3">{saveLoadError}</Text>
+            ) : null}
+
+            <View className="mb-3">
+              <Pressable 
+                onPress={refreshSaveSlots}
+                className="px-4 py-2 rounded-2xl border bg-white/5 border-white/20 active:opacity-70 mb-3"
+              >
+                <Text className="text-white font-semibold">Refresh Save Slots</Text>
+              </Pressable>
+              
+              {saveSlots.map((slot, idx) => (
+                <View key={slot.slot} className="flex-row items-center justify-between mb-2 p-3 rounded-xl bg-zinc-900/50">
+                  <View className="flex-1">
+                    <Text className="text-white font-semibold">Slot {slot.slot + 1}</Text>
+                    {slot.exists ? (
+                      <>
+                        <Text className="text-white/70 text-sm">
+                          Level {slot.playerLevel} • {slot.gold}g
+                        </Text>
+                        <Text className="text-white/60 text-sm">
+                          Page {slot.currentPage}/{slot.totalPages}
+                        </Text>
+                        <Text className="text-white/50 text-xs">
+                          {slot.savedAt ? new Date(slot.savedAt).toLocaleString() : 'Unknown time'}
+                        </Text>
+                      </>
+                    ) : (
+                      <Text className="text-white/50 text-sm">Empty</Text>
+                    )}
+                  </View>
+                  <View className="flex-row gap-2">
+                    <Pressable 
+                      onPress={async () => {
+                        try {
+                          await saveToSlot(slot.slot);
+                          await refreshSaveSlots();
+                          setSaveLoadError('');
+                        } catch (error) {
+                          setSaveLoadError(`Save failed: ${error}`);
+                        }
+                      }}
+                      className="px-3 py-2 rounded-xl bg-green-700/40 active:opacity-70"
+                      disabled={state.phase === 'menu'}
+                    >
+                      <Text className="text-white text-sm font-semibold">Save</Text>
+                    </Pressable>
+                    <Pressable 
+                      onPress={async () => {
+                        try {
+                          await loadFromSlot(slot.slot);
+                          setShowSaveLoad(false);
+                          setSaveLoadError('');
+                        } catch (error) {
+                          setSaveLoadError(`Load failed: ${error}`);
+                        }
+                      }}
+                      className="px-3 py-2 rounded-xl bg-blue-700/40 active:opacity-70"
+                      disabled={!slot.exists}
+                    >
+                      <Text className="text-white text-sm font-semibold">Load</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
         {/* ===== Controls / QA ===== */}
         <View className="rounded-2xl p-4 bg-zinc-800/50 border border-white/10 mb-4">
           <Text className="text-white/80 mb-2">Seed</Text>
@@ -648,6 +880,15 @@ export default function Home() {
           <View className="flex-row gap-2 mt-3 flex-wrap">
             <Button title="New Run" onPress={() => newRun(seed)} />
             <Button title="End Turn" onPress={() => dispatch({ type: 'EndTurn' })} disabled={!inCombat} />
+            <Button 
+              title={showSaveLoad ? "Close Save/Load" : "Save/Load Game"} 
+              onPress={() => {
+                setShowSaveLoad(!showSaveLoad);
+                if (!showSaveLoad) {
+                  refreshSaveSlots();
+                }
+              }} 
+            />
           </View>
           <View className="flex-row gap-2 mt-3 flex-wrap">
             <Button title="QA: Kill Enemy" onPress={() => dispatch({ type: 'QA_KillEnemy' })} disabled={!inCombat} />
