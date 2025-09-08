@@ -36,6 +36,7 @@ export const BY_RARITY: Record<Rarity, CardData[]> = {
   Common: ALL_CARDS.filter(c => c.rarity === 'Common' && (CARD_LIST.find(x => x.id === c.id)?.inRewards ?? true)),
   Uncommon: ALL_CARDS.filter(c => c.rarity === 'Uncommon' && (CARD_LIST.find(x => x.id === c.id)?.inRewards ?? true)),
   Rare: ALL_CARDS.filter(c => c.rarity === 'Rare' && (CARD_LIST.find(x => x.id === c.id)?.inRewards ?? true)),
+  Legendary: ALL_CARDS.filter(c => c.rarity === 'Legendary' && (CARD_LIST.find(x => x.id === c.id)?.inRewards ?? true)),
 };
 
 // สุ่มศัตรูตาม tier ด้วย RNG (deterministic)
@@ -86,6 +87,7 @@ export const BLESSINGS_BY_RARITY: Record<Rarity, BlessingDef[]> = {
   Common: BLESSING_POOL.filter(b => b.rarity === 'Common'),
   Uncommon: BLESSING_POOL.filter(b => b.rarity === 'Uncommon'),
   Rare: BLESSING_POOL.filter(b => b.rarity === 'Rare'),
+  Legendary: BLESSING_POOL.filter(b => b.rarity === 'Legendary'),
 };
 
 // === Equipment (base pack) ===

@@ -12,6 +12,7 @@ function buildPools() {
     Common: [],
     Uncommon: [],
     Rare: [],
+    Legendary: [],
   };
   const pool = (Array.isArray(cardsBase) ? cardsBase : []).filter(
     (c: any) => c && (c.inShop === true || typeof c.cost === 'number')
@@ -35,6 +36,7 @@ function priceForCard(c: CardData, act = 1): number {
 
   if (c.rarity === 'Uncommon') price += 20;
   if (c.rarity === 'Rare') price += 50;
+  if (c.rarity === 'Legendary') price += 120;
 
   // ปรับขึ้นเล็กน้อยตาม act
   price = Math.round(price * (1 + 0.05 * (act - 1)));
@@ -52,8 +54,8 @@ export function rollShopStock(
   const taken = new Set<string>();
 
   // น้ำหนักเลือก Rarity
-  const weights: Record<Rarity, number> = { Common: 60, Uncommon: 30, Rare: 10 };
-  const total = weights.Common + weights.Uncommon + weights.Rare;
+  const weights: Record<Rarity, number> = { Common: 55, Uncommon: 30, Rare: 13, Legendary: 2 };
+  const total = weights.Common + weights.Uncommon + weights.Rare + weights.Legendary;
 
   // พูลตาม rarity (อัปเดตครั้งเดียวตอนเรียก)
   const BY_RARITY = buildPools();
@@ -74,14 +76,15 @@ export function rollShopStock(
     let rar: Rarity = 'Common';
     if ((v -= weights.Common) <= 0) rar = 'Common';
     else if ((v -= weights.Uncommon) <= 0) rar = 'Uncommon';
-    else rar = 'Rare';
+    else if ((v -= weights.Rare) <= 0) rar = 'Rare';
+    else rar = 'Legendary';
 
     // พยายามหยิบจาก rarity ที่สุ่มได้ก่อน
     let card = pickFromRarity(rar);
 
     // ถ้าหมวดนั้นหมด ลอง fallback ไปหมวดอื่นที่ยังเหลือ
     if (!card) {
-      card = pickFromRarity('Uncommon') ?? pickFromRarity('Common') ?? pickFromRarity('Rare');
+      card = pickFromRarity('Uncommon') ?? pickFromRarity('Common') ?? pickFromRarity('Rare') ?? pickFromRarity('Legendary');
     }
     if (!card) break; // การ์ดหมดจริง ๆ
 

@@ -173,7 +173,8 @@ export function choose(s: GameState, cmd: Extract<Command, { type: 'ChooseOffer'
       ({ state: s, rng } = drawUpTo(s, rng));
 
       // ★ Equipment: battle-start hook (NOTM-style)
-      runEquipmentOnEquip(s); // ← จุดนี้
+      runEquipmentOnEquip(s); // Player equipment
+      runEquipmentOnEquip(s, 'enemy'); // Enemy equipment
 
       // start-of-turn blessing hooks
       resetBlessingTurnFlags(s);
@@ -210,7 +211,8 @@ export function choose(s: GameState, cmd: Extract<Command, { type: 'ChooseOffer'
       ({ state: s, rng } = drawUpTo(s, rng));
 
       // ★ Equipment: battle-start hook (NOTM-style)
-      runEquipmentOnEquip(s); // ← จุดนี้      
+      runEquipmentOnEquip(s); // Player equipment
+      runEquipmentOnEquip(s, 'enemy'); // Enemy equipment      
 
       resetBlessingTurnFlags(s);
       runBlessingsTurnHook(s, 'on_turn_start');

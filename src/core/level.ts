@@ -37,16 +37,57 @@ export function rollLevelUpBucket(rng: RNG, s: GameState): { rng: RNG; bucket: L
   return { rng: r, bucket };
 }
 
-export function rollTwoCards(rng: RNG) {
+export function rollThreeCards(rng: RNG, playerLevel = 1) {
   let r = rng;
-  const pool: CardData[] = [...BY_RARITY.Common, ...BY_RARITY.Uncommon, ...BY_RARITY.Rare];
-  const sh = shuffle(r, pool); r = sh.rng;
-  return { rng: r, list: sh.array.slice(0, Math.min(2, sh.array.length)).map(c => ({ ...c })) };
+  
+  // ปรับน้ำหนักตาม level
+  let commonWeight = 100;
+  let uncommonWeight = 0;
+  let rareWeight = 0;
+  let legendaryWeight = 0;
+  
+  if (playerLevel >= 1 && playerLevel <= 3) {
+    // Level 1-3: Common only
+    commonWeight = 100;
+  } else if (playerLevel >= 4 && playerLevel <= 6) {
+    // Level 4-6: 70% Common, 30% Uncommon
+    commonWeight = 70;
+    uncommonWeight = 30;
+  } else {
+    // Level 7+: 50% Common, 40% Uncommon, 10% Rare, 0.5% Legendary
+    commonWeight = 50;
+    uncommonWeight = 40;
+    rareWeight = 10;
+    legendaryWeight = 0.5;
+  }
+  
+  const cards: CardData[] = [];
+  
+  for (let i = 0; i < 3; i++) {
+    const roll = Math.random() * 100;
+    let selectedPool: CardData[] = BY_RARITY.Common;
+    
+    if (roll < legendaryWeight && BY_RARITY.Legendary.length > 0) {
+      selectedPool = BY_RARITY.Legendary;
+    } else if (roll < legendaryWeight + rareWeight && BY_RARITY.Rare.length > 0) {
+      selectedPool = BY_RARITY.Rare;
+    } else if (roll < legendaryWeight + rareWeight + uncommonWeight && BY_RARITY.Uncommon.length > 0) {
+      selectedPool = BY_RARITY.Uncommon;
+    }
+    
+    if (selectedPool.length > 0) {
+      const cardRoll = int(r, 0, selectedPool.length - 1);
+      r = cardRoll.rng;
+      cards.push({ ...selectedPool[cardRoll.value] });
+    }
+  }
+  
+  return { rng: r, list: cards };
 }
 
 export function rollTwoBlessings(rng: RNG) {
   let r = rng;
-  const pool: BlessingDef[] = [...BLESSINGS_BY_RARITY.Common, ...BLESSINGS_BY_RARITY.Uncommon, ...BLESSINGS_BY_RARITY.Rare];
+  const pool: BlessingDef[] = [...BLESSINGS_BY_RARITY.Common, ...BLESSINGS_BY_RARITY.Uncommon, ...BLESSINGS_BY_RARITY.Rare, ...BLESSINGS_BY_RARITY.Legendary];
   const sh = shuffle(r, pool); r = sh.rng;
   return { rng: r, list: sh.array.slice(0, Math.min(2, sh.array.length)).map(b => ({ ...b })) };
 }

@@ -319,7 +319,31 @@ export default function Home() {
                   Intent: {enemy.intentCardId ?? '...'}
                 </Text>
                 
-                {/* Equipment Status During Combat */}
+                {/* Enemy Equipment Display */}
+                {(enemy.equipped && enemy.equipped.length > 0) && (
+                  <View className="mt-3 p-2 rounded-lg bg-red-900/30 border border-red-500/30">
+                    <Text className="text-red-400 font-semibold text-sm mb-1">
+                      🛡️ Enemy Equipment ({enemy.equipped.length}):
+                    </Text>
+                    <View className="flex-row flex-wrap gap-1">
+                      {enemy.equipped.map((eq, i) => (
+                        <View 
+                          key={`enemy-equipment-${eq.id}-${i}`} 
+                          className="px-2 py-1 rounded border bg-red-600/50 border-red-400/60"
+                        >
+                          <Text className="text-red-100 text-xs font-medium">
+                            {eq.name || eq.id}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                    <Text className="text-red-300/70 text-xs mt-1">
+                      {enemy.equipped.map(eq => eq.desc).join(', ')}
+                    </Text>
+                  </View>
+                )}
+                
+                {/* Player Equipment Status During Combat */}
                 {(state.equipped && state.equipped.length > 0) && (
                   <View className="mt-3 p-2 rounded-lg bg-amber-900/30 border border-amber-500/30">
                     <Text className="text-amber-400 font-semibold text-sm mb-1">
@@ -894,6 +918,8 @@ export default function Home() {
             <Button title="QA: Kill Enemy" onPress={() => dispatch({ type: 'QA_KillEnemy' })} disabled={!inCombat} />
             <Button title="QA: Draw 1" onPress={() => dispatch({ type: 'QA_Draw', count: 1 })} disabled={!inCombat} />
             <Button title="QA: Energy=3" onPress={() => dispatch({ type: 'QA_SetEnergy', value: 3 })} disabled={!inCombat} />
+            <Button title="QA: Armed Bandit" onPress={() => dispatch({ type: 'QA_SpawnEquippedEnemy', enemyId: 'armed_bandit' })} />
+            <Button title="QA: Vampire Lord" onPress={() => dispatch({ type: 'QA_SpawnEquippedEnemy', enemyId: 'vampire_elite' })} />
             <Button title="QA: Blessing Demo" onPress={() => dispatch({ type: 'QA_AddBlessingDemo' })} />
             <Button title="QA: Equip Demo" onPress={() => dispatch({ type: 'QA_AddEquipmentDemo' })} />
             <Button title="QA: Open Shop" onPress={() => dispatch({ type: 'QA_OpenShopHere' })} />

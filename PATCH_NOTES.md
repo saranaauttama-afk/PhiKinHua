@@ -1,6 +1,91 @@
 # Patch Notes
 
-## 🔥 Latest: Equipment Card System (Major Update)
+## 🆕 Latest: Thai Shaman (หมอผีไทย) Complete System (Major Update)
+
+### 🎯 **Thai Shaman Card System - Full Implementation**
+**Date**: 2025-09-08
+**Status**: Ready for Testing
+
+#### 🎴 **Starter Deck Changes**
+- **ปาไผ่เผา** (Bamboo Dart): 4 ใบ - แทน Strike (5 damage + burn effect)
+- **ผ้าเย็น** (Cooling Cloth): 4 ใบ - แทน Defend (5 block + cleanse debuffs)  
+- **นั่งสมาธิ** (Meditation): 1 ใบ - แทน Focus (0 cost: draw 1, +1 energy)
+- **Equipment Cards**: ผ้าเย็นถาวร + เครื่องรางหลวงปู่
+
+#### 🏪 **Shop System Updates**
+- เพิ่ม **Legendary** rarity (2% drop chance)
+- ปรับราคา: Common 30-80, Uncommon 50-120, Rare 80-200, Legendary 150-300
+- Thai cards มีราคาตาม complexity และ rarity
+
+#### ⬆️ **Level Up Rewards (3-Card System)**
+- เปลี่ยนจาก 2 ใบเป็น **3 ใบ**
+- Level 1-3: Common only
+- Level 4-6: 70% Common, 30% Uncommon  
+- Level 7+: 50% Common, 40% Uncommon, 10% Rare, 0.5% Legendary
+
+#### 🎯 **Thai Shaman Cards (40+ Cards)**
+
+**0 Energy Cards (Free Play)**
+- **ปาไผ่เผา**: 5 damage + burn 2/turn for 2 turns
+- **ผงเจ้าพ่อ**: 4 block + curse enemy if they attack  
+- **ผ้าเย็น**: 5 block + cleanse all debuffs
+- **กระซิบผี**: 3 damage + draw 1
+- **หลบผี**: 2 block + draw 1
+- **ยาสมุนไพร**: heal 4 HP + cleanse 1 debuff
+
+**1+ Energy Cards**
+- **เสียงระฆัง**: 1 cost, 6 block + weaken enemy 1 turn
+- **เสกเข็มปัก**: 1 cost, 7 damage (+4 if enemy has debuff)
+- **นั่งสมาธิ**: 0 cost, draw 1 + gain 1 energy
+- **เรียกผีเก่า**: 1 cost, summon Ghost Ally (3 HP, 4 attack, 3 turns)
+- **ดูดวิญญาณ**: 1 cost, 5 damage + heal equal to damage (Uncommon)
+- **เสกคาถาสาป**: 1 cost, 4 damage + Cursed 3 turns
+- **พิธีบวงสรวง**: 1 cost, retrieve 3 cards from discard (Exhaust)
+
+**Advanced Cards**
+- **ทรงผี**: 2 cost, 0-cost cards unlimited this turn + draw 2 (Uncommon)
+- **เปิดประตูนรก**: 3 cost, 20 damage + summon 2 Demon Minions (Rare)
+- **ยาชาววัง**: 2 cost, heal 8 HP + permanent +2 Max HP (Exhaust, Uncommon)
+- **สร้างกุมาร**: 2 cost, summon Kuman (8 HP, heal 2/turn) (Exhaust, Uncommon)
+- **วงเกลือศักดิ์สิทธิ์**: 2 cost, 10 block + Sanctuary (-50% next damage) (Uncommon)
+
+**Rare/Legendary Cards**  
+- **ผีตายโหง**: 2 cost, 12 damage (x2 if HP < 50%) (Rare)
+- **อาถรรพ์ดำ**: 3 cost, all enemies HP = 1 (Exhaust, once per fight) (Legendary)
+- **เทพารักษ์**: 3 cost, full heal + immunity 3 turns (Exhaust) (Legendary)
+- **วิญญาณบรรพบุรุษ**: 1 cost, copy last played card (free) (Legendary)
+
+#### ⚙️ **Thai Shaman Equipment System**
+- **ผ้าเย็นถาวร**: heal 2 HP per turn start (Common, Starter)
+- **เครื่องรางหลวงปู่**: reduce all damage by 1 (Uncommon, Starter)
+- **ลูกประคำ**: attack cards +1 damage (Uncommon)
+- **กะโหลกนางตานี**: draw 1 when enemy dies (Rare)
+- **ไม้เท้าหมอผี**: first card each turn costs -1 energy (Rare)
+
+#### 🎮 **Playstyle Design**
+หมอผีไทยเน้นการใช้การ์ดฟรี (0 energy) เป็นหลัก พร้อมด้วย:
+- **Utility Focus**: การรักษา, การล้างสถานะ, การจั่วการ์ด
+- **Minion Support**: เรียกผีและปีศาจมาช่วยสู้
+- **Conditional Power**: การ์ดที่แรงขึ้นตามเงื่อนไข (debuffs, HP threshold)
+- **Equipment Synergy**: อุปกรณ์ที่เสริมสร้าง playstyle
+
+#### 🔧 **Technical Implementation**
+- เพิ่ม Legendary rarity support ใน types, shop, pack, level systems
+- เพิ่ม 5 Thai Equipment definitions และ runtime behaviors  
+- ปรับ balance การ์ดใหม่ให้เหมาะกับ 0-energy playstyle
+- แก้ไข JSON format errors และเพิ่ม Equipment เข้า registry
+- ปรับ level-up เป็น 3-card system พร้อม level-based rarity scaling
+
+#### 📝 **Balance Changes**
+- **ผงเจ้าพ่อ**: ลด block 5→4 (การ์ดฟรีที่แรงเกินไป)
+- **เสียงระฆัง**: เพิ่ม cost 0→1, เพิ่ม block 3→6 (ให้คุ้มค่า 1 energy)
+- **เสกเข็มปัก**: ลด base damage 8→7, เพิ่ม conditional 3→4
+- **ดูดวิญญาณ**: ลด damage 6→5, เปลี่ยนเป็น Uncommon (lifesteal แรงมาก)
+- **ยาสมุนไพร**: ลด cost 1→0, ลด healing 6→4 (เป็นการ์ดฟรี utility)
+
+---
+
+## 🔥 Previous: Equipment Card System (Major Update)
 
 ### Equipment Cards & Dynamic Installation System
 **Date**: Current Session

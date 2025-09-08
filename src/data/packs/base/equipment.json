@@ -19,5 +19,45 @@
     "rarity": "Rare",
     "slotCost": 1,
     "desc": "First card you play each turn grants +1 Energy."
+  },
+  {
+    "id": "cooling_cloth_equipment",
+    "name": "ผ้าเย็นถาวร",
+    "rarity": "Common",
+    "slotCost": 1,
+    "desc": "ฟื้นฟู 2 HP ต้นเทิร์น",
+    "tags": ["thai", "shaman", "heal"]
+  },
+  {
+    "id": "luang_pu_amulet",
+    "name": "เครื่องรางหลวงปู่",
+    "rarity": "Uncommon",
+    "slotCost": 1,
+    "desc": "ลดดาเมจที่รับ 1 แต้ม",
+    "tags": ["thai", "shaman", "defense"]
+  },
+  {
+    "id": "prayer_beads",
+    "name": "ลูกประคำ",
+    "rarity": "Uncommon",
+    "slotCost": 1,
+    "desc": "เมื่อเล่นการ์ดโจมตี +1 ดาเมจ",
+    "tags": ["thai", "shaman", "attack"]
+  },
+  {
+    "id": "nang_tani_skull",
+    "name": "กะโหลกนางตานี",
+    "rarity": "Rare",
+    "slotCost": 1,
+    "desc": "เมื่อศัตรูตาย จั่วการ์ด 1 ใบ",
+    "tags": ["thai", "shaman", "draw"]
+  },
+  {
+    "id": "shaman_staff",
+    "name": "ไม้เท้าหมอผี",
+    "rarity": "Rare",
+    "slotCost": 1,
+    "desc": "การ์ดแรกแต่ละเทิร์น ใช้ Energy -1",
+    "tags": ["thai", "shaman", "energy"]
   }
 ]

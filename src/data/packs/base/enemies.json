@@ -91,6 +91,42 @@
   },
 
   {
+    "id": "armed_bandit",
+    "name": "Armed Bandit",
+    "tier": "normal",
+    "hp": 32,
+    "maxHp": 32,
+    "block": 0,
+    "equipped": [
+      {
+        "id": "start_shield",
+        "name": "Start Shield",
+        "rarity": "Uncommon",
+        "slotCost": 1,
+        "desc": "Gain 5 Block at the start of each turn."
+      }
+    ],
+    "deck": {
+      "lists": [
+        { "id": "equipped", "weight": 100, "cards": ["claw","swipe","claw","claw","swipe","claw","swipe","claw","claw","swipe","claw","claw"] }
+      ],
+      "pool": {
+        "allowOwners": ["global","bandit"],
+        "include": [
+          { "id": "claw",  "w": 6 },
+          { "id": "swipe", "w": 4 }
+        ],
+        "minAttack": 6,
+        "minBlock": 2
+      },
+      "handSize": 3,
+      "maxEnergy": 2
+    },
+    "ai": { "playOrder": "atk_first" },
+    "scaling": { "dmgPerAct": 1, "blockPerAct": 1 }
+  },
+
+  {
     "id": "sentry",
     "name": "Rusty Sentry",
     "tier": "normal",
@@ -198,6 +234,43 @@
     },
     "ai": { "playOrder": "cheap_first" },
     "scaling": { "dmgPerAct": 2, "blockPerAct": 2 }
+  },
+
+  {
+    "id": "vampire_elite",
+    "name": "Vampire Lord",
+    "tier": "elite",
+    "hp": 75,
+    "maxHp": 75,
+    "block": 0,
+    "equipped": [
+      {
+        "id": "regen_charm",
+        "name": "Regeneration Charm",
+        "rarity": "Common",
+        "slotCost": 1,
+        "desc": "Heal 1 HP at the end of your turn."
+      }
+    ],
+    "deck": {
+      "lists": [
+        { "id": "lifesteal", "weight": 100, "cards": ["swipe","swipe","guard","maul","guard","swipe","maul","guard","swipe","guard","maul","swipe"] }
+      ],
+      "pool": {
+        "allowOwners": ["global","vampire_elite"],
+        "include": [
+          { "id": "swipe", "w": 5 },
+          { "id": "maul",  "w": 3 },
+          { "id": "guard", "w": 3 }
+        ],
+        "minAttack": 10,
+        "minBlock": 6
+      },
+      "handSize": 4,
+      "maxEnergy": 3
+    },
+    "ai": { "playOrder": "atk_first" },
+    "scaling": { "dmgPerAct": 2, "blockPerAct": 1 }
   },
 
   {

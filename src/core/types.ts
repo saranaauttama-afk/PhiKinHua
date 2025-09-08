@@ -9,7 +9,7 @@ export type BlessingDef = {
   on_card_played?: BlessingFn | BlessingCardHookConfig;
 };
 
-export type Rarity = 'Common' | 'Uncommon' | 'Rare';
+export type Rarity = 'Common' | 'Uncommon' | 'Rare' | 'Legendary';
 export type CardType = 'attack' | 'skill' | 'equipment';
 
 export type CardData = {
@@ -50,9 +50,10 @@ export type EnemyState = {
   block: number;
   // ↓ เพิ่มใหม่ (E1)
   ai?: { cycle: string[]; index: number }; // อ้างถึง enemy card id
-  intentCardId?: string;                    // ใบที่จะเล่น “เทิร์นนี้”
+  intentCardId?: string;                    // ใบที่จะเล่น "เทิร์นนี้"
   maxEnergy?: number;  // ค่าพลังงานสูงสุดของศัตรู (ต่อเทิร์น)
   handSize?: number;   // จำนวนการ์ดที่จั่วตอนเริ่มเทิร์นศัตรู
+  equipped?: EquipmentData[];  // ศัตรูก็มี equipment ได้เหมือนกัน
 };
 
 export type DeckPiles = {
@@ -247,6 +248,7 @@ export type Command =
   | { type: 'QA_OpenGamble' }
   | { type: 'QA_OpenTreasure' }
   | { type: 'QA_InitPages' }
-  | { type: 'QA_PrintPage' };
+  | { type: 'QA_PrintPage' }
+  | { type: 'QA_SpawnEquippedEnemy'; enemyId?: string };
 
 export type TurnCtx = { state: GameState };

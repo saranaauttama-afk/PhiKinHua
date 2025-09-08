@@ -1,8 +1,12 @@
 // src/core/engine/handlers/qa.ts
 import type { Command, GameState } from '../../types';
 import type { RNG } from '../../rng';
-import { drawUpTo } from '../../commands';
+import { drawUpTo, buildAndShuffleDeck } from '../../commands';
 import { grantExpAndQueueLevelUp } from '../shared';
+import { buildAndShuffleEnemyDeck } from './enemy';
+import { runEquipmentOnBattleStart } from '../../equipmentRuntime';
+import { resetBlessingTurnFlags, runBlessingsTurnHook } from '../../blessingRuntime';
+import { START_ENERGY } from '../../balance/core';
 
 export function qaKillEnemy(s: GameState, _cmd: Extract<Command, { type: 'QA_KillEnemy' }>, r: RNG) {
   if (s.phase !== 'combat' || !s.enemy) return { state: s, rng: r };
@@ -103,5 +107,58 @@ export function qaPrintPage(s: GameState, _cmd: Extract<Command, { type: 'QA_Pri
   if (!s.pages?.current) { s.log.push('No page open.'); return { state: s, rng: r }; }
   const list = s.pages.current.offers.map((o: any) => o.kind === 'monster' ? `monster:${o.tier}` : o.kind);
   s.log.push(`Offers: ${list.join(' | ')}`);
+  return { state: s, rng: r };
+}
+
+export function qaSpawnEquippedEnemy(s: GameState, cmd: Extract<Command, { type: 'QA_SpawnEquippedEnemy' }>, r: RNG) {
+  const enemyId = cmd.enemyId || 'armed_bandit';
+  
+  // โหลด enemy data
+  const ENEMY_LIST = require('../../../data/packs/base/enemies.json');
+  const enemyTemplate = ENEMY_LIST.find((e: any) => e.id === enemyId);
+  
+  if (!enemyTemplate) {
+    s.log.push(`QA: Enemy ${enemyId} not found`);
+    return { state: s, rng: r };
+  }
+
+  // ตั้งค่าการต่อสู้
+  s.phase = 'combat';
+  (s as any).nodePhase = 'in_combat';
+  s.turn = 1;
+  s.combatVictoryLock = false;
+  
+  // เคลียร์สเตต
+  (s as any).enemyPiles = undefined;
+  (s as any).playerPiles = undefined;
+  (s as any).enemyIntentCardId = null;
+  s.player.block = 0;
+  s.player.energy = s.player.maxEnergy ?? START_ENERGY;
+  
+  // Set temporary equipment slots during combat  
+  s.equipmentTempSlots = 5;
+
+  // สร้างศัตรู
+  s.enemy = JSON.parse(JSON.stringify(enemyTemplate));
+  ({ state: s, rng: r } = buildAndShuffleEnemyDeck(s, r));
+  (s as any).enemyIntentCardId = (s as any).enemyPiles?.draw?.[0] ?? null;
+
+  // สร้างเด็คผู้เล่น
+  ({ state: s, rng: r } = buildAndShuffleDeck(s, r));
+  ({ state: s, rng: r } = drawUpTo(s, r));
+
+  // Equipment battle-start hooks
+  runEquipmentOnBattleStart(s, 'player');
+  runEquipmentOnBattleStart(s, 'enemy');
+
+  // Blessing hooks
+  resetBlessingTurnFlags(s);
+  runBlessingsTurnHook(s, 'on_turn_start');
+
+  s.log.push(`QA: Spawned ${s.enemy?.name} with ${s.enemy?.equipped?.length || 0} equipment`);
+  if (s.enemy?.equipped) {
+    s.log.push(`QA: Enemy equipment: ${s.enemy.equipped.map(eq => eq.name || eq.id).join(', ')}`);
+  }
+  
   return { state: s, rng: r };
 }

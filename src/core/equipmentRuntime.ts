@@ -29,38 +29,116 @@ type EquipBehavior = {
 const REGISTRY: Record<string, EquipBehavior> = {
   // ฟื้นฟูเล็กน้อยปลายเทิร์น
   regen_charm: {
-    on_turn_end: ({ state: s /*, side */ }) => {
-      const before = s.player.hp;
-      s.player.hp = Math.min(s.player.maxHp, s.player.hp + 1);
-      const healed = s.player.hp - before;
-      s.log.push(healed > 0 ? 'Equip: Regen Charm heals 1.' : 'Equip: Regen Charm (no effect).');
+    on_turn_end: ({ state: s, side }) => {
+      if (side === 'player') {
+        const before = s.player.hp;
+        s.player.hp = Math.min(s.player.maxHp, s.player.hp + 1);
+        const healed = s.player.hp - before;
+        s.log.push(healed > 0 ? 'Equip: Player Regen Charm heals 1.' : 'Equip: Player Regen Charm (no effect).');
+      } else if (side === 'enemy' && s.enemy) {
+        const before = s.enemy.hp;
+        s.enemy.hp = Math.min(s.enemy.maxHp, s.enemy.hp + 1);
+        const healed = s.enemy.hp - before;
+        s.log.push(healed > 0 ? 'Equip: Enemy Regen Charm heals 1.' : 'Equip: Enemy Regen Charm (no effect).');
+      }
     },
   },
   // ได้ Block 5 ตอนเริ่มไฟต์และทุกเทิร์น
   start_shield: {
-    on_battle_start: ({ state: s /*, side */ }) => {
-      s.player.block = (s.player.block ?? 0) + 5;
-      s.log.push('Equip: Start Shield gives Block +5 (battle start).');
+    on_battle_start: ({ state: s, side }) => {
+      if (side === 'player') {
+        s.player.block = (s.player.block ?? 0) + 5;
+        s.log.push('Equip: Player Start Shield gives Block +5 (battle start).');
+      } else if (side === 'enemy' && s.enemy) {
+        s.enemy.block = (s.enemy.block ?? 0) + 5;
+        s.log.push('Equip: Enemy Start Shield gives Block +5 (battle start).');
+      }
     },
-    on_turn_start: ({ state: s /*, side */ }) => {
-      s.player.block = (s.player.block ?? 0) + 5;
-      s.log.push('Equip: Start Shield gives Block +5 (turn start).');
+    on_turn_start: ({ state: s, side }) => {
+      if (side === 'player') {
+        s.player.block = (s.player.block ?? 0) + 5;
+        s.log.push('Equip: Player Start Shield gives Block +5 (turn start).');
+      } else if (side === 'enemy' && s.enemy) {
+        s.enemy.block = (s.enemy.block ?? 0) + 5;
+        s.log.push('Equip: Enemy Start Shield gives Block +5 (turn start).');
+      }
     },
   },
-  // ใบแรกที่เล่นแต่ละเทิร์น +1 Energy (ทั้ง player/enemy ถ้าต้องการ ให้คุมด้วย side ใน call site)
+  // ใบแรกที่เล่นแต่ละเทิร์น +1 Energy (ทั้ง player/enemy)
   battle_rhythm_band: {
     oncePerTurn: true,
-    on_card_played: ({ state: s /*, side */ }) => {
-      s.player.energy += 1;
-      s.log.push('Equip: Battle Rhythm (+1 energy on first play).');
+    on_card_played: ({ state: s, side }) => {
+      if (side === 'player') {
+        s.player.energy += 1;
+        s.log.push('Equip: Player Battle Rhythm (+1 energy on first play).');
+      } else if (side === 'enemy' && s.enemyEnergy !== undefined) {
+        s.enemyEnergy += 1;
+        s.log.push('Equip: Enemy Battle Rhythm (+1 energy on first play).');
+      }
+    },
+  },
+
+  // === Thai Shaman Equipment ===
+  // ผ้าเย็นถาวร: ฟื้นฟู 2 HP ต้นเทิร์น
+  cooling_cloth_equipment: {
+    on_turn_start: ({ state: s, side }) => {
+      if (side === 'player') {
+        const before = s.player.hp;
+        s.player.hp = Math.min(s.player.maxHp, s.player.hp + 2);
+        const healed = s.player.hp - before;
+        s.log.push(healed > 0 ? 'ผ้าเย็น: ฟื้นฟู 2 HP' : 'ผ้าเย็น: HP เต็มแล้ว');
+      }
+    },
+  },
+
+  // เครื่องรางหลวงปู่: ลดดาเมจที่รับ 1 แต้ม
+  luang_pu_amulet: {
+    on_damage_dealt: ({ state: s, side, target, amount }) => {
+      if (target === 'player' && side === 'enemy') {
+        // ลดดาเมจที่ผู้เล่นรับจากศัตรู
+        const reduction = Math.min(1, amount);
+        s.player.hp += reduction;
+        s.log.push(`เครื่องรางหลวงปู่: ลดดาเมจ ${reduction} แต้ม`);
+      }
+    },
+  },
+
+  // ลูกประคำ: เมื่อเล่นการ์ดโจมตี +1 ดาเมจ
+  prayer_beads: {
+    on_card_played: ({ state: s, side }, card) => {
+      if (side === 'player' && card.type === 'attack' && card.dmg) {
+        // เพิ่มดาเมจให้การ์ดโจมตี (จำลองโดยเพิ่ม HP ให้ศัตรู)
+        if (s.enemy) {
+          s.enemy.hp -= 1;
+          s.log.push('ลูกประคำ: +1 ดาเมจ');
+        }
+      }
+    },
+  },
+
+  // กะโหลกนางตานี: เมื่อศัตรูตาย จั่วการ์ด 1 ใบ
+  nang_tani_skull: {
+    // Note: จะต้องเรียกผ่าน event อื่นเมื่อศัตรูตาย
+  },
+
+  // ไม้เท้าหมอผี: การ์ดแรกแต่ละเทิร์น ใช้ Energy -1
+  shaman_staff: {
+    oncePerTurn: true,
+    on_card_played: ({ state: s, side }, card) => {
+      if (side === 'player' && card.cost > 0) {
+        s.player.energy += 1;
+        s.log.push('ไม้เท้าหมอผี: ลด Energy 1 แต้ม');
+      }
     },
   },
 };
 
 // === Helpers ===
-function activeEquipped(s: GameState): EquipmentData[] {
-  const list = s.equipped ?? [];
-  const slots = s.equipmentSlotsMax ?? 0;
+function activeEquipped(s: GameState, side: TurnSide = 'player'): EquipmentData[] {
+  // เลือก equipment list ตาม side
+  const list = side === 'player' ? (s.equipped ?? []) : (s.enemy?.equipped ?? []);
+  const slots = side === 'player' ? (s.equipmentSlotsMax ?? 0) : 1; // ศัตรูมี 1 slot เป็นพื้นฐาน
+  
   let used = 0;
   const active: EquipmentData[] = [];
   for (const e of list) {
@@ -97,7 +175,7 @@ export function resetEquipmentTurnFlags(s: GameState) {
 /** ใหม่: เรียกเมื่อเริ่มไฟต์ (alias on_battle_start + on_equip แบบเดิม) */
 export function runEquipmentOnBattleStart(s: GameState, side: TurnSide = 'player') {
   ensureEquipFlags(s);
-  for (const e of activeEquipped(s)) {
+  for (const e of activeEquipped(s, side)) {
     const bh = REGISTRY[e.id];
     if (bh?.on_battle_start) bh.on_battle_start({ state: s, side });
     if (bh?.on_equip)        bh.on_equip({ state: s, side }); // backward compat
@@ -114,7 +192,7 @@ export function runEquipmentTurnHook(
   side: TurnSide = 'player'
 ) {
   ensureEquipFlags(s);
-  for (const e of activeEquipped(s)) {
+  for (const e of activeEquipped(s, side)) {
     const bh = REGISTRY[e.id];
     const fn = bh?.[which];
     if (!fn) continue;
@@ -137,7 +215,7 @@ export function runEquipmentCardPlayed(
   side: TurnSide = 'player'
 ) {
   ensureEquipFlags(s);
-  for (const e of activeEquipped(s)) {
+  for (const e of activeEquipped(s, side)) {
     const bh = REGISTRY[e.id];
     const fn = bh?.on_card_played;
     if (!fn) continue;

@@ -2,7 +2,7 @@
 import type { GameState, CardData } from '../types';
 import type { RNG } from '../rng';
 import { nextExpForLevel, EXP_KILL_NORMAL, EXP_KILL_ELITE, EXP_KILL_BOSS } from '../balance/progression';
-import { rollLevelUpBucket, rollTwoBlessings, rollTwoCards, type LevelBucket } from '../level';
+import { rollLevelUpBucket, rollTwoBlessings, rollThreeCards, type LevelBucket } from '../level';
 import { findNode } from '../map';
 import { goldRewardForVictory } from '../balance/economy';
 
@@ -66,7 +66,7 @@ export function grantExpAndQueueLevelUp(s: GameState, r: RNG): RNG {
       const rolled = rollLevelUpBucket(r, s); r = rolled.rng;
       const bucket = rolled.bucket as LevelBucket;
       let cardChoices, blessingChoices;
-      if (bucket === 'cards') { const rr = rollTwoCards(r); r = rr.rng; cardChoices = rr.list; }
+      if (bucket === 'cards') { const rr = rollThreeCards(r, s.player.level); r = rr.rng; cardChoices = rr.list; }
       if (bucket === 'blessing') { const bb = rollTwoBlessings(r); r = bb.rng; blessingChoices = bb.list; }
       s.levelUp = { bucket, cardChoices, blessingChoices, consumed: false };
     } else {

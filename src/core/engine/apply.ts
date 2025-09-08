@@ -73,6 +73,7 @@ const H: { [K in Command['type']]?: Handler<K> } = {
   QA_OpenTreasure: qa.qaOpenTreasure,
   QA_InitPages: qa.qaInitPages,
   QA_PrintPage: qa.qaPrintPage,
+  QA_SpawnEquippedEnemy: qa.qaSpawnEquippedEnemy,
 };
 
 export function applyCommand(state: GameState, cmd: Command, rng: RNG) {
