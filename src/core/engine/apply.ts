@@ -64,7 +64,29 @@ const H: { [K in Command['type']]?: Handler<K> } = {
   DismissOffer: mappages.dismiss,
   Proceed: mappages.proceed,
 
-  // QA
+  // QA - Status Effects & Enemy Behavior
+  QA_ApplyStatusToPlayer: qa.qaApplyStatusToPlayer,
+  QA_ApplyStatusToEnemy: qa.qaApplyStatusToEnemy,
+  QA_ClearPlayerStatus: qa.qaClearPlayerStatus,
+  QA_ClearEnemyStatus: qa.qaClearEnemyStatus,
+  QA_TriggerEnemyBehavior: qa.qaTriggerEnemyBehavior,
+  QA_StartSpellCasting: qa.qaStartSpellCasting,
+  QA_ForcePhase2: qa.qaForcePhase2,
+  
+  // QA - Environment & Minions  
+  QA_SetEnvironment: qa.qaSetEnvironment,
+  QA_SummonPlayerMinion: qa.qaSummonPlayerMinion,
+  QA_SummonEnemyMinion: qa.qaSummonEnemyMinion,
+  QA_ClearAllMinions: qa.qaClearAllMinions,
+  
+  // QA - Phase 4: Adaptive AI & Combos
+  QA_DebugAdaptiveAI: qa.qaDebugAdaptiveAI,
+  QA_ResetAILearning: qa.qaResetAILearning,
+  QA_DebugCombos: qa.qaDebugCombos,
+  QA_TriggerCombo: qa.qaTriggerCombo,
+  QA_ClearCombos: qa.qaClearCombos,
+
+  // QA - Original
   QA_KillEnemy: qa.qaKillEnemy,
   QA_Draw: qa.qaDraw,
   QA_SetEnergy: qa.qaSetEnergy,

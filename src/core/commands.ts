@@ -102,19 +102,36 @@ export function startPlayerTurn(state: GameState, rng: RNG): { state: GameState;
   // state.player.block = 0;
   // resetBlessingTurnFlags(state); // ✅ ให้พรแบบ once-per-turn ยิงได้ใหม่
   // return drawUpTo(state,rng ,state.player.maxHandSize ?? HAND_SIZE);
+  // Import systems
+  const { processStatusEffectsOnTurnStart } = require('./statusEffectsRuntime');
+  const { applyEnvironmentEnergyModifier, applyEnvironmentDrawModifier, processEnvironmentTurnEffects } = require('./environmentRuntime');
+  const { processPlayerTurnMinions } = require('./minionRuntime');
+
   // ★ รีเซ็ต once-per-turn ของอุปกรณ์สำหรับเทิร์นใหม่นี้
   resetEquipmentTurnFlags(state);
 
-  // ขั้นตอนพื้นฐาน
-  state.player.energy = state.player.maxEnergy ?? START_ENERGY;
+  // ขั้นตอนพื้นฐาน with environment modifications
+  const baseEnergy = state.player.maxEnergy ?? START_ENERGY;
+  state.player.energy = applyEnvironmentEnergyModifier(state, baseEnergy, 'player');
   state.player.block = 0;
 
-  // จั่วให้ครบมือก่อน (ถ้าต้องการให้เอฟเฟกต์ start-turn รู้จักมือใหม่)
-  const out = drawUpTo(state, rng, state.player.maxHandSize ?? HAND_SIZE);
+  // Process status effects at start of turn
+  processStatusEffectsOnTurnStart('player', state);
+  
+  // Process environment effects
+  processEnvironmentTurnEffects(state);
+
+  // จั่วให้ครบมือก่อน (with environment modifications)
+  const baseHandSize = state.player.maxHandSize ?? HAND_SIZE;
+  const modifiedHandSize = applyEnvironmentDrawModifier(state, baseHandSize, 'player');
+  const out = drawUpTo(state, rng, modifiedHandSize);
   state = out.state; rng = out.rng;
 
   // ★ ยิง on_turn_start (ฝั่งผู้เล่น)
   runEquipmentTurnHook(state, 'on_turn_start', 'player');
+
+  // Process player minions actions
+  processPlayerTurnMinions(state);
 
   // เดิม: ให้พร reset ที่อื่นด้วย แต่ถ้าจะคงไว้ตรงนี้ก็ได้
   resetBlessingTurnFlags(state);
@@ -125,22 +142,69 @@ export function startPlayerTurn(state: GameState, rng: RNG): { state: GameState;
 export function applyCardEffect(state: GameState, idxInHand: number) {
   const card = state.piles.hand[idxInHand];
   if (!card) return;
-  // Spend energy
-  if (state.player.energy < card.cost) return;
-  state.player.energy -= card.cost;
+  
+  // Import all advanced systems
+  const { modifyCardCostForStatusEffects, modifyDamageForStatusEffects, canPlayAttackCards } = require('./statusEffectsRuntime');
+  const { applyEnvironmentCardCostModifier, applyEnvironmentDamageModifier, applyEnvironmentBlockModifier } = require('./environmentRuntime');
+  const { onPlayerCardPlayed, getAdaptiveDamageMultiplier } = require('./adaptiveAI');
+  const { applyComboCardModifiers, onCardPlayedForCombos } = require('./cardComboSystem');
+  
+  // Check if attack cards can be played (entangle check)
+  if (card.type === 'attack' && !canPlayAttackCards(state)) {
+    state.log.push(`Cannot play attack cards while entangled`);
+    return;
+  }
+  
+  // ★ Apply combo system modifiers first
+  const modifiedCard = applyComboCardModifiers(state, card);
+  
+  // Apply status effect and environment cost modifications
+  let modifiedCost = modifyCardCostForStatusEffects(state, modifiedCard.cost);
+  modifiedCost = applyEnvironmentCardCostModifier(state, modifiedCost, 'player');
+  
+  if (state.player.energy < modifiedCost) return;
+  state.player.energy -= modifiedCost;
+  
+  if (modifiedCost !== card.cost) {
+    state.log.push(`Card cost modified: ${card.cost} → ${modifiedCost}`);
+  }
 
-  // Effect
-  if (card.dmg && state.enemy) {
-    state.enemy.hp = Math.max(0, state.enemy.hp - card.dmg);
+  // Effect - Damage with status effect and environment modifications
+  if (modifiedCard.dmg && state.enemy) {
+    let modifiedDamage = modifyDamageForStatusEffects('player', 'enemy', state, modifiedCard.dmg);
+    modifiedDamage = applyEnvironmentDamageModifier(state, modifiedDamage, 'player');
+    // Apply adaptive AI damage multiplier  
+    const adaptiveMult = getAdaptiveDamageMultiplier();
+    const finalDamage = Math.round(modifiedDamage * (1 / adaptiveMult)); // Inverse for player damage
+    state.enemy.hp = Math.max(0, state.enemy.hp - finalDamage);
+    
+    if (finalDamage !== card.dmg) {
+      state.log.push(`Damage modified: ${card.dmg} → ${finalDamage}`);
+    }
   }
-  if (card.block) {
-    state.player.block += card.block;
+  
+  // Block effect with environment modifications
+  if (modifiedCard.block) {
+    let modifiedBlock = applyEnvironmentBlockModifier(state, modifiedCard.block, 'player');
+    state.player.block += modifiedBlock;
+    
+    if (modifiedBlock !== card.block) {
+      state.log.push(`Block modified: ${card.block} → ${modifiedBlock}`);
+    }
   }
+  
   // ✅ รองรับการ์ดที่ให้พลังงาน (เช่น Focus: energyGain = 1)
-  if (card.energyGain && card.energyGain > 0) {
-    state.player.energy += card.energyGain;
-    state.log.push(`Gained +${card.energyGain} energy`);
+  if (modifiedCard.energyGain && modifiedCard.energyGain > 0) {
+    state.player.energy += modifiedCard.energyGain;
+    state.log.push(`Gained +${modifiedCard.energyGain} energy`);
   }
+  
+  // ★ Trigger combo system after card effects
+  onCardPlayedForCombos(state, modifiedCard);
+  
+  // ★ AI learning from player card usage
+  onPlayerCardPlayed(state, modifiedCard);
+  
   // draw will be handled by reducer after moving the card
 }
 
@@ -181,6 +245,37 @@ function stepNextEnemyCard(s: GameState) {
 }
 
 export function endEnemyTurn(state: GameState) {
+  // ★ Process all advanced systems before enemy turn
+  const { processEnemyTurnBehaviors } = require('./enemyBehaviorRuntime');  
+  const { onTurnEndForCombos } = require('./cardComboSystem');
+  const { onPlayerTurnEnd } = require('./adaptiveAI');
+  
+  // Process combos and AI learning
+  onTurnEndForCombos(state);
+  onPlayerTurnEnd(state, { energyUsed: 0, blockGained: state.player.block });
+  
+  // Process environment effects (check if function exists)
+  try {
+    const { processEnvironmentEndTurn } = require('./environmentRuntime');
+    if (typeof processEnvironmentEndTurn === 'function') {
+      processEnvironmentEndTurn(state);
+    }
+  } catch (e) {
+    // Environment system not available, skip
+  }
+  
+  // Process enemy minions and behaviors (check if function exists)
+  try {
+    const { processEnemyMinions } = require('./minionRuntime');
+    if (typeof processEnemyMinions === 'function') {
+      processEnemyMinions(state);
+    }
+    processEnemyTurnBehaviors(state);
+  } catch (e) {
+    // Minion/behavior system not available, skip
+  }
+  
+  // Run standard enemy turn
   const { runEnemyTurn } = require('./engine/handlers/enemy');
   runEnemyTurn(state);  
 }

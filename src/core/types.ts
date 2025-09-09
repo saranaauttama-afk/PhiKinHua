@@ -1,5 +1,8 @@
 // src/core/types.ts — CLEAN (Pages-first, no StartCombat, no reward)
 
+// Import status effects from extended system
+import type { StatusEffect } from './types_extended';
+
 export type BlessingFn = (tc: TurnCtx, card?: CardData, target?: any) => void;
 export type BlessingCardHookConfig = { tag?: string; once_per_turn?: boolean; effects: BlessingFn[] };
 export type BlessingDef = {
@@ -54,6 +57,8 @@ export type EnemyState = {
   maxEnergy?: number;  // ค่าพลังงานสูงสุดของศัตรู (ต่อเทิร์น)
   handSize?: number;   // จำนวนการ์ดที่จั่วตอนเริ่มเทิร์นศัตรู
   equipped?: EquipmentData[];  // ศัตรูก็มี equipment ได้เหมือนกัน
+  // Status Effects System
+  statusEffects?: StatusEffect[];
 };
 
 export type DeckPiles = {
@@ -87,6 +92,8 @@ export type PlayerState = {
   hp: number; maxHp: number; block: number; energy: number; gold: number;
   level: number; exp: number; expToNext: number;
   maxEnergy: number; maxHandSize: number;
+  // Status Effects System
+  statusEffects?: StatusEffect[];
 };
 
 export type RunCounters = {
@@ -256,6 +263,26 @@ export type Command =
   | { type: 'QA_OpenTreasure' }
   | { type: 'QA_InitPages' }
   | { type: 'QA_PrintPage' }
-  | { type: 'QA_SpawnEquippedEnemy'; enemyId?: string };
+  | { type: 'QA_SpawnEquippedEnemy'; enemyId?: string }
+  // Status Effects Debug Commands
+  | { type: 'QA_ApplyStatusToPlayer'; statusId: string; stacks?: number; duration?: number }
+  | { type: 'QA_ApplyStatusToEnemy'; statusId: string; stacks?: number; duration?: number }
+  | { type: 'QA_ClearPlayerStatus' }
+  | { type: 'QA_ClearEnemyStatus' }
+  // Enemy Behavior Debug Commands
+  | { type: 'QA_TriggerEnemyBehavior' }
+  | { type: 'QA_StartSpellCasting'; spellId: string }
+  | { type: 'QA_ForcePhase2' }
+  // Environment & Minion Debug Commands
+  | { type: 'QA_SetEnvironment'; environmentId: string }
+  | { type: 'QA_SummonPlayerMinion'; minionId: string }
+  | { type: 'QA_SummonEnemyMinion'; minionId: string }
+  | { type: 'QA_ClearAllMinions' }
+  // Phase 4 Debug Commands - Adaptive AI & Combos
+  | { type: 'QA_DebugAdaptiveAI' }
+  | { type: 'QA_ResetAILearning' }
+  | { type: 'QA_DebugCombos' }
+  | { type: 'QA_TriggerCombo'; comboId: string }
+  | { type: 'QA_ClearCombos' };
 
 export type TurnCtx = { state: GameState };

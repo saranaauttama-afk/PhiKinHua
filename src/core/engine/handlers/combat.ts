@@ -140,6 +140,12 @@ runEquipmentCardPlayed(s, played, 'player');
 export function endTurn(s: GameState, _cmd: Extract<Command, { type: 'EndTurn' }>, r: RNG) {
   if (s.phase !== 'combat') return { state: s, rng: r };
 
+  // Import status effects system
+  const { processStatusEffectsOnTurnEnd } = require('../../statusEffectsRuntime');
+
+  // Process status effects at end of player turn
+  processStatusEffectsOnTurnEnd('player', s);
+
   // ★ ปลายเทิร์นผู้เล่น → ยิงอุปกรณ์ก่อนสลับฝั่ง
 runEquipmentTurnHook(s, 'on_turn_end', 'player');
 

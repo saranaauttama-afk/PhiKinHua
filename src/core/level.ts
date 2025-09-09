@@ -10,14 +10,16 @@ export type LevelBucket =
   | 'remove' | 'upgrade' | 'gold';
 
 const BASE_BUCKET_W: Record<LevelBucket, number> = {
-  max_hp: 20, max_energy: 12, max_hand: 12, cards: 24, blessing: 12, remove: 10, upgrade: 8, gold: 2,
+  max_hp: 30, max_energy: 20, max_hand: 10, cards: 24, blessing: 12, remove: 10, upgrade: 8, gold: 2,
 };
 
 function deriveWeights(s: GameState): Record<LevelBucket, number> {
   const w = { ...BASE_BUCKET_W };
-  // Soft-pity for max_hand at Lv 3 and 6 (only triggers twice)
+  // Strategic hand size boosts at key levels for combo potential
   const lv = s.player?.level ?? 1;
-  if (lv === 3 || lv === 6) w.max_hand += 20;
+  if (lv === 3) w.max_hand += 15; // Early game combo potential
+  if (lv === 6) w.max_hand += 20; // Mid game strategy expansion  
+  if (lv === 9) w.max_hand += 15; // Late game mastery
   return w;
 }
 

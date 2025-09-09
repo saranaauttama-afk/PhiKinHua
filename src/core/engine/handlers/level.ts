@@ -9,7 +9,7 @@ export function chooseLevelUp(s: GameState, cmd: Extract<Command, { type: 'Choos
   const idx = cmd.index ?? 0;
   switch (b) {
     case 'max_hp':
-      s.player.maxHp += 5; s.player.hp = Math.min(s.player.hp + 5, s.player.maxHp);
+      s.player.maxHp += 8; s.player.hp = Math.min(s.player.hp + 8, s.player.maxHp);
       break;
     case 'max_energy':
       s.player.maxEnergy += 1;

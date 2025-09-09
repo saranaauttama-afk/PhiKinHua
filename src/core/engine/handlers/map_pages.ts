@@ -165,6 +165,16 @@ export function choose(s: GameState, cmd: Extract<Command, { type: 'ChooseOffer'
       rng = res.rng;
       s.enemy = res.enemy;
       ({ state: s, rng } = buildAndShuffleEnemyDeck(s, rng));
+      
+      // Initialize enemy behaviors, environment, and minions
+      const { initializeEnemyBehaviors } = require('../../enemyBehaviorRuntime');
+      const { initializeCombatEnvironment } = require('../../environmentRuntime');
+      const { initializeCombatMinions } = require('../../minionRuntime');
+      
+      initializeEnemyBehaviors(s);
+      initializeCombatEnvironment(s);
+      initializeCombatMinions(s);
+      
       // ตั้ง intent แสดงล่วงหน้า (ไพ่บนสุดของ draw)
       (s as any).enemyIntentCardId = (s as any).enemyPiles?.draw?.[0] ?? null;
 
@@ -205,6 +215,16 @@ export function choose(s: GameState, cmd: Extract<Command, { type: 'ChooseOffer'
       rng = res.rng;
       s.enemy = res.enemy;
       ({ state: s, rng } = buildAndShuffleEnemyDeck(s, rng));
+      
+      // Initialize boss behaviors, environment, and minions
+      const { initializeEnemyBehaviors } = require('../../enemyBehaviorRuntime');
+      const { initializeCombatEnvironment } = require('../../environmentRuntime');
+      const { initializeCombatMinions } = require('../../minionRuntime');
+      
+      initializeEnemyBehaviors(s);
+      initializeCombatEnvironment(s);
+      initializeCombatMinions(s);
+      
       (s as any).enemyIntentCardId = (s as any).enemyPiles?.draw?.[0] ?? null;
 
       ({ state: s, rng } = buildAndShuffleDeck(s, rng));

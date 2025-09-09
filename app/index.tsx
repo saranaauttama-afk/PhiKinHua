@@ -285,46 +285,208 @@ export default function Home() {
         <EventView state={state} dispatch={dispatch} />
         <DeckView state={state} dispatch={dispatch} />
 
-        {/* Log */}
+        {/* Defeat Screen */}
+        {state.phase === 'defeat' && (
+          <View style={{ marginTop: 16, padding: 16, borderRadius: 16, backgroundColor: 'rgba(239, 68, 68, 0.1)', borderWidth: 2, borderColor: 'rgba(239, 68, 68, 0.3)' }}>
+            <Text style={{ color: '#fecaca', fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 }}>💀 พ่ายแพ้</Text>
+            <Text style={{ color: '#fca5a5', fontSize: 16, textAlign: 'center', marginBottom: 16 }}>หมอผีถูกปีศาจเอาชนะ...</Text>
+            
+            <View style={{ flexDirection: 'row', gap: 12, justifyContent: 'center' }}>
+              <Pressable
+                onPress={() => {
+                  // Restart from beginning
+                  const { newRun } = useGame.getState();
+                  newRun(state.seed);
+                }}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  borderRadius: 12,
+                  backgroundColor: 'rgba(34, 197, 94, 0.5)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(74, 222, 128, 0.5)',
+                  flex: 1
+                }}
+              >
+                <Text style={{ color: '#bbf7d0', fontWeight: '600', textAlign: 'center' }}>🔄 เริ่มใหม่</Text>
+              </Pressable>
+              
+              <Pressable
+                onPress={() => {
+                  // Go back to menu
+                  useGame.setState({ state: makeEmptyState(), rng: makeRng(1) });
+                }}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  borderRadius: 12,
+                  backgroundColor: 'rgba(99, 102, 241, 0.5)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(129, 140, 248, 0.5)',
+                  flex: 1
+                }}
+              >
+                <Text style={{ color: '#c7d2fe', fontWeight: '600', textAlign: 'center' }}>🏠 เมนูหลัก</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {/* Enhanced Log with System Message Formatting */}
         {state.log.length > 0 && (
           <View style={{ marginTop: 24, borderRadius: 16, padding: 16, backgroundColor: 'rgba(39, 39, 42, 0.5)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }}>
             <Text style={{ color: 'white', fontWeight: '600', marginBottom: 8 }}>📜 Game Log</Text>
             <ScrollView style={{ maxHeight: 128 }} showsVerticalScrollIndicator={false}>
-              {state.log.slice(-10).map((entry, i) => (
-                <Text key={i} style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: 14, marginBottom: 4 }}>• {entry}</Text>
-              ))}
+              {state.log.slice(-10).map((entry, i) => {
+                // Enhanced log formatting for different system messages
+                const getLogColor = (text: string) => {
+                  if (text.includes('🎆') || text.includes('✨')) return '#fbbf24'; // Combo messages - gold
+                  if (text.includes('🧠') || text.includes('🤖')) return '#8b5cf6'; // AI messages - purple  
+                  if (text.includes('💫') || text.includes('status')) return '#a78bfa'; // Status messages - light purple
+                  if (text.includes('💥') || text.includes('damage')) return '#ef4444'; // Damage - red
+                  if (text.includes('💚') || text.includes('heal')) return '#22c55e'; // Healing - green
+                  if (text.includes('👹') || text.includes('👿')) return '#f87171'; // Enemy/minion - light red
+                  if (text.includes('🌿') || text.includes('Environment')) return '#10b981'; // Environment - emerald
+                  if (text.includes('⚡') || text.includes('energy')) return '#fcd34d'; // Energy - yellow
+                  return 'rgba(255, 255, 255, 0.7)'; // Default
+                };
+                
+                return (
+                  <Text key={i} style={{ 
+                    color: getLogColor(entry), 
+                    fontSize: 14, 
+                    marginBottom: 4,
+                    fontWeight: entry.includes('🎆') || entry.includes('COMBO') ? '600' : '400'
+                  }}>
+                    • {entry}
+                  </Text>
+                );
+              })}
             </ScrollView>
           </View>
         )}
 
-        {/* QA Tools */}
+        {/* Enhanced QA Debug Panel */}
         <View style={{ marginTop: 24, paddingTop: 16, borderTopWidth: 1, borderTopColor: 'rgba(255, 255, 255, 0.1)' }}>
           <Text style={{ color: 'rgba(255, 255, 255, 0.4)', fontWeight: '600', marginBottom: 8 }}>🛠️ Debug Tools</Text>
-          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-            <Pressable 
-              onPress={() => dispatch({ type: 'QA_KillEnemy' })} 
-              style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 4, backgroundColor: 'rgba(185, 28, 28, 0.3)' }}
-            >
-              <Text style={{ color: '#fecaca', fontSize: 14 }}>Kill Enemy</Text>
-            </Pressable>
-            <Pressable 
-              onPress={() => dispatch({ type: 'QA_Draw', count: 1 })} 
-              style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 4, backgroundColor: 'rgba(29, 78, 216, 0.3)' }}
-            >
-              <Text style={{ color: '#bfdbfe', fontSize: 14 }}>Draw Cards</Text>
-            </Pressable>
-            <Pressable 
-              onPress={() => dispatch({ type: 'QA_SetEnergy', value: 10 })} 
-              style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 4, backgroundColor: 'rgba(161, 98, 7, 0.3)' }}
-            >
-              <Text style={{ color: '#fde68a', fontSize: 14 }}>+Energy</Text>
-            </Pressable>
-            <Pressable 
-              onPress={() => dispatch({ type: 'QA_OpenShopHere' })} 
-              style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 4, backgroundColor: 'rgba(21, 128, 61, 0.3)' }}
-            >
-              <Text style={{ color: '#bbf7d0', fontSize: 14 }}>Open Shop</Text>
-            </Pressable>
+          
+          {/* Basic Debug */}
+          <View style={{ marginBottom: 12 }}>
+            <Text style={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: 12, marginBottom: 4 }}>Basic:</Text>
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+              <Pressable 
+                onPress={() => dispatch({ type: 'QA_KillEnemy' })} 
+                style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 4, backgroundColor: 'rgba(185, 28, 28, 0.3)' }}
+              >
+                <Text style={{ color: '#fecaca', fontSize: 14 }}>Kill Enemy</Text>
+              </Pressable>
+              <Pressable 
+                onPress={() => dispatch({ type: 'QA_Draw', count: 1 })} 
+                style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 4, backgroundColor: 'rgba(29, 78, 216, 0.3)' }}
+              >
+                <Text style={{ color: '#bfdbfe', fontSize: 14 }}>Draw Cards</Text>
+              </Pressable>
+              <Pressable 
+                onPress={() => dispatch({ type: 'QA_SetEnergy', value: 10 })} 
+                style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 4, backgroundColor: 'rgba(161, 98, 7, 0.3)' }}
+              >
+                <Text style={{ color: '#fde68a', fontSize: 14 }}>+Energy</Text>
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Status Effects Debug */}
+          <View style={{ marginBottom: 12 }}>
+            <Text style={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: 12, marginBottom: 4 }}>Status Effects:</Text>
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+              <Pressable 
+                onPress={() => dispatch({ type: 'QA_ApplyStatusToPlayer', statusId: 'poison', stacks: 3 })} 
+                style={{ paddingHorizontal: 8, paddingVertical: 6, borderRadius: 4, backgroundColor: 'rgba(239, 68, 68, 0.3)' }}
+              >
+                <Text style={{ color: '#fca5a5', fontSize: 12 }}>☠️ Poison Self</Text>
+              </Pressable>
+              <Pressable 
+                onPress={() => dispatch({ type: 'QA_ApplyStatusToEnemy', statusId: 'vulnerable', stacks: 2 })} 
+                style={{ paddingHorizontal: 8, paddingVertical: 6, borderRadius: 4, backgroundColor: 'rgba(168, 85, 247, 0.3)' }}
+              >
+                <Text style={{ color: '#c084fc', fontSize: 12 }}>🛡️💔 Vuln Enemy</Text>
+              </Pressable>
+              <Pressable 
+                onPress={() => dispatch({ type: 'QA_ClearPlayerStatus' })} 
+                style={{ paddingHorizontal: 8, paddingVertical: 6, borderRadius: 4, backgroundColor: 'rgba(34, 197, 94, 0.3)' }}
+              >
+                <Text style={{ color: '#86efac', fontSize: 12 }}>🧹 Clear Player</Text>
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Phase 4 Debug */}
+          <View style={{ marginBottom: 12 }}>
+            <Text style={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: 12, marginBottom: 4 }}>Phase 4 Systems:</Text>
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+              <Pressable 
+                onPress={() => dispatch({ type: 'QA_DebugAdaptiveAI' })} 
+                style={{ paddingHorizontal: 8, paddingVertical: 6, borderRadius: 4, backgroundColor: 'rgba(139, 92, 246, 0.3)' }}
+              >
+                <Text style={{ color: '#a78bfa', fontSize: 12 }}>🧠 AI Debug</Text>
+              </Pressable>
+              <Pressable 
+                onPress={() => dispatch({ type: 'QA_DebugCombos' })} 
+                style={{ paddingHorizontal: 8, paddingVertical: 6, borderRadius: 4, backgroundColor: 'rgba(245, 158, 11, 0.3)' }}
+              >
+                <Text style={{ color: '#fbbf24', fontSize: 12 }}>✨ Combo Debug</Text>
+              </Pressable>
+              <Pressable 
+                onPress={() => dispatch({ type: 'QA_TriggerCombo', comboId: 'shaman_meditation' })} 
+                style={{ paddingHorizontal: 8, paddingVertical: 6, borderRadius: 4, backgroundColor: 'rgba(34, 197, 94, 0.3)' }}
+              >
+                <Text style={{ color: '#86efac', fontSize: 12 }}>🎆 Force Combo</Text>
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Environment & Minions */}
+          <View style={{ marginBottom: 12 }}>
+            <Text style={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: 12, marginBottom: 4 }}>Environment & Minions:</Text>
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+              <Pressable 
+                onPress={() => dispatch({ type: 'QA_SetEnvironment', environmentId: 'haunted_temple' })} 
+                style={{ paddingHorizontal: 8, paddingVertical: 6, borderRadius: 4, backgroundColor: 'rgba(16, 185, 129, 0.3)' }}
+              >
+                <Text style={{ color: '#6ee7b7', fontSize: 12 }}>🌿 Temple</Text>
+              </Pressable>
+              <Pressable 
+                onPress={() => dispatch({ type: 'QA_SummonPlayerMinion', minionId: 'ghost_ally' })} 
+                style={{ paddingHorizontal: 8, paddingVertical: 6, borderRadius: 4, backgroundColor: 'rgba(168, 85, 247, 0.3)' }}
+              >
+                <Text style={{ color: '#c084fc', fontSize: 12 }}>🤝 Summon Ally</Text>
+              </Pressable>
+              <Pressable 
+                onPress={() => dispatch({ type: 'QA_SummonEnemyMinion', minionId: 'shadow_clone' })} 
+                style={{ paddingHorizontal: 8, paddingVertical: 6, borderRadius: 4, backgroundColor: 'rgba(239, 68, 68, 0.3)' }}
+              >
+                <Text style={{ color: '#fca5a5', fontSize: 12 }}>👿 Enemy Minion</Text>
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Shops & Spawns */}
+          <View>
+            <Text style={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: 12, marginBottom: 4 }}>Shops & Spawns:</Text>
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+              <Pressable 
+                onPress={() => dispatch({ type: 'QA_OpenShopHere' })} 
+                style={{ paddingHorizontal: 8, paddingVertical: 6, borderRadius: 4, backgroundColor: 'rgba(21, 128, 61, 0.3)' }}
+              >
+                <Text style={{ color: '#bbf7d0', fontSize: 12 }}>🏪 Shop</Text>
+              </Pressable>
+              <Pressable 
+                onPress={() => dispatch({ type: 'QA_SpawnEquippedEnemy', enemyId: 'thai_ghost_doctor' })} 
+                style={{ paddingHorizontal: 8, paddingVertical: 6, borderRadius: 4, backgroundColor: 'rgba(185, 28, 28, 0.3)' }}
+              >
+                <Text style={{ color: '#fecaca', fontSize: 12 }}>👹 Boss Fight</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       </ScrollView>

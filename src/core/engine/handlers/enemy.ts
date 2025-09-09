@@ -203,13 +203,28 @@ function enemyDiscardHand(s: GameState) {
 export function runEnemyTurn(s: GameState) {
   if (!s.enemy || !(s as any).enemyPiles) return;
 
+  // Import behavior system
+  const { processEnemyTurnBehaviors } = require('../../enemyBehaviorRuntime');
+  const { processStatusEffectsOnTurnStart } = require('../../statusEffectsRuntime');
+
   // PATCH: equipment once-per-turn reset and start-turn hook for ENEMY
   resetEquipmentTurnFlags(s);
   runEquipmentTurnHook(s, 'on_turn_start', 'enemy');
 
-  // เริ่มเทิร์นศัตรู
+  // Process status effects at start of enemy turn
+  processStatusEffectsOnTurnStart('enemy', s);
+
+  // Process enemy behaviors and spells
+  processEnemyTurnBehaviors(s);
+
+  // Import environment and minion systems
+  const { applyEnvironmentEnergyModifier } = require('../../environmentRuntime');
+  const { processEnemyTurnMinions } = require('../../minionRuntime');
+
+  // เริ่มเทิร์นศัตรู with environment modifications
   s.enemy.block = 0;
-  (s as any).enemyEnergy = (s as any).enemyMaxEnergy ?? ENEMY_MAX_ENERGY_NORMAL;
+  const baseEnemyEnergy = (s as any).enemyMaxEnergy ?? ENEMY_MAX_ENERGY_NORMAL;
+  (s as any).enemyEnergy = applyEnvironmentEnergyModifier(s, baseEnemyEnergy, 'enemy');
 
   // จั่วถึงขนาดมือ
   enemyDrawUpToHand(s);
@@ -241,6 +256,17 @@ export function runEnemyTurn(s: GameState) {
   const endHandBeforeDiscard = (s as any).enemyPiles?.hand?.length ?? 0;
   enemyDiscardHand(s);
   s.log.push(`Enemy end turn: played ${plays}/${startHand}, leftover=${endHandBeforeDiscard - plays}`);
+
+  // Process enemy minions actions
+  processEnemyTurnMinions(s);
+
+  // Process status effects at end of enemy turn
+  const { processStatusEffectsOnTurnEnd } = require('../../statusEffectsRuntime');
+  processStatusEffectsOnTurnEnd('enemy', s);
+
+  // Process minion end turn effects
+  const { processMinionsEndTurn } = require('../../minionRuntime');
+  processMinionsEndTurn(s);
 
   // PATCH: equipment end-turn hook for ENEMY
   runEquipmentTurnHook(s, 'on_turn_end', 'enemy');
