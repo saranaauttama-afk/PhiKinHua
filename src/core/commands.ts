@@ -143,6 +143,10 @@ export function applyCardEffect(state: GameState, idxInHand: number) {
   const card = state.piles.hand[idxInHand];
   if (!card) return;
   
+  console.log(`🔥 Playing card: ${card.id} (${card.name})`);
+  console.log('🔥 Card object:', JSON.stringify(card, null, 2));
+  state.log.push(`🎴 Playing ${card.name} (${card.id})`);
+  
   // Import all advanced systems
   const { modifyCardCostForStatusEffects, modifyDamageForStatusEffects, canPlayAttackCards } = require('./statusEffectsRuntime');
   const { applyEnvironmentCardCostModifier, applyEnvironmentDamageModifier, applyEnvironmentBlockModifier } = require('./environmentRuntime');
@@ -157,17 +161,10 @@ export function applyCardEffect(state: GameState, idxInHand: number) {
   
   // ★ Apply combo system modifiers first
   const modifiedCard = applyComboCardModifiers(state, card);
+  console.log('🔥 Modified card object:', JSON.stringify(modifiedCard, null, 2));
   
-  // Apply status effect and environment cost modifications
-  let modifiedCost = modifyCardCostForStatusEffects(state, modifiedCard.cost);
-  modifiedCost = applyEnvironmentCardCostModifier(state, modifiedCost, 'player');
-  
-  if (state.player.energy < modifiedCost) return;
-  state.player.energy -= modifiedCost;
-  
-  if (modifiedCost !== card.cost) {
-    state.log.push(`Card cost modified: ${card.cost} → ${modifiedCost}`);
-  }
+  // Note: Energy is already paid by combat handler
+  console.log(`🔥 Energy already paid by combat handler`);
 
   // Effect - Damage with status effect and environment modifications
   if (modifiedCard.dmg && state.enemy) {
@@ -197,6 +194,54 @@ export function applyCardEffect(state: GameState, idxInHand: number) {
   if (modifiedCard.energyGain && modifiedCard.energyGain > 0) {
     state.player.energy += modifiedCard.energyGain;
     state.log.push(`Gained +${modifiedCard.energyGain} energy`);
+  }
+  
+  console.log(`🔥 About to check summonMinion property...`);
+  
+  try {
+    // ✅ รองรับการเรียก minion
+    console.log(`🔥 Checking summonMinion property:`, modifiedCard.summonMinion);
+    if (modifiedCard.summonMinion) {
+      console.log(`🔥 Card ${card.id} has summonMinion:`, modifiedCard.summonMinion);
+      const { summonMinion } = require('./minionRuntime');
+      summonMinion(state, modifiedCard.summonMinion, 'player', 1);
+    } else {
+      console.log(`🔥 Card ${card.id} does NOT have summonMinion property`);
+    }
+    
+    // ✅ Special minion effects for specific cards
+    if (card.id === 'hell_gate') {
+      console.log('🔥 Hell gate special effect triggered');
+      const { summonMinion } = require('./minionRuntime');
+      summonMinion(state, 'demon_minion', 'player', 2);
+    }
+  } catch (error) {
+    console.log(`🔥 ERROR in minion summoning:`, error);
+    state.log.push(`Error in minion summoning: ${error}`);
+  }
+  
+  // ✅ Status Effect cards (direct application)
+  if ((modifiedCard as any).statusEffect) {
+    const statusConfig = (modifiedCard as any).statusEffect;
+    console.log(`🔥 Card ${card.id} applying status:`, statusConfig);
+    
+    try {
+      const { applyStatusEffect } = require('./statusEffectsRuntime');
+      const targetType = statusConfig.target; // 'enemy' or 'player'
+      
+      applyStatusEffect(
+        targetType,
+        state, 
+        statusConfig.effect,    // e.g., 'poison'
+        statusConfig.duration,  // e.g., 4
+        statusConfig.value      // e.g., 3 stacks
+      );
+      
+      state.log.push(`✨ ${card.name} applies ${statusConfig.effect} (${statusConfig.value} stacks) to ${targetType}`);
+    } catch (error) {
+      console.log(`🔥 ERROR applying status effect:`, error);
+      state.log.push(`Error applying status effect: ${error}`);
+    }
   }
   
   // ★ Trigger combo system after card effects

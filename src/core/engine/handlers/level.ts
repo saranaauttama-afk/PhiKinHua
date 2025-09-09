@@ -5,9 +5,40 @@ import { upgradeCard } from '../shared';
 
 export function chooseLevelUp(s: GameState, cmd: Extract<Command, { type: 'ChooseLevelUp' }>, r: RNG) {
   if (s.phase !== 'levelup' || !s.levelUp || s.levelUp.consumed) return { state: s, rng: r };
+  
+  // Legacy support for old bucket system
   const b = s.levelUp.bucket;
+  if (b) {
+    const idx = cmd.index ?? 0;
+    applyBucketChoice(s, b, idx);
+    s.levelUp.consumed = true;
+    s.phase = 'victory';
+    return { state: s, rng: r };
+  }
+  
+  return { state: s, rng: r };
+}
+
+export function chooseLevelUpOption(s: GameState, cmd: Extract<Command, { type: 'ChooseLevelUpOption' }>, r: RNG) {
+  if (s.phase !== 'levelup' || !s.levelUp || s.levelUp.consumed || !s.levelUp.choice) return { state: s, rng: r };
+  
+  const choice = s.levelUp.choice;
+  const selectedBucket = cmd.option === 'A' ? choice.optionA : choice.optionB;
   const idx = cmd.index ?? 0;
-  switch (b) {
+  
+  // Store the selected option for UI display
+  choice.selectedOption = cmd.option;
+  
+  applyBucketChoice(s, selectedBucket, idx);
+  s.levelUp.consumed = true;
+  
+  // After level up choice, go to victory phase
+  s.phase = 'victory';
+  return { state: s, rng: r };
+}
+
+function applyBucketChoice(s: GameState, bucket: string, idx: number) {
+  switch (bucket) {
     case 'max_hp':
       s.player.maxHp += 8; s.player.hp = Math.min(s.player.hp + 8, s.player.maxHp);
       break;
@@ -18,12 +49,12 @@ export function chooseLevelUp(s: GameState, cmd: Extract<Command, { type: 'Choos
       s.player.maxHandSize += 1;
       break;
     case 'cards': {
-      const c = s.levelUp.cardChoices?.[idx]; if (!c) break;
+      const c = s.levelUp?.cardChoices?.[idx]; if (!c) break;
       s.masterDeck.push(JSON.parse(JSON.stringify(c)));
       break;
     }
     case 'blessing': {
-      const bsel = s.levelUp.blessingChoices?.[idx]; if (!bsel) break;
+      const bsel = s.levelUp?.blessingChoices?.[idx]; if (!bsel) break;
       s.blessings.push(bsel);
       break;
     }
@@ -43,16 +74,17 @@ export function chooseLevelUp(s: GameState, cmd: Extract<Command, { type: 'Choos
       }
       break;
     }
+    case 'equipment_slot':
+      s.equipmentSlotsMax = (s.equipmentSlotsMax ?? 2) + 1;
+      break;
+    case 'gold_skip':
+      s.player.gold += 50;
+      break;
     case 'gold':
     default:
       s.player.gold += 25;
       break;
   }
-  s.levelUp.consumed = true;
-  
-  // After level up choice, go to victory phase
-  s.phase = 'victory';
-  return { state: s, rng: r };
 }
 
 export function skipLevelUp(s: GameState, _cmd: Extract<Command, { type: 'SkipLevelUp' }>, r: RNG) {

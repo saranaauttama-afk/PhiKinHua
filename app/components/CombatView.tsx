@@ -180,12 +180,12 @@ function CombatView({ state, dispatch }: CombatViewProps) {
             <Text style={{ color: '#8b5cf6', fontWeight: '600' }}>👹 Minions:</Text>
             {(state as any).playerMinions?.map((minion: any, i: number) => (
               <Text key={i} style={{ color: '#a78bfa', fontSize: 12 }}>
-                🤝 {minion.name} (HP: {minion.hp}/{minion.maxHp})
+                🤝 {minion.name} ({minion.duration} turns left)
               </Text>
             ))}
             {(state as any).enemyMinions?.map((minion: any, i: number) => (
               <Text key={i} style={{ color: '#f87171', fontSize: 12 }}>
-                👿 {minion.name} (HP: {minion.hp}/{minion.maxHp})
+                👿 {minion.name} ({minion.duration} turns left)
               </Text>
             ))}
           </View>

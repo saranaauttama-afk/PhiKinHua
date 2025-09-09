@@ -86,7 +86,8 @@ export type Phase =
 
 export type Bucket =
   | 'max_hp' | 'max_energy' | 'max_hand'
-  | 'cards' | 'blessing' | 'remove' | 'upgrade' | 'gold';
+  | 'cards' | 'blessing' | 'remove' | 'upgrade' | 'gold'
+  | 'equipment_slot' | 'gold_skip';
 
 export type PlayerState = {
   hp: number; maxHp: number; block: number; energy: number; gold: number;
@@ -187,7 +188,13 @@ export type GameState = {
   equipment?: any[]; // Equipment inventory (unequipped items from shops)
   // Level up
   levelUp?: {
-    bucket: Bucket;
+    bucket?: Bucket; // Legacy single bucket system
+    choice?: {
+      optionA: Bucket;
+      optionB: Bucket;
+      contextDescription?: string;
+      selectedOption?: 'A' | 'B';
+    };
     cardChoices?: CardData[];
     blessingChoices?: BlessingDef[];
     consumed?: boolean;
@@ -214,6 +221,7 @@ export type Command =
 
   // Level Up
   | { type: 'ChooseLevelUp'; index?: number }
+  | { type: 'ChooseLevelUpOption'; option: 'A' | 'B'; index?: number }
   | { type: 'SkipLevelUp' }
 
   // UI

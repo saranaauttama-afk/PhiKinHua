@@ -1,5 +1,5 @@
-// ราคา/เศรษฐศาสตร์ร้านค้า
-export const SHOP_REROLL_COST = 20;
+// ราคา/เศรษฐศาสตร์ร้านค้า (เล่นง่ายขึ้น)
+export const SHOP_REROLL_COST = 10; // ลดลงจาก 20
 
 export const REMOVE_SHOP_COSTS = [0, 20, 50, 90, 140, 200] as const;
 export const UPGRADE_SHOP_COSTS = [0, 30, 60, 100, 150, 200] as const;
@@ -21,14 +21,14 @@ export function upgradeCostForCount(count: number): number {
   return last + extra * UPGRADE_STEP;
 }
 
-// === Victory Gold Rewards ===
+// === Victory Gold Rewards === (เพิ่มขึ้น)
 export const GOLD_VICTORY_BASE = {
-  normal: 8,    // base gold for normal enemies
-  elite: 15,    // base gold for elite enemies  
-  boss: 30,     // base gold for bosses
+  normal: 12,   // เพิ่มจาก 8 → 12 
+  elite: 25,    // เพิ่มจาก 15 → 25
+  boss: 50,     // เพิ่มจาก 30 → 50  
 } as const;
 
-export const GOLD_VICTORY_LEVEL_BONUS = 2; // bonus per player level
+export const GOLD_VICTORY_LEVEL_BONUS = 3; // เพิ่มจาก 2 → 3
 
 export function goldRewardForVictory(
   tier: 'normal' | 'elite' | 'boss',

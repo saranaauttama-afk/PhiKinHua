@@ -176,56 +176,104 @@ export const THAI_MINIONS: Record<string, MinionData> = {
   ghost_ally: {
     id: 'ghost_ally',
     name: 'Ghost Ally',
-    hp: 3,
-    maxHp: 3,
-    attack: 4,
     duration: 3,
     owner: 'player',
-    ai: 'aggressive',
-    abilities: ['phase_attack'] // Can attack through block
+    abilities: [
+      {
+        type: 'attack',
+        trigger: 'turn_start',
+        target: 'enemy',
+        value: 4,
+        ignores_block: true,
+        description: 'Phase attack through defenses'
+      }
+    ]
   },
   demon_minion: {
     id: 'demon_minion', 
     name: 'Demon Minion',
-    hp: 4,
-    maxHp: 4,
-    attack: 3,
     duration: 5,
     owner: 'player',
-    ai: 'aggressive'
+    abilities: [
+      {
+        type: 'attack',
+        trigger: 'turn_start',
+        target: 'enemy',
+        value: 3,
+        description: 'Demonic assault'
+      }
+    ]
   },
   kuman_spirit: {
     id: 'kuman_spirit',
     name: 'Kuman Spirit',
-    hp: 8,
-    maxHp: 8,
-    attack: 2,
-    duration: 0, // Permanent until destroyed
+    duration: 6, // 6 turns instead of permanent
     owner: 'player',
-    ai: 'support',
-    abilities: ['heal_player_2'] // Heals player 2 HP per turn
+    abilities: [
+      {
+        type: 'heal',
+        trigger: 'turn_start',
+        target: 'owner',
+        value: 2,
+        description: 'Channels healing energy'
+      }
+    ]
+  },
+  poison_spirit: {
+    id: 'poison_spirit',
+    name: 'Poison Spirit',
+    duration: 4,
+    owner: 'player',
+    abilities: [
+      {
+        type: 'status',
+        trigger: 'turn_start',
+        target: 'enemy',
+        effect: 'poison',
+        value: 2,
+        duration: 3,
+        description: 'Apply poison (2 stacks, 3 turns)'
+      }
+    ]
   },
   shadow_clone: {
     id: 'shadow_clone',
     name: 'Shadow Clone',
-    hp: 15,
-    maxHp: 15,
-    attack: 8,
     duration: 4,
     owner: 'enemy',
-    ai: 'aggressive',
-    abilities: ['copy_enemy_attacks'] // Copies enemy's last attack
+    abilities: [
+      {
+        type: 'attack',
+        trigger: 'turn_start',
+        target: 'enemy',  // This will be flipped to 'player' for enemy minions
+        value: 8,
+        description: 'Powerful shadow strike'
+      }
+    ]
   },
   tree_guardian: {
     id: 'tree_guardian',
     name: 'Tree Guardian',
-    hp: 12,
-    maxHp: 12,
-    attack: 5,
     duration: 6,
-    owner: 'enemy', 
-    ai: 'defensive',
-    abilities: ['root_entangle'] // Can apply entangle to player
+    owner: 'enemy',
+    abilities: [
+      {
+        type: 'attack',
+        trigger: 'turn_start',
+        target: 'enemy',  // This will be flipped to 'player' for enemy minions
+        value: 5,
+        description: 'Root strike'
+      },
+      {
+        type: 'status',
+        trigger: 'turn_start',
+        target: 'enemy',  // This will be flipped to 'player' for enemy minions
+        effect: 'entangle',
+        value: 1,
+        duration: 2,
+        description: 'Entangle with roots'
+      }
+    ]
   }
 };
 

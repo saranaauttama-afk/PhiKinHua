@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import type { GameState, Command } from '../../src/core/types';
+import { getBucketDisplayInfo } from '../../src/core/level';
 
 interface EventViewProps {
   state: GameState;
@@ -118,72 +119,171 @@ function EventView({ state, dispatch }: EventViewProps) {
     const lu = state.levelUp;
     if (!lu) return null;
 
-    const Btn = ({ label, onPress }: { label: string; onPress: () => void }) => (
-      <Pressable onPress={onPress} className="px-4 py-2 rounded-xl bg-yellow-600/50 border border-yellow-400/50 active:opacity-70">
-        <Text className="text-yellow-200 font-semibold">{label}</Text>
-      </Pressable>
-    );
+    // Support for new choice-based system
+    if (lu.choice) {
+      const { optionA, optionB, contextDescription } = lu.choice;
+      const infoA = getBucketDisplayInfo(optionA);
+      const infoB = getBucketDisplayInfo(optionB);
 
-    return (
-      <View style={{ marginTop: 16, borderRadius: 16, padding: 16, backgroundColor: 'rgba(146, 64, 14, 0.3)', borderWidth: 1, borderColor: 'rgba(234, 179, 8, 0.3)' }}>
-        <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold', marginBottom: 8 }}>⬆️ Level Up!</Text>
-        <Text style={{ color: '#fde68a', marginBottom: 16 }}>Choose your reward:</Text>
+      const renderChoiceOption = (option: 'A' | 'B', info: any) => {
+        const bucket = option === 'A' ? optionA : optionB;
+        const needsSubChoice = bucket === 'cards' || bucket === 'blessing' || bucket === 'remove' || bucket === 'upgrade';
         
-        {(() => {
-          switch (lu.bucket) {
-            case 'blessing':
-              return (
-                <View>
-                  <Text className="text-white font-semibold mb-2">Choose a blessing:</Text>
-                  <View className="flex-col gap-2">
-                    {(lu.blessingChoices ?? []).map((blessing, i) => (
-                      <Pressable
-                        key={i}
-                        onPress={() => dispatch({ type: 'ChooseLevelUp', index: i })}
-                        className="p-3 rounded-lg bg-purple-800/30 border border-purple-500/30 active:opacity-70"
-                      >
-                        <Text className="text-purple-200 font-semibold">{blessing.name}</Text>
-                        <Text className="text-purple-200/70 text-sm">{blessing.desc}</Text>
-                      </Pressable>
-                    ))}
+        return (
+          <Pressable
+            onPress={() => {
+              if (needsSubChoice) {
+                // For choices that need sub-selection, just mark the choice and let user select from sub-options
+                dispatch({ type: 'ChooseLevelUpOption', option, index: 0 });
+              } else {
+                // For direct choices, apply immediately
+                dispatch({ type: 'ChooseLevelUpOption', option });
+              }
+            }}
+            style={{
+              flex: 1,
+              padding: 16,
+              marginHorizontal: 4,
+              borderRadius: 12,
+              backgroundColor: 'rgba(234, 179, 8, 0.2)',
+              borderWidth: 2,
+              borderColor: 'rgba(234, 179, 8, 0.4)',
+            }}
+          >
+            <Text style={{ fontSize: 32, textAlign: 'center', marginBottom: 8 }}>{info.icon}</Text>
+            <Text style={{ color: 'white', fontWeight: 'bold', textAlign: 'center', marginBottom: 4 }}>{info.name}</Text>
+            <Text style={{ color: '#fde68a', textAlign: 'center', fontSize: 12 }}>{info.description}</Text>
+          </Pressable>
+        );
+      };
+
+      return (
+        <View style={{ marginTop: 16, borderRadius: 16, padding: 16, backgroundColor: 'rgba(146, 64, 14, 0.3)', borderWidth: 1, borderColor: 'rgba(234, 179, 8, 0.3)' }}>
+          <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold', marginBottom: 8 }}>⬆️ Level Up!</Text>
+          <Text style={{ color: '#fde68a', marginBottom: 16, textAlign: 'center' }}>
+            {contextDescription || 'Choose your path forward:'}
+          </Text>
+          
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {renderChoiceOption('A', infoA)}
+            {renderChoiceOption('B', infoB)}
+          </View>
+
+          {/* Sub-choice rendering for cards/blessings */}
+          {(optionA === 'cards' || optionB === 'cards') && lu.cardChoices && (
+            <View style={{ marginTop: 16 }}>
+              <Text style={{ color: 'white', fontWeight: 'bold', marginBottom: 8 }}>Choose cards to add:</Text>
+              <View style={{ gap: 8 }}>
+                {lu.cardChoices.map((card, i) => (
+                  <Pressable
+                    key={i}
+                    onPress={() => dispatch({ type: 'ChooseLevelUpOption', option: optionA === 'cards' ? 'A' : 'B', index: i })}
+                    style={{ padding: 12, borderRadius: 8, backgroundColor: 'rgba(59, 130, 246, 0.2)', borderWidth: 1, borderColor: 'rgba(59, 130, 246, 0.4)' }}
+                  >
+                    <Text style={{ color: '#bfdbfe', fontWeight: 'bold' }}>{card.name}</Text>
+                    <Text style={{ color: '#93c5fd', fontSize: 12 }}>Cost: {card.cost ?? 0}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {(optionA === 'blessing' || optionB === 'blessing') && lu.blessingChoices && (
+            <View style={{ marginTop: 16 }}>
+              <Text style={{ color: 'white', fontWeight: 'bold', marginBottom: 8 }}>Choose a blessing:</Text>
+              <View style={{ gap: 8 }}>
+                {lu.blessingChoices.map((blessing, i) => (
+                  <Pressable
+                    key={i}
+                    onPress={() => dispatch({ type: 'ChooseLevelUpOption', option: optionA === 'blessing' ? 'A' : 'B', index: i })}
+                    style={{ padding: 12, borderRadius: 8, backgroundColor: 'rgba(147, 51, 234, 0.2)', borderWidth: 1, borderColor: 'rgba(147, 51, 234, 0.4)' }}
+                  >
+                    <Text style={{ color: '#ddd6fe', fontWeight: 'bold' }}>{blessing.name}</Text>
+                    <Text style={{ color: '#c4b5fd', fontSize: 12 }}>{blessing.desc}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          )}
+        </View>
+      );
+    }
+
+    // Legacy support for old bucket system
+    if (lu.bucket) {
+      const Btn = ({ label, onPress }: { label: string; onPress: () => void }) => (
+        <Pressable onPress={onPress} style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, backgroundColor: 'rgba(234, 179, 8, 0.5)', borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.5)' }}>
+          <Text style={{ color: '#fde68a', fontWeight: 'bold' }}>{label}</Text>
+        </Pressable>
+      );
+
+      return (
+        <View style={{ marginTop: 16, borderRadius: 16, padding: 16, backgroundColor: 'rgba(146, 64, 14, 0.3)', borderWidth: 1, borderColor: 'rgba(234, 179, 8, 0.3)' }}>
+          <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold', marginBottom: 8 }}>⬆️ Level Up!</Text>
+          <Text style={{ color: '#fde68a', marginBottom: 16 }}>Choose your reward:</Text>
+          
+          {(() => {
+            switch (lu.bucket) {
+              case 'blessing':
+                return (
+                  <View>
+                    <Text style={{ color: 'white', fontWeight: 'bold', marginBottom: 8 }}>Choose a blessing:</Text>
+                    <View style={{ gap: 8 }}>
+                      {(lu.blessingChoices ?? []).map((blessing, i) => (
+                        <Pressable
+                          key={i}
+                          onPress={() => dispatch({ type: 'ChooseLevelUp', index: i })}
+                          style={{ padding: 12, borderRadius: 8, backgroundColor: 'rgba(147, 51, 234, 0.2)', borderWidth: 1, borderColor: 'rgba(147, 51, 234, 0.4)' }}
+                        >
+                          <Text style={{ color: '#ddd6fe', fontWeight: 'bold' }}>{blessing.name}</Text>
+                          <Text style={{ color: '#c4b5fd', fontSize: 12 }}>{blessing.desc}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
                   </View>
-                </View>
-              );
-            case 'cards':
-              return (
-                <View>
-                  <Text className="text-white font-semibold mb-2">Choose cards to add:</Text>
-                  <View className="flex-col gap-2">
-                    {(lu.cardChoices ?? []).map((card, i) => (
-                      <Pressable
-                        key={i}
-                        onPress={() => dispatch({ type: 'ChooseLevelUp', index: i })}
-                        className="p-3 rounded-lg bg-blue-800/30 border border-blue-500/30 active:opacity-70"
-                      >
-                        <Text className="text-blue-200 font-semibold">{card.name}</Text>
-                        <Text className="text-blue-200/70 text-sm">Cost: {card.cost ?? 0}</Text>
-                      </Pressable>
-                    ))}
+                );
+              case 'cards':
+                return (
+                  <View>
+                    <Text style={{ color: 'white', fontWeight: 'bold', marginBottom: 8 }}>Choose cards to add:</Text>
+                    <View style={{ gap: 8 }}>
+                      {(lu.cardChoices ?? []).map((card, i) => (
+                        <Pressable
+                          key={i}
+                          onPress={() => dispatch({ type: 'ChooseLevelUp', index: i })}
+                          style={{ padding: 12, borderRadius: 8, backgroundColor: 'rgba(59, 130, 246, 0.2)', borderWidth: 1, borderColor: 'rgba(59, 130, 246, 0.4)' }}
+                        >
+                          <Text style={{ color: '#bfdbfe', fontWeight: 'bold' }}>{card.name}</Text>
+                          <Text style={{ color: '#93c5fd', fontSize: 12 }}>Cost: {card.cost ?? 0}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
                   </View>
-                </View>
-              );
-            case 'remove': 
-              return <Btn label="Remove a card from deck" onPress={() => dispatch({ type: 'ChooseLevelUp' })} />;
-            case 'upgrade':
-              return <Btn label="Upgrade a card" onPress={() => dispatch({ type: 'ChooseLevelUp' })} />;
-            case 'max_hp': 
-              return <Btn label="+5 Max HP" onPress={() => dispatch({ type: 'ChooseLevelUp' })} />;
-            case 'max_energy': 
-              return <Btn label="+1 Max Energy" onPress={() => dispatch({ type: 'ChooseLevelUp' })} />;
-            case 'max_hand': 
-              return <Btn label="+1 Max Hand Size" onPress={() => dispatch({ type: 'ChooseLevelUp' })} />;
-            case 'gold':
-            default: 
-              return <Btn label="+25 Gold" onPress={() => dispatch({ type: 'ChooseLevelUp' })} />;
-          }
-        })()}
-      </View>
-    );
+                );
+              case 'remove': 
+                return <Btn label="Remove a card from deck" onPress={() => dispatch({ type: 'ChooseLevelUp' })} />;
+              case 'upgrade':
+                return <Btn label="Upgrade a card" onPress={() => dispatch({ type: 'ChooseLevelUp' })} />;
+              case 'max_hp': 
+                return <Btn label="+5 Max HP" onPress={() => dispatch({ type: 'ChooseLevelUp' })} />;
+              case 'max_energy': 
+                return <Btn label="+1 Max Energy" onPress={() => dispatch({ type: 'ChooseLevelUp' })} />;
+              case 'max_hand': 
+                return <Btn label="+1 Max Hand Size" onPress={() => dispatch({ type: 'ChooseLevelUp' })} />;
+              case 'equipment_slot':
+                return <Btn label="+1 Equipment Slot" onPress={() => dispatch({ type: 'ChooseLevelUp' })} />;
+              case 'gold_skip':
+                return <Btn label="+50 Gold" onPress={() => dispatch({ type: 'ChooseLevelUp' })} />;
+              case 'gold':
+              default: 
+                return <Btn label="+25 Gold" onPress={() => dispatch({ type: 'ChooseLevelUp' })} />;
+            }
+          })()}
+        </View>
+      );
+    }
+
+    return null;
   };
 
   const renderStarter = () => {

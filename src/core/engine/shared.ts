@@ -2,7 +2,7 @@
 import type { GameState, CardData } from '../types';
 import type { RNG } from '../rng';
 import { nextExpForLevel, EXP_KILL_NORMAL, EXP_KILL_ELITE, EXP_KILL_BOSS } from '../balance/progression';
-import { rollLevelUpBucket, rollTwoBlessings, rollThreeCards, type LevelBucket } from '../level';
+import { rollLevelUpChoice, rollTwoBlessings, rollThreeCards, type LevelBucket } from '../level';
 import { goldRewardForVictory } from '../balance/economy';
 
 export function getCurrentNodeId(map?: any): string | undefined {
@@ -56,13 +56,20 @@ export function grantExpAndQueueLevelUp(s: GameState, r: RNG): RNG {
     s.player.level += 1;
     s.player.expToNext = nextExpForLevel(s.player.level);
 
-    if (!s.levelUp) {
-      const rolled = rollLevelUpBucket(r, s); r = rolled.rng;
-      const bucket = rolled.bucket as LevelBucket;
+    if (!s.levelUp || s.levelUp.consumed) {
+      const rolled = rollLevelUpChoice(r, s); r = rolled.rng;
+      const choice = rolled.choice;
       let cardChoices, blessingChoices;
-      if (bucket === 'cards') { const rr = rollThreeCards(r, s.player.level); r = rr.rng; cardChoices = rr.list; }
-      if (bucket === 'blessing') { const bb = rollTwoBlessings(r); r = bb.rng; blessingChoices = bb.list; }
-      s.levelUp = { bucket, cardChoices, blessingChoices, consumed: false };
+      
+      // Check if either option needs additional choices (cards/blessings)
+      if (choice.optionA === 'cards' || choice.optionB === 'cards') {
+        const rr = rollThreeCards(r, s.player.level); r = rr.rng; cardChoices = rr.list;
+      }
+      if (choice.optionA === 'blessing' || choice.optionB === 'blessing') {
+        const bb = rollTwoBlessings(r); r = bb.rng; blessingChoices = bb.list;
+      }
+      
+      s.levelUp = { choice, cardChoices, blessingChoices, consumed: false };
     } else {
       s.log.push('LevelUp queued (multiple levels).');
     }

@@ -31,6 +31,7 @@ const H: { [K in Command['type']]?: Handler<K> } = {
 
   // Level up
   ChooseLevelUp: lvl.chooseLevelUp,
+  ChooseLevelUpOption: lvl.chooseLevelUpOption,
   SkipLevelUp: lvl.skipLevelUp,
 
   // UI

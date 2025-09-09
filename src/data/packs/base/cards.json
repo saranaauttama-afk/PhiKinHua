@@ -76,6 +76,7 @@
     "cost": 1,
     "rarity": "Common",
     "inShop": true,
+    "summonMinion": "ghost_ally",
     "tags": ["thai", "shaman", "minion"],
     "desc": "เรียกผีเก่ามาช่วย สร้าง Ghost Ally (3 HP, โจมตี 4, หายไปหลัง 3 เทิร์น)"
   },
@@ -186,9 +187,39 @@
     "cost": 2,
     "rarity": "Uncommon",
     "inShop": true,
+    "starter": 1,
     "tags": ["thai", "shaman", "minion", "exhaust"],
     "exhaust": true,
+    "summonMinion": "kuman_spirit",
     "desc": "สร้างกุมารเด็กน้อย สร้าง Kuman (8 HP, โจมตี 2, รักษา 2 HP/เทิร์น) (ใช้ได้ครั้งเดียว)"
+  },
+  {
+    "id": "summon_poison_spirit",
+    "name": "เรียกผีพิษ", 
+    "type": "skill",
+    "cost": 2,
+    "rarity": "Uncommon",
+    "inShop": true,
+    "summonMinion": "poison_spirit",
+    "tags": ["thai", "shaman", "minion", "status"],
+    "desc": "เรียกผีพิษมาช่วย สร้าง Poison Spirit (4 turns, ทำให้ศัตรู poison 2 stacks)"
+  },
+  {
+    "id": "direct_poison_spell",
+    "name": "เสกพิษตรง",
+    "type": "skill",
+    "cost": 1,
+    "rarity": "Common",
+    "starter": 1,
+    "inShop": true,
+    "statusEffect": {
+      "target": "enemy",
+      "effect": "poison", 
+      "value": 3,
+      "duration": 4
+    },
+    "tags": ["thai", "shaman", "status", "poison"],
+    "desc": "เสกคาถาพิษโดยตรง ให้ศัตรู Poison 3 stacks นาน 4 turns"
   },
   {
     "id": "salt_circle",

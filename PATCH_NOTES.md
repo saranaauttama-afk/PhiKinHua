@@ -1,6 +1,34 @@
 # Thai Shaman Card Game - Patch Notes
 
-## 🚀 **MAJOR UPDATE: Phase 1-4 Complete Integration** (Latest - 2025-09-09)
+## 🚀 **MEGA UPDATE: Balance Overhaul + Choice-Based Levelup** (Latest - 2025-09-09)
+
+### 🎯 **Phase 1: Balance Revolution**
+- **⚡ Faster Progression**: 
+  - Normal enemies: 10 → 12 EXP
+  - Elite enemies: 25 → 40 EXP  
+  - Boss enemies: 50 → 100 EXP
+  - Level requirements: 50% reduction (เดิม 1,700 XP ถึง Level 10 → ตอนนี้ 648 XP)
+- **💰 Enhanced Economy**:
+  - Victory gold: Normal +50%, Elite +67%, Boss +67%
+  - Shop reroll cost: 20 → 10 gold
+  - More generous gold per level bonus: 2 → 3
+
+### 🎲 **Phase 2: Strategic Choice System**
+- **11 Meaningful Decision Pairs** replacing random levelup:
+  - **Power Scaling**: Energy vs Hand Size | HP vs Equipment Slots
+  - **Build Direction**: Cards vs Blessings | Immediate vs Delayed value
+  - **Deck Refinement**: Remove vs Upgrade cards | Purify vs Strengthen
+  - **Economic**: Gold options vs Power progression
+- **Level-Contextual Choices**:
+  - **Early (1-3)**: Foundation building choices
+  - **Mid (4-7)**: Full strategic variety
+  - **Late (8+)**: Optimization and refinement focus
+- **Enhanced UI**: Side-by-side choice cards with icons, strategic descriptions, and context messaging
+- **Strategic Balance**: Every choice creates meaningful trade-offs that shape playstyle
+
+---
+
+## 🚀 **MAJOR UPDATE: Phase 1-4 Complete Integration** (2025-09-08)
 
 ### 🎯 **Phase 1: Advanced Status Effects System (12 Types)**
 - **💪 Strength** - เพิ่มความแรงโจมตี
@@ -132,6 +160,8 @@
 - ✅ **12 Card Combos** for strategic depth
 - ✅ **Adaptive AI** that learns and counters
 - ✅ **Dynamic Difficulty** scaling
+- ✅ **Strategic Choice-Based Levelup** with meaningful trade-offs
+- ✅ **Optimized Game Economy** for 12-15 encounter gameplay
 - ✅ **Comprehensive Debug System** (50+ commands)
 - ✅ **Enhanced UI** showing all systems
 - ✅ **Component Architecture** for maintainability
@@ -146,8 +176,10 @@
 - **Multi-turn Strategic Planning** with combo system
 - **Dynamic Environment Effects** on combat
 - **Comprehensive Status Effect Interactions**
+- **Strategic Choice Algorithm** with level-contextual filtering
+- **Backward-Compatible Levelup System** supporting both old and new modes
 - **Modular Component Architecture**
 - **50+ Debug Commands** for complete testing
 - **Zero Critical Bugs** - stable and ready for extended play
 
-*The Thai Shaman Card Game now features the most advanced AI and combat systems with full Thai cultural integration. Every system works together for deep, strategic gameplay with authentic cultural themes!*
+*The Thai Shaman Card Game now features perfectly balanced progression with strategic depth matching Slay the Spire and NOTM. Players experience meaningful choices that shape their unique playstyle while enjoying authentic Thai cultural themes!*

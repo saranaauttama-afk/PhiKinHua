@@ -169,11 +169,12 @@ export function choose(s: GameState, cmd: Extract<Command, { type: 'ChooseOffer'
       // Initialize enemy behaviors, environment, and minions
       const { initializeEnemyBehaviors } = require('../../enemyBehaviorRuntime');
       const { initializeCombatEnvironment } = require('../../environmentRuntime');
-      const { initializeCombatMinions } = require('../../minionRuntime');
+      const { syncMinionsToState } = require('../../minionRuntime');
       
       initializeEnemyBehaviors(s);
       initializeCombatEnvironment(s);
-      initializeCombatMinions(s);
+      // Don't clear minions on combat start - let them persist from previous summons
+      syncMinionsToState(s);
       
       // ตั้ง intent แสดงล่วงหน้า (ไพ่บนสุดของ draw)
       (s as any).enemyIntentCardId = (s as any).enemyPiles?.draw?.[0] ?? null;
@@ -219,11 +220,12 @@ export function choose(s: GameState, cmd: Extract<Command, { type: 'ChooseOffer'
       // Initialize boss behaviors, environment, and minions
       const { initializeEnemyBehaviors } = require('../../enemyBehaviorRuntime');
       const { initializeCombatEnvironment } = require('../../environmentRuntime');
-      const { initializeCombatMinions } = require('../../minionRuntime');
+      const { syncMinionsToState } = require('../../minionRuntime');
       
       initializeEnemyBehaviors(s);
       initializeCombatEnvironment(s);
-      initializeCombatMinions(s);
+      // Don't clear minions on combat start - let them persist from previous summons
+      syncMinionsToState(s);
       
       (s as any).enemyIntentCardId = (s as any).enemyPiles?.draw?.[0] ?? null;
 

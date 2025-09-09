@@ -31,9 +31,13 @@ export function summonMinion(
 ): void {
   const minionTemplate = THAI_MINIONS[minionId];
   if (!minionTemplate) {
-    state.log.push(`Unknown minion: ${minionId}`);
+    state.log.push(`❌ Unknown minion: ${minionId}`);
+    console.log('Available minions:', Object.keys(THAI_MINIONS));
     return;
   }
+  
+  console.log(`🔄 Summoning ${count}x ${minionId} for ${owner}`);
+  state.log.push(`🔄 Attempting to summon ${count}x ${minionTemplate.name} for ${owner}`);
 
   for (let i = 0; i < count; i++) {
     // Create unique minion instance
@@ -47,12 +51,13 @@ export function summonMinion(
     activeMinions.push(minion);
     
     const ownerName = owner === 'player' ? 'Player' : state.enemy?.name || 'Enemy';
-    state.log.push(`✨ ${ownerName} summons ${minion.name}! (${minion.hp}/${minion.maxHp} HP, ${minion.attack} ATK)`);
+    const abilitySummary = minion.abilities.map(a => a.description).join(', ');
+    state.log.push(`✨ ${ownerName} summons ${minion.name}! (${minion.duration} turns, ${abilitySummary})`);
   }
 
   // Check summoning limits
   const ownerMinions = activeMinions.filter(m => m.owner === owner);
-  const maxMinions = owner === 'player' ? 5 : (state.enemy ? getEnemyMaxMinions(state) : 3);
+  const maxMinions = owner === 'player' ? 3 : (state.enemy ? getEnemyMaxMinions(state) : 2); // Reduced limits
   
   if (ownerMinions.length > maxMinions) {
     // Remove oldest minions if over limit
@@ -61,9 +66,12 @@ export function summonMinion(
     
     for (const minion of toRemove) {
       removeMinion(state, minion.id);
-      state.log.push(`💀 ${minion.name} is dismissed due to minion limit`);
+      state.log.push(`💀 ${minion.name} is dismissed due to minion limit (${maxMinions} max)`);
     }
   }
+  
+  // ★ Sync minions to state for UI
+  syncMinionsToState(state);
 }
 
 function getEnemyMaxMinions(state: GameState): number {
@@ -81,6 +89,7 @@ export function removeMinion(state: GameState, minionId: string): boolean {
   if (index >= 0) {
     const removed = activeMinions.splice(index, 1)[0];
     state.log.push(`💀 ${removed.name} is removed from battle`);
+    syncMinionsToState(state);
     return true;
   }
   return false;
@@ -91,8 +100,17 @@ export function clearAllMinions(state: GameState, owner?: 'player' | 'enemy'): v
     activeMinions.filter(m => m.owner === owner) : 
     [...activeMinions];
     
-  for (const minion of toRemove) {
-    removeMinion(state, minion.id);
+  if (toRemove.length > 0) {
+    // Clear without individual logging to avoid spam
+    if (owner) {
+      activeMinions.splice(0, activeMinions.length, ...activeMinions.filter(m => m.owner !== owner));
+    } else {
+      activeMinions.length = 0;
+    }
+    
+    const ownerText = owner ? `${owner} ` : '';
+    state.log.push(`🧹 All ${ownerText}minions cleared from battle`);
+    syncMinionsToState(state);
   }
 }
 
@@ -120,72 +138,80 @@ function processMinionAction(
   target: any,
   targetType: 'player' | 'enemy'
 ): void {
-  // Process minion abilities first
-  if (minion.abilities?.length) {
-    for (const ability of minion.abilities) {
+  console.log(`🔥 Processing ${minion.name} with ${minion.abilities.length} abilities`);
+  
+  // Process all minion abilities
+  for (const ability of minion.abilities) {
+    if (ability.trigger === 'turn_start') {
       processMinionAbility(state, minion, ability, target, targetType);
     }
-  }
-
-  // Basic attack based on AI type
-  switch (minion.ai) {
-    case 'aggressive':
-      // Direct attack
-      dealMinionDamage(state, minion, target, targetType);
-      break;
-      
-    case 'defensive':
-      // Defensive minions might not attack every turn, or provide buffs
-      if (Math.random() < 0.7) { // 70% chance to attack
-        dealMinionDamage(state, minion, target, targetType);
-      } else {
-        state.log.push(`🛡️ ${minion.name} takes a defensive stance`);
-      }
-      break;
-      
-    case 'support':
-      // Support minions focus on helping their owner
-      provideMinionSupport(state, minion);
-      break;
   }
 }
 
 function processMinionAbility(
   state: GameState,
   minion: MinionData,
-  ability: string,
+  ability: any,
   target: any,
   targetType: 'player' | 'enemy'
 ): void {
-  switch (ability) {
-    case 'phase_attack':
-      // Ignores block
-      const phaseDamage = minion.attack;
-      target.hp = Math.max(0, target.hp - phaseDamage);
-      state.log.push(`👻 ${minion.name} phases through defenses for ${phaseDamage} damage!`);
-      return; // Skip normal attack
-      
-    case 'heal_player_2':
-      if (minion.owner === 'player') {
-        state.player.hp = Math.min(state.player.maxHp, state.player.hp + 2);
-        state.log.push(`💚 ${minion.name} heals player for 2 HP`);
+  console.log(`🔥 Processing ability: ${ability.type} -> ${ability.target} (value: ${ability.value})`);
+  
+  // Determine actual target based on ability.target and minion.owner
+  let actualTarget = target;
+  let actualTargetType = targetType;
+  
+  if (ability.target === 'owner') {
+    actualTarget = minion.owner === 'player' ? state.player : state.enemy;
+    actualTargetType = minion.owner;
+  }
+  
+  switch (ability.type) {
+    case 'attack':
+      const damage = ability.value;
+      if (ability.ignores_block) {
+        actualTarget.hp = Math.max(0, actualTarget.hp - damage);
+        state.log.push(`👻 ${minion.name} phases through defenses for ${damage} damage!`);
+      } else {
+        dealMinionDamage(state, { ...minion, attack: damage }, actualTarget, actualTargetType);
       }
       break;
       
-    case 'copy_enemy_attacks':
-      // Copy the last enemy attack (simplified)
-      if (minion.owner === 'enemy' && state.enemy) {
-        const copyDamage = Math.floor(minion.attack * 1.5);
-        dealMinionDamage(state, { ...minion, attack: copyDamage }, target, targetType);
-        state.log.push(`🔄 ${minion.name} copies master's technique!`);
-        return; // Skip normal attack
+    case 'heal':
+      if (actualTarget.hp !== undefined && actualTarget.maxHp !== undefined) {
+        const oldHp = actualTarget.hp;
+        actualTarget.hp = Math.min(actualTarget.maxHp, actualTarget.hp + ability.value);
+        const healed = actualTarget.hp - oldHp;
+        state.log.push(`💚 ${minion.name} ${ability.description} (+${healed} HP)`);
       }
       break;
       
-    case 'root_entangle':
-      if (Math.random() < 0.3) { // 30% chance
-        applyStatusEffect(targetType, state, 'entangle', 2, 1);
-        state.log.push(`🌿 ${minion.name} entangles the ${targetType}!`);
+    case 'energy':
+      if (actualTargetType === 'player') {
+        state.player.energy += ability.value;
+        state.log.push(`⚡ ${minion.name} grants ${ability.value} energy`);
+      }
+      break;
+      
+    case 'draw':
+      if (actualTargetType === 'player') {
+        state.log.push(`🎴 ${minion.name} grants card draw (${ability.value})`);
+        // TODO: Implement card draw
+      }
+      break;
+      
+    case 'block':
+      if (actualTargetType === 'player') {
+        state.player.block += ability.value;
+        state.log.push(`🛡️ ${minion.name} grants ${ability.value} block`);
+      }
+      break;
+      
+    case 'status':
+      if (ability.effect) {
+        const { applyStatusEffect } = require('./statusEffectsRuntime');
+        applyStatusEffect(actualTargetType, state, ability.effect, ability.duration || 1, ability.value);
+        state.log.push(`✨ ${minion.name} applies ${ability.effect} to ${actualTargetType}`);
       }
       break;
   }
@@ -193,11 +219,11 @@ function processMinionAbility(
 
 function dealMinionDamage(
   state: GameState,
-  minion: MinionData,
+  minion: any, // Can have attack property for backwards compatibility
   target: any,
   targetType: 'player' | 'enemy'
 ): void {
-  let damage = minion.attack;
+  let damage = minion.attack || 0;
   
   // Apply environment modifiers if minion is attacking
   const { applyEnvironmentDamageModifier } = require('./environmentRuntime');
@@ -221,20 +247,7 @@ function dealMinionDamage(
   }
 }
 
-function provideMinionSupport(state: GameState, minion: MinionData): void {
-  switch (minion.id.split('_')[0]) { // Get base minion type
-    case 'kuman':
-      // Kuman provides healing
-      if (minion.owner === 'player') {
-        state.player.hp = Math.min(state.player.maxHp, state.player.hp + 2);
-        state.log.push(`💚 ${minion.name} channels healing energy (+2 HP)`);
-      }
-      break;
-      
-    default:
-      state.log.push(`✨ ${minion.name} provides support`);
-  }
-}
+// Legacy function - no longer used with new abilities system
 
 // ===== Minion Duration & Status Processing =====
 
@@ -251,22 +264,14 @@ export function processMinionsEndTurn(state: GameState): void {
       });
     }
     
-    // Check duration
-    if (minion.duration !== undefined && minion.duration > 0) {
-      minion.duration -= 1;
-      
-      if (minion.duration <= 0) {
-        state.log.push(`⏰ ${minion.name} duration expires and fades away`);
-        continue; // Don't add to remaining minions
-      } else if (minion.duration <= 2) {
-        state.log.push(`⏰ ${minion.name} will fade in ${minion.duration} turns`);
-      }
-    }
+    // Check duration (all minions now have duration)
+    minion.duration -= 1;
     
-    // Check if minion is still alive
-    if (minion.hp <= 0) {
-      state.log.push(`💀 ${minion.name} is defeated!`);
+    if (minion.duration <= 0) {
+      state.log.push(`⏰ ${minion.name} duration expires and fades away`);
       continue; // Don't add to remaining minions
+    } else if (minion.duration <= 2) {
+      state.log.push(`⏰ ${minion.name} will fade in ${minion.duration} turns`);
     }
     
     remainingMinions.push(minion);
@@ -275,6 +280,7 @@ export function processMinionsEndTurn(state: GameState): void {
   // Update active minions
   activeMinions.length = 0;
   activeMinions.push(...remainingMinions);
+  syncMinionsToState(state);
 }
 
 // ===== Minion Damage Taking =====
@@ -300,18 +306,34 @@ export function damageMinionsByOwner(
 
 // ===== Integration Helpers =====
 
+export function syncMinionsToState(state: GameState): void {
+  // Sync global activeMinions to state for UI
+  (state as any).playerMinions = getPlayerMinions();
+  (state as any).enemyMinions = getEnemyMinions();
+}
+
 export function initializeCombatMinions(state: GameState): void {
   // Clear all minions at start of combat
   activeMinions.length = 0;
+  syncMinionsToState(state);
   state.log.push('🧹 Combat area cleared of minions');
 }
 
 export function processPlayerTurnMinions(state: GameState): void {
+  console.log(`🔥 processPlayerTurnMinions called`);
+  const playerMinions = getPlayerMinions();
+  console.log(`🔥 Player minions count: ${playerMinions.length}`);
+  playerMinions.forEach((minion, i) => {
+    console.log(`🔥 Minion ${i}: ${minion.name} (${minion.id}), AI: ${minion.ai}`);
+  });
+  
   processMinionTurn(state, 'player');
+  syncMinionsToState(state);
 }
 
 export function processEnemyTurnMinions(state: GameState): void {
   processMinionTurn(state, 'enemy');
+  syncMinionsToState(state);
 }
 
 // ===== Utility Functions =====
@@ -334,8 +356,8 @@ export function getAllMinionTypes(): Record<string, MinionData> {
 export function debugMinions(state: GameState): void {
   console.log('=== MINIONS DEBUG ===');
   console.log('Active Minions:', activeMinions.length);
-  console.log('Player Minions:', getPlayerMinions().map(m => `${m.name}(${m.hp}/${m.maxHp})`));
-  console.log('Enemy Minions:', getEnemyMinions().map(m => `${m.name}(${m.hp}/${m.maxHp})`));
+  console.log('Player Minions:', getPlayerMinions().map(m => `${m.name}(${m.duration} turns)`));
+  console.log('Enemy Minions:', getEnemyMinions().map(m => `${m.name}(${m.duration} turns)`));
 }
 
 export function processEnemyMinions(state: GameState): void {

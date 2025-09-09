@@ -96,7 +96,9 @@ export function play(s: GameState, cmd: Extract<Command, { type: 'PlayCard' }>, 
   }
 
   // effect
+  console.log(`🔥 About to call applyCardEffect for card: ${played.name} (${played.id})`);
   applyCardEffect(s, idx);
+  console.log(`🔥 Finished applyCardEffect for card: ${played.name}`);
 // ★ แจ้งอุปกรณ์ว่า “ผู้เล่นเล่นการ์ด”
 runEquipmentCardPlayed(s, played, 'player');
   // blessings on_card_played
@@ -110,10 +112,15 @@ runEquipmentCardPlayed(s, played, 'player');
     s.log.push(`Blessing error: ${e?.message ?? String(e)}`);
   }
 
-  // move to discard
+  // move to discard or exhaust
   const [c] = s.piles.hand.splice(idx, 1);
-  s.piles.discard.push(c);
-  s.log.push(`Played ${played.name}`);
+  if ((played as any).exhaust) {
+    s.piles.exhaust.push(c);
+    s.log.push(`Played ${played.name} (Exhausted)`);
+  } else {
+    s.piles.discard.push(c);
+    s.log.push(`Played ${played.name}`);
+  }
 
   // on-play draw
   if ((played as any).draw && (played as any).draw > 0) {
@@ -124,6 +131,10 @@ runEquipmentCardPlayed(s, played, 'player');
   if (isVictory(s)) {
     r = grantExpAndQueueLevelUp(s, r);
     s.combatVictoryLock = true;
+    
+    // Clear minions on victory
+    const { clearAllMinions } = require('../../minionRuntime');
+    clearAllMinions(s);
     
     // Check if level up is pending - go to levelup phase first
     if (s.levelUp && !s.levelUp.consumed) {
@@ -153,6 +164,10 @@ runEquipmentTurnHook(s, 'on_turn_end', 'player');
   if (isDefeat(s)) {
     s.phase = 'defeat';
     s.log.push('Defeat..');
+    
+    // Clear minions on defeat
+    const { clearAllMinions } = require('../../minionRuntime');
+    clearAllMinions(s);
     
     // Clear temporary equipment slots
     s.equipmentTempSlots = 0;

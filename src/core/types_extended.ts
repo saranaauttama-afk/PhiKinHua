@@ -141,17 +141,24 @@ export type EnvironmentEffect = {
 };
 
 // ===== Minion System =====
+export type MinionAbility = {
+  type: 'attack' | 'heal' | 'energy' | 'draw' | 'block' | 'status';
+  trigger: 'turn_start' | 'turn_end' | 'on_summon' | 'on_death';
+  target: 'owner' | 'enemy' | 'all_allies' | 'all_enemies';
+  value: number;
+  effect?: string; // For status type
+  duration?: number; // For status type
+  ignores_block?: boolean; // For attack type
+  description: string;
+};
+
 export type MinionData = {
   id: string;
   name: string;
-  hp: number;
-  maxHp: number;
-  attack: number;
-  abilities?: string[];
-  duration?: number; // Turns before disappearing
+  duration: number; // Required - how many turns it lasts
   owner: 'player' | 'enemy';
-  ai?: 'aggressive' | 'defensive' | 'support';
-  statusEffects?: StatusEffect[];
+  abilities: MinionAbility[];
+  statusEffects?: StatusEffect[]; // Runtime effects on the minion
 };
 
 // ===== Enhanced Enemy Definition =====
