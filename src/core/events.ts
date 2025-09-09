@@ -55,18 +55,19 @@ const byRarity: Record<Rarity, BlessingDef[]> = BLESSINGS_BY_RARITY;
 
 function chooseRarity(rng: RNG, weights: Record<Rarity, number>): { rng: RNG; rarity: Rarity } {
   let r = rng;
-  const total = weights.Common + weights.Uncommon + weights.Rare;
+  const total = weights.Common + weights.Uncommon + weights.Rare + weights.Legendary;
   const roll = int(r, 1, total); r = roll.rng;
   let v = roll.value;
   if ((v -= weights.Common) <= 0) return { rng: r, rarity: 'Common' };
   if ((v -= weights.Uncommon) <= 0) return { rng: r, rarity: 'Uncommon' };
-  return { rng: r, rarity: 'Rare' };
+  if ((v -= weights.Rare) <= 0) return { rng: r, rarity: 'Rare' };
+  return { rng: r, rarity: 'Legendary' };
 }
 
 export function rollShrine(rng: RNG, s: GameState, count = 3): { rng: RNG; event: EventState } {
   let r = rng;
   // น้ำหนัก 70/25/5 และ no-dup (เทียบกับพรที่มีอยู่)
-  const weights: Record<Rarity, number> = { Common: 70, Uncommon: 25, Rare: 5 };
+  const weights: Record<Rarity, number> = { Common: 70, Uncommon: 25, Rare: 5, Legendary: 0 };
   const owned = new Set((s.blessings ?? []).map(b => b.id));
   const out: BlessingDef[] = [];
   let guard = 0;

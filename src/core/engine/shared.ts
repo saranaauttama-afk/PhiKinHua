@@ -3,7 +3,6 @@ import type { GameState, CardData } from '../types';
 import type { RNG } from '../rng';
 import { nextExpForLevel, EXP_KILL_NORMAL, EXP_KILL_ELITE, EXP_KILL_BOSS } from '../balance/progression';
 import { rollLevelUpBucket, rollTwoBlessings, rollThreeCards, type LevelBucket } from '../level';
-import { findNode } from '../map';
 import { goldRewardForVictory } from '../balance/economy';
 
 export function getCurrentNodeId(map?: any): string | undefined {
@@ -33,12 +32,7 @@ export function grantExpAndQueueLevelUp(s: GameState, r: RNG): RNG {
   let tier: 'normal' | 'elite' | 'boss' = 'normal';
   
   // Determine enemy tier for rewards
-  if (s.map?.currentNodeId) {
-    // Old map mode
-    const n = findNode(s.map, s.map.currentNodeId);
-    if (n?.kind === 'elite') { gained = EXP_KILL_ELITE; tier = 'elite'; }
-    if (n?.kind === 'boss') { gained = EXP_KILL_BOSS; tier = 'boss'; }
-  } else if (s.pages?.current && s.pages._activeOfferIndex != null) {
+  if (s.pages?.current && s.pages._activeOfferIndex != null) {
     // Pages mode - get tier from active offer
     const offer = s.pages.current.offers[s.pages._activeOfferIndex];
     if (offer?.kind === 'monster') {

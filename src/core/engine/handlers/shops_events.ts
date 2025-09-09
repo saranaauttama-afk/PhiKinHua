@@ -89,6 +89,7 @@ export function takeShop(s: GameState, cmd: Extract<Command, { type: 'TakeShop' 
   const i = cmd.index;
   const item = s.shopStock[i];
   if (!item) return { state: s, rng: r };
+  if (!('card' in item)) return { state: s, rng: r }; // Only handle card items
   if (s.player.gold < item.price) {
     s.log.push('Shop: Not enough gold');
     return { state: s, rng: r };
@@ -329,6 +330,7 @@ export function takeShopEquipment(s: GameState, cmd: Extract<Command, { type: 'T
   const i = cmd.index;
   const item = s.shopStock[i];
   if (!item) return { state: s, rng: r };
+  if (!('equipment' in item)) return { state: s, rng: r }; // Only handle equipment items
   if (s.player.gold < item.price) {
     s.log.push('Equipment Shop: Not enough gold');
     return { state: s, rng: r };

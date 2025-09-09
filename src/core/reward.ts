@@ -39,6 +39,7 @@ const BY_RARITY: Record<Rarity, CardData[]> = {
   Common:   ALL_CARDS.filter(c => (c.rarity ?? 'Common') === 'Common'),
   Uncommon: ALL_CARDS.filter(c => c.rarity === 'Uncommon'),
   Rare:     ALL_CARDS.filter(c => c.rarity === 'Rare'),
+  Legendary: ALL_CARDS.filter(c => c.rarity === 'Legendary'),
 };
 
 type Tier = 'normal' | 'elite' | 'boss';
@@ -47,12 +48,13 @@ const BY_RARITY_LOCAL: Record<Rarity, CardData[]> = BY_RARITY;
 
 function chooseRarity(rng: RNG, weights: Record<Rarity, number>): { rng: RNG; rarity: Rarity } {
   let r = rng;
-  const total = weights.Common + weights.Uncommon + weights.Rare;
+  const total = weights.Common + weights.Uncommon + weights.Rare + weights.Legendary;
   const roll = int(r, 1, total); r = roll.rng;
   let v = roll.value;
   if ((v -= weights.Common) <= 0) return { rng: r, rarity: 'Common' };
   if ((v -= weights.Uncommon) <= 0) return { rng: r, rarity: 'Uncommon' };
-  return { rng: r, rarity: 'Rare' };
+  if ((v -= weights.Rare) <= 0) return { rng: r, rarity: 'Rare' };
+  return { rng: r, rarity: 'Legendary' };
 }
 
 function drawUniqueFrom(rng: RNG, rarity: Rarity, taken: Set<string>): { rng: RNG; card?: CardData } {
@@ -71,9 +73,9 @@ export function rollRewardOptionsByTier(rng: RNG, tier: Tier): { rng: RNG; optio
   const counts: Record<Tier, number> = { normal: 3, elite: 4, boss: 5 };
   // น้ำหนัก rarity
   const weightsByTier: Record<Tier, Record<Rarity, number>> = {
-    normal:  { Common: 70, Uncommon: 25, Rare: 5 },
-    elite:   { Common: 55, Uncommon: 35, Rare: 10 },
-    boss:    { Common: 40, Uncommon: 40, Rare: 20 },
+    normal:  { Common: 70, Uncommon: 25, Rare: 5, Legendary: 0 },
+    elite:   { Common: 55, Uncommon: 35, Rare: 10, Legendary: 0 },
+    boss:    { Common: 40, Uncommon: 40, Rare: 20, Legendary: 0 },
   };
   const want = counts[tier];
   const weights = weightsByTier[tier];

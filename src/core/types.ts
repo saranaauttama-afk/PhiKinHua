@@ -102,11 +102,14 @@ export type EventState =
   | { type: 'remove'; capPerRun: number }
   | { type: 'gamble'; resolved?: { outcome: 'win' | 'lose'; gold?: number; hpLoss?: number } }
   | { type: 'treasure'; amount?: number }
-  | { type: 'well'; used: boolean; dismissed: boolean };
+  | { type: 'well'; used: boolean; dismissed: boolean }
+  | { type: 'healing_shrine'; used: boolean; dismissed: boolean };
 
 // ===== Shop / Pages =====
-export type ShopItem = { card: CardData; price: number };
-export type ShopKind = 'card' | 'remove' | 'upgrade';
+export type ShopItem = 
+  | { card: CardData; price: number }
+  | { equipment: any; price: number };
+export type ShopKind = 'card' | 'remove' | 'upgrade' | 'equipment';
 
 export type MapMode = 'pages';
 export type MapStatePages = import('./map/pages').MapStatePages;
@@ -174,6 +177,7 @@ export type GameState = {
   equipmentTempSlots?: number; // Additional slots available during combat
   equipped?: EquipmentData[];
   backpack?: EquipmentData[];
+  equipment?: any[]; // Equipment inventory (unequipped items from shops)
   // Level up
   levelUp?: {
     bucket: Bucket;

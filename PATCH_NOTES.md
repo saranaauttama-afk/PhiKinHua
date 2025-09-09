@@ -1,6 +1,52 @@
 # Patch Notes
 
-## 🆕 Latest: Thai Shaman (หมอผีไทย) Complete System (Major Update)
+## 🆕 Latest: UI Refactoring & Critical Bug Fixes (Major Update)
+**Date**: 2025-09-09
+**Status**: Production Ready
+
+### 🐛 **Critical Bug Fixes**
+- **FIXED: Block Mechanics Bug**: Cards with block effects now properly stack instead of replacing
+  - **Problem**: Playing ผ้าเย็น (5 block) + เสียงระฆัง (6 block) = 6 total block ❌
+  - **Solution**: Playing ผ้าเย็น (5 block) + เสียงระฆัง (6 block) = 11 total block ✅
+  - **Location**: `src/core/commands.ts:137` - Changed `state.player.block = card.block` to `state.player.block += card.block`
+
+### 🏗️ **Major UI Refactoring**
+- **Component Breakdown**: Split massive 944-line `index.tsx` into manageable components
+  - `CombatView.tsx` (120 lines) - Combat interface, player/enemy stats, hand management
+  - `ShopView.tsx` (150 lines) - Shop interface and equipment purchasing
+  - `MapView.tsx` (180 lines) - Adventure map and navigation
+  - `DeckView.tsx` (140 lines) - Deck viewing and equipment management
+  - `EventView.tsx` (216 lines) - Events, level up, victory, starter blessing screens
+- **Code Maintainability**: Reduced main file complexity by 68% (944 → 300 lines)
+
+### 📱 **React Native Styling Migration**
+- **Fixed Dark UI Issues**: Resolved black text on dark backgrounds across all components
+- **Tailwind to Native Conversion**: Converted all CSS classes to React Native style objects
+  - `text-white` → `color: '#FFFFFF'`
+  - `bg-blue-600` → `backgroundColor: '#2563EB'`
+  - `p-4` → `padding: 16`
+- **Mobile Compatibility**: All components now render correctly on mobile devices
+
+### 🔧 **TypeScript Error Resolution**
+- **CombatView**: Fixed `enemyIntentCardId` property access with proper type casting
+- **EventView**: Fixed level up and starter option property names
+  - `lu.options` → `lu.blessingChoices` / `lu.cardChoices`
+  - `starter.options` → `starter.choices`
+- **Component Exports**: Converted all components to default exports for proper import handling
+
+### 🎮 **Game Balance Enhancements**
+- **Enhanced Map System**: Increased total pages from 12 to 16 for longer gameplay
+- **Equipment System**: Added temporary equipment slots during combat (5 additional slots)
+- **Encounter Variety**: Added support for healing shrines and equipment shops in map generation
+
+### 🎨 **Content Integration**
+- **Thai Mythology Complete**: All 14 enemies from Thai folklore fully integrated
+- **Equipment System**: Thai-themed equipment with cultural significance
+- **Card Balance**: 0-cost card design philosophy maintained across all Thai shaman cards
+
+---
+
+## 🆕 Previous: Thai Shaman (หมอผีไทย) Complete System (Major Update)
 
 ### 🎯 **Thai Shaman Card System - Full Implementation**
 **Date**: 2025-09-08

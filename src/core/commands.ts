@@ -134,7 +134,7 @@ export function applyCardEffect(state: GameState, idxInHand: number) {
     state.enemy.hp = Math.max(0, state.enemy.hp - card.dmg);
   }
   if (card.block) {
-    state.player.block = card.block;
+    state.player.block += card.block;
   }
   // ✅ รองรับการ์ดที่ให้พลังงาน (เช่น Focus: energyGain = 1)
   if (card.energyGain && card.energyGain > 0) {
