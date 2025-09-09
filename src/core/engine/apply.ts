@@ -54,6 +54,9 @@ const H: { [K in Command['type']]?: Handler<K> } = {
   ShopUpgradeBuy: se.shopUpgradeBuy,
   DoWellUse: se.doWellUse,
   DoWellDismiss: se.doWellDismiss,
+  DoHealingShrineUse: se.doHealingShrineUse,
+  DoHealingShrineDismiss: se.doHealingShrineDismiss,
+  TakeShopEquipment: se.takeShopEquipment,
 
   // Pages mode
   OpenPage: mappages.open,

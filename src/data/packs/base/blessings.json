@@ -1,62 +1,86 @@
 [
   {
-    "id": "regen_1",
-    "name": "Gentle Regeneration",
+    "id": "ancestral_blessing",
+    "name": "พรบรรพบุรุษ",
     "rarity": "Common",
-    "desc": "Heal 1 at end of your turn."
+    "desc": "ฟื้นฟู 1 HP ท้ายเทิร์น (วิญญาณบรรพบุรุษคุ้มครอง)",
+    "tags": ["thai", "healing"]
   },
   {
-    "id": "bl_energy_first",
-    "name": "Battle Rhythm",
+    "id": "spirit_energy",
+    "name": "พลังวิญญาณ",
     "rarity": "Uncommon",
-    "desc": "+1 energy on the first card each turn."
+    "desc": "การ์ดใบแรกแต่ละเทิร์น ได้ +1 Energy (ผีช่วยเสริมพลัง)",
+    "tags": ["thai", "energy"]
   },
   {
-    "id": "block_on_attack_2",
-    "name": "Deflecting Strikes",
+    "id": "ghost_protection",
+    "name": "ผีป้องกัน",
     "rarity": "Common",
-    "desc": "Gain 2 Block whenever you play an Attack."
+    "desc": "เมื่อเล่นการ์ดโจมตี ได้ Block 2 (ผีช่วยป้องกัน)",
+    "tags": ["thai", "defense"]
   },
   {
-    "id": "start_block_3",
-    "name": "Steady Stance",
+    "id": "meditation_peace",
+    "name": "สมาธิสงบ",
     "rarity": "Uncommon",
-    "desc": "At the start of your turn, gain 3 Block."
+    "desc": "ต้นเทิร์น ได้ Block 3 (จิตใจสงบ ผีไม่รบกวน)",
+    "tags": ["thai", "meditation"]
   },
   {
-    "id": "energy_on_skill_first",
-    "name": "Tactical Flow",
+    "id": "herbal_wisdom",
+    "name": "ปัญญาสมุนไพร",
     "rarity": "Uncommon",
-    "desc": "The first Skill each turn gives +1 energy."
+    "desc": "การ์ด Skill ใบแรกแต่ละเทิร์น ได้ +1 Energy",
+    "tags": ["thai", "wisdom"]
   },
   {
-    "id": "steel_skin_1",
-    "name": "Steel Skin",
+    "id": "sacred_cloth",
+    "name": "ผ้าศักดิ์สิทธิ์",
     "rarity": "Common",
-    "desc": "Gain 1 Block at end of turn."
+    "desc": "ท้ายเทิร์น ได้ Block 1 (ผ้าเย็นป้องกัน)",
+    "tags": ["thai", "defense"]
   },
   {
-    "id": "blood_thirst_1",
-    "name": "Blood Thirst",
+    "id": "life_steal_spirit",
+    "name": "ดูดพลังชีวิต",
     "rarity": "Uncommon",
-    "desc": "Heal 1 whenever you play an Attack."
+    "desc": "เมื่อเล่นการ์ดโจมตี ฟื้นฟู 1 HP (ดูดวิญญาณศัตรู)",
+    "tags": ["thai", "vampire"]
   },
   {
-    "id": "attack_first_energy",
-    "name": "Opening Strike",
+    "id": "bamboo_dart_power",
+    "name": "พลังปาไผ่",
     "rarity": "Common",
-    "desc": "Your first Attack each turn gives +1 energy."
+    "desc": "การ์ดโจมตีใบแรกแต่ละเทิร์น ได้ +1 Energy",
+    "tags": ["thai", "attack"]
   },
   {
-    "id": "skill_shield_1",
-    "name": "Sage's Guard",
+    "id": "ritual_shield",
+    "name": "โล่พิธีกรรม",
     "rarity": "Common",
-    "desc": "Gain 1 Block whenever you play a Skill."
+    "desc": "เมื่อเล่นการ์ด Skill ได้ Block 1 (พิธีกรรมป้องกัน)",
+    "tags": ["thai", "ritual"]
   },
   {
-    "id": "special_refund_1",
-    "name": "Refund Tactics",
-    "rarity": "Uncommon",
-    "desc": "First card with cost \u22651 each turn refunds +1 energy."
+    "id": "free_card_energy",
+    "name": "พลังการ์ดฟรี",
+    "rarity": "Rare",
+    "desc": "การ์ดฟรี (0 cost) ใบแรกแต่ละเทิร์น คืน +1 Energy",
+    "tags": ["thai", "special"]
+  },
+  {
+    "id": "luang_pu_protection",
+    "name": "เครื่องรางหลวงปู่",
+    "rarity": "Rare",
+    "desc": "ลดดาเมจที่รับ 1 แต้ม (เครื่องรางศักดิ์สิทธิ์)",
+    "tags": ["thai", "protection"]
+  },
+  {
+    "id": "naga_blessing",
+    "name": "พรพญานาค",
+    "rarity": "Legendary",
+    "desc": "ต้นเทิร์น จั่วการ์ด 1 ใบ และได้ Energy +1 (พรจากพญานาค)",
+    "tags": ["thai", "naga", "legendary"]
   }
 ]

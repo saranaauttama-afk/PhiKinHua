@@ -1,59 +1,23 @@
 [
   {
-    "id": "slime",
-    "name": "Green Slime",
+    "id": "phi_pong",
+    "name": "ผีโป่ง",
     "tier": "normal",
-    "hp": 42,
-    "maxHp": 42,
+    "hp": 35,
+    "maxHp": 35,
     "block": 0,
     "deck": {
       "lists": [
-        {
-          "id": "poke",
-          "weight": 70,
-          "cards": ["slime_poke","slime_poke","slime_guard","slime_poke","slime_guard","slime_poke","slime_poke","slime_poke","slime_guard","slime_poke","slime_poke","slime_guard"]
-        },
-        {
-          "id": "sticky",
-          "weight": 30,
-          "cards": ["slime_poke","slime_guard","slime_guard","slime_poke","slime_guard","slime_guard","slime_poke","slime_guard","slime_guard","slime_poke","slime_guard","slime_guard"]
-        }
+        { "id": "floating", "weight": 100, "cards": ["slime_poke","guard","slime_poke","guard","slime_poke","guard","slime_poke","guard","slime_poke","guard","slime_poke","guard"] }
       ],
       "pool": {
-        "allowOwners": ["global","slime"],
+        "allowOwners": ["global","phi_pong"],
         "include": [
-          { "id": "slime_poke",  "w": 6 },
-          { "id": "slime_guard", "w": 4 }
+          { "id": "slime_poke", "w": 6 },
+          { "id": "guard", "w": 4 }
         ],
-        "minAttack": 6,
-        "minBlock": 3
-      },
-      "handSize": 2,
-      "maxEnergy": 2
-    },
-    "ai": { "playOrder": "cheap_first" },
-    "scaling": { "dmgPerAct": 1, "blockPerAct": 1 }
-  },
-
-  {
-    "id": "wolf",
-    "name": "Forest Wolf",
-    "tier": "normal",
-    "hp": 34,
-    "maxHp": 34,
-    "block": 0,
-    "deck": {
-      "lists": [
-        { "id": "hunt", "weight": 100, "cards": ["swipe","swipe","guard","swipe","guard","swipe","swipe","guard","swipe","swipe","guard","swipe"] }
-      ],
-      "pool": {
-        "allowOwners": ["global","wolf"],
-        "include": [
-          { "id": "swipe", "w": 6 },
-          { "id": "guard", "w": 3 }
-        ],
-        "minAttack": 6,
-        "minBlock": 3
+        "minAttack": 5,
+        "minBlock": 4
       },
       "handSize": 3,
       "maxEnergy": 2
@@ -63,20 +27,20 @@
   },
 
   {
-    "id": "bandit",
-    "name": "Street Bandit",
+    "id": "kluai_tani",
+    "name": "กะหล่ำปลี",
     "tier": "normal",
-    "hp": 36,
-    "maxHp": 36,
+    "hp": 38,
+    "maxHp": 38,
     "block": 0,
     "deck": {
       "lists": [
-        { "id": "ambush", "weight": 100, "cards": ["claw","swipe","guard","claw","claw","guard","swipe","claw","guard","claw","swipe","guard"] }
+        { "id": "banana_throw", "weight": 100, "cards": ["claw","swipe","guard","claw","swipe","claw","guard","swipe","claw","guard","swipe","claw"] }
       ],
       "pool": {
-        "allowOwners": ["global","bandit"],
+        "allowOwners": ["global","kluai_tani"],
         "include": [
-          { "id": "claw",  "w": 5 },
+          { "id": "claw", "w": 5 },
           { "id": "swipe", "w": 4 },
           { "id": "guard", "w": 3 }
         ],
@@ -86,34 +50,52 @@
       "handSize": 3,
       "maxEnergy": 2
     },
+    "ai": { "playOrder": "atk_first" },
+    "scaling": { "dmgPerAct": 1, "blockPerAct": 1 }
+  },
+
+  {
+    "id": "phi_ruen",
+    "name": "ผีเรือน",
+    "tier": "normal",
+    "hp": 40,
+    "maxHp": 40,
+    "block": 0,
+    "deck": {
+      "lists": [
+        { "id": "house_guard", "weight": 100, "cards": ["guard","guard","claw","guard","guard","claw","guard","guard","claw","guard","guard","claw"] }
+      ],
+      "pool": {
+        "allowOwners": ["global","phi_ruen"],
+        "include": [
+          { "id": "guard", "w": 7 },
+          { "id": "claw", "w": 3 }
+        ],
+        "minAttack": 5,
+        "minBlock": 5
+      },
+      "handSize": 3,
+      "maxEnergy": 2
+    },
     "ai": { "playOrder": "cheap_first" },
     "scaling": { "dmgPerAct": 1, "blockPerAct": 1 }
   },
 
   {
-    "id": "armed_bandit",
-    "name": "Armed Bandit",
+    "id": "phi_krasue",
+    "name": "ผีกระสือ", 
     "tier": "normal",
     "hp": 32,
     "maxHp": 32,
     "block": 0,
-    "equipped": [
-      {
-        "id": "start_shield",
-        "name": "Start Shield",
-        "rarity": "Uncommon",
-        "slotCost": 1,
-        "desc": "Gain 5 Block at the start of each turn."
-      }
-    ],
     "deck": {
       "lists": [
-        { "id": "equipped", "weight": 100, "cards": ["claw","swipe","claw","claw","swipe","claw","swipe","claw","claw","swipe","claw","claw"] }
+        { "id": "night_hunt", "weight": 100, "cards": ["claw","claw","swipe","claw","swipe","claw","claw","swipe","claw","swipe","claw","claw"] }
       ],
       "pool": {
-        "allowOwners": ["global","bandit"],
+        "allowOwners": ["global","phi_krasue"],
         "include": [
-          { "id": "claw",  "w": 6 },
+          { "id": "claw", "w": 6 },
           { "id": "swipe", "w": 4 }
         ],
         "minAttack": 6,
@@ -127,51 +109,25 @@
   },
 
   {
-    "id": "sentry",
-    "name": "Rusty Sentry",
+    "id": "phi_tai_hong",
+    "name": "ผีตายโหง",
     "tier": "normal",
-    "hp": 38,
-    "maxHp": 38,
+    "hp": 45,
+    "maxHp": 45,
     "block": 0,
     "deck": {
       "lists": [
-        { "id": "patrol", "weight": 100, "cards": ["guard","claw","guard","claw","guard","claw","guard","claw","guard","claw","guard","claw"] }
+        { "id": "revenge", "weight": 100, "cards": ["swipe","guard","swipe","guard","maul","guard","swipe","guard","maul","swipe","guard","maul"] }
       ],
       "pool": {
-        "allowOwners": ["global","sentry"],
+        "allowOwners": ["global","phi_tai_hong"],
         "include": [
-          { "id": "guard", "w": 6 },
-          { "id": "claw",  "w": 4 }
+          { "id": "swipe", "w": 5 },
+          { "id": "maul", "w": 3 },
+          { "id": "guard", "w": 4 }
         ],
-        "minAttack": 5,
+        "minAttack": 7,
         "minBlock": 4
-      },
-      "handSize": 3,
-      "maxEnergy": 2
-    },
-    "ai": { "playOrder": "cheap_first" },
-    "scaling": { "dmgPerAct": 1, "blockPerAct": 1 }
-  },
-
-  {
-    "id": "boar",
-    "name": "Wild Boar",
-    "tier": "normal",
-    "hp": 40,
-    "maxHp": 40,
-    "block": 0,
-    "deck": {
-      "lists": [
-        { "id": "charge", "weight": 100, "cards": ["claw","claw","guard","claw","claw","guard","claw","claw","guard","claw","claw","guard"] }
-      ],
-      "pool": {
-        "allowOwners": ["global","boar"],
-        "include": [
-          { "id": "claw",  "w": 6 },
-          { "id": "guard", "w": 3 }
-        ],
-        "minAttack": 6,
-        "minBlock": 2
       },
       "handSize": 3,
       "maxEnergy": 2
@@ -181,20 +137,87 @@
   },
 
   {
-    "id": "ogre_elite",
-    "name": "Ogre Brute",
-    "tier": "elite",
-    "hp": 90,
-    "maxHp": 90,
+    "id": "phi_dip",
+    "name": "ผีดิบ",
+    "tier": "normal", 
+    "hp": 50,
+    "maxHp": 50,
     "block": 0,
     "deck": {
       "lists": [
-        { "id": "bruiser", "weight": 100, "cards": ["maul","guard","brace","maul","guard","maul","brace","guard","maul","guard","brace","maul"] }
+        { "id": "undead", "weight": 100, "cards": ["guard","swipe","guard","swipe","guard","maul","guard","swipe","guard","maul","guard","swipe"] }
       ],
       "pool": {
-        "allowOwners": ["global","ogre_elite"],
+        "allowOwners": ["global","phi_dip"],
         "include": [
-          { "id": "maul",  "w": 6 },
+          { "id": "guard", "w": 6 },
+          { "id": "swipe", "w": 4 },
+          { "id": "maul", "w": 2 }
+        ],
+        "minAttack": 6,
+        "minBlock": 5
+      },
+      "handSize": 3,
+      "maxEnergy": 2
+    },
+    "ai": { "playOrder": "cheap_first" },
+    "scaling": { "dmgPerAct": 1, "blockPerAct": 1 }
+  },
+
+  {
+    "id": "nang_tani_elite",
+    "name": "นางตานี",
+    "tier": "elite",
+    "hp": 85,
+    "maxHp": 85,
+    "block": 0,
+    "deck": {
+      "lists": [
+        { "id": "tree_spirit", "weight": 100, "cards": ["swipe","brace","guard","maul","guard","swipe","brace","maul","swipe","guard","brace","maul"] }
+      ],
+      "pool": {
+        "allowOwners": ["global","nang_tani_elite"],
+        "include": [
+          { "id": "swipe", "w": 4 },
+          { "id": "maul", "w": 3 },
+          { "id": "brace", "w": 3 },
+          { "id": "guard", "w": 2 }
+        ],
+        "minAttack": 9,
+        "minBlock": 7
+      },
+      "handSize": 4,
+      "maxEnergy": 3
+    },
+    "ai": { "playOrder": "atk_first" },
+    "scaling": { "dmgPerAct": 2, "blockPerAct": 1 }
+  },
+
+  {
+    "id": "phi_pop_elite",
+    "name": "ผีปอบ",
+    "tier": "elite",
+    "hp": 75,
+    "maxHp": 75,
+    "block": 0,
+    "equipped": [
+      {
+        "id": "regen_charm",
+        "name": "Regeneration Charm", 
+        "rarity": "Common",
+        "slotCost": 1,
+        "desc": "Heal 1 HP at the end of your turn."
+      }
+    ],
+    "deck": {
+      "lists": [
+        { "id": "malevolent", "weight": 100, "cards": ["maul","swipe","guard","maul","swipe","brace","maul","guard","swipe","brace","maul","swipe"] }
+      ],
+      "pool": {
+        "allowOwners": ["global","phi_pop_elite"],
+        "include": [
+          { "id": "maul", "w": 5 },
+          { "id": "swipe", "w": 4 },
           { "id": "brace", "w": 3 },
           { "id": "guard", "w": 2 }
         ],
@@ -209,25 +232,25 @@
   },
 
   {
-    "id": "knight_elite",
-    "name": "Black Knight",
+    "id": "phaya_naga_elite",
+    "name": "พญานาค",
     "tier": "elite",
-    "hp": 80,
-    "maxHp": 80,
+    "hp": 90,
+    "maxHp": 90,
     "block": 0,
     "deck": {
       "lists": [
-        { "id": "discipline", "weight": 100, "cards": ["swipe","brace","guard","swipe","guard","brace","swipe","brace","guard","swipe","guard","brace"] }
+        { "id": "naga_coil", "weight": 100, "cards": ["maul","brace","guard","maul","brace","guard","maul","brace","guard","maul","brace","guard"] }
       ],
       "pool": {
-        "allowOwners": ["global","knight_elite"],
+        "allowOwners": ["global","phaya_naga_elite"],
         "include": [
-          { "id": "swipe", "w": 5 },
+          { "id": "maul", "w": 6 },
           { "id": "brace", "w": 4 },
           { "id": "guard", "w": 3 }
         ],
-        "minAttack": 9,
-        "minBlock": 7
+        "minAttack": 11,
+        "minBlock": 8
       },
       "handSize": 4,
       "maxEnergy": 3
@@ -237,45 +260,8 @@
   },
 
   {
-    "id": "vampire_elite",
-    "name": "Vampire Lord",
-    "tier": "elite",
-    "hp": 75,
-    "maxHp": 75,
-    "block": 0,
-    "equipped": [
-      {
-        "id": "regen_charm",
-        "name": "Regeneration Charm",
-        "rarity": "Common",
-        "slotCost": 1,
-        "desc": "Heal 1 HP at the end of your turn."
-      }
-    ],
-    "deck": {
-      "lists": [
-        { "id": "lifesteal", "weight": 100, "cards": ["swipe","swipe","guard","maul","guard","swipe","maul","guard","swipe","guard","maul","swipe"] }
-      ],
-      "pool": {
-        "allowOwners": ["global","vampire_elite"],
-        "include": [
-          { "id": "swipe", "w": 5 },
-          { "id": "maul",  "w": 3 },
-          { "id": "guard", "w": 3 }
-        ],
-        "minAttack": 10,
-        "minBlock": 6
-      },
-      "handSize": 4,
-      "maxEnergy": 3
-    },
-    "ai": { "playOrder": "atk_first" },
-    "scaling": { "dmgPerAct": 2, "blockPerAct": 1 }
-  },
-
-  {
     "id": "witch_elite",
-    "name": "Hex Witch",
+    "name": "แม่มด",
     "tier": "elite",
     "hp": 70,
     "maxHp": 70,
@@ -302,20 +288,48 @@
   },
 
   {
-    "id": "lich_boss",
-    "name": "Lich Lord",
+    "id": "yaksha_elite",
+    "name": "ยักษ์",
+    "tier": "elite", 
+    "hp": 95,
+    "maxHp": 95,
+    "block": 0,
+    "deck": {
+      "lists": [
+        { "id": "giant_power", "weight": 100, "cards": ["maul","brace","maul","guard","maul","brace","guard","maul","brace","guard","maul","brace"] }
+      ],
+      "pool": {
+        "allowOwners": ["global","yaksha_elite"],
+        "include": [
+          { "id": "maul", "w": 7 },
+          { "id": "brace", "w": 4 },
+          { "id": "guard", "w": 3 }
+        ],
+        "minAttack": 12,
+        "minBlock": 8
+      },
+      "handSize": 4,
+      "maxEnergy": 3
+    },
+    "ai": { "playOrder": "atk_first" },
+    "scaling": { "dmgPerAct": 2, "blockPerAct": 1 }
+  },
+
+  {
+    "id": "phra_ruang_boss",
+    "name": "พระร่วง",
     "tier": "boss",
     "hp": 170,
     "maxHp": 170,
     "block": 0,
     "deck": {
       "lists": [
-        { "id": "necromancy", "weight": 100, "cards": ["maul","brace","maul","guard","maul","brace","guard","maul","brace","guard","maul","brace"] }
+        { "id": "royal_power", "weight": 100, "cards": ["maul","brace","maul","guard","maul","brace","guard","maul","brace","guard","maul","brace"] }
       ],
       "pool": {
-        "allowOwners": ["global","lich_boss"],
+        "allowOwners": ["global","phra_ruang_boss"],
         "include": [
-          { "id": "maul",  "w": 7 },
+          { "id": "maul", "w": 7 },
           { "id": "brace", "w": 4 },
           { "id": "guard", "w": 3 }
         ],
@@ -330,20 +344,20 @@
   },
 
   {
-    "id": "dragon_boss",
-    "name": "Cave Dragon",
+    "id": "mara_boss",
+    "name": "มาร",
     "tier": "boss",
     "hp": 190,
     "maxHp": 190,
     "block": 0,
     "deck": {
       "lists": [
-        { "id": "inferno", "weight": 100, "cards": ["maul","maul","brace","guard","maul","brace","maul","guard","maul","brace","maul","guard"] }
+        { "id": "evil_power", "weight": 100, "cards": ["maul","maul","brace","guard","maul","brace","maul","guard","maul","brace","maul","guard"] }
       ],
       "pool": {
-        "allowOwners": ["global","dragon_boss"],
+        "allowOwners": ["global","mara_boss"],
         "include": [
-          { "id": "maul",  "w": 8 },
+          { "id": "maul", "w": 8 },
           { "id": "brace", "w": 4 },
           { "id": "guard", "w": 3 }
         ],

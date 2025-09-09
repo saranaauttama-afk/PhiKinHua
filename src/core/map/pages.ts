@@ -7,9 +7,11 @@ import type { GameState } from '../types';
 export type PageOffer =
   | { kind: 'monster', tier: 'normal' | 'elite' }
   | { kind: 'shop_card' }
+  | { kind: 'shop_equipment' }
   | { kind: 'shop_remove' }
   | { kind: 'shop_upgrade' }
   | { kind: 'well' }
+  | { kind: 'healing_shrine' }
   | { kind: 'next_event' } // ไปหน้าถัดไปแบบเหตุการณ์พิเศษ
   | { kind: 'boss' };
 
@@ -18,8 +20,8 @@ export type MapStatePages = {
   pageIndex: number; // 0-based
   pools: {
     normal: number; elite: number;
-    shopCard: number; shopRemove: number; shopUpgrade: number;
-    wells: number; nextEvent: number;
+    shopCard: number; shopEquipment: number; shopRemove: number; shopUpgrade: number;
+    wells: number; healingShrine: number; nextEvent: number;
   };
   current?: { offers: PageOffer[]; resolved: boolean[] };
   _closeAfterCombat?: boolean;
@@ -46,12 +48,14 @@ export function consumeToken(mp: MapStatePages, offer: PageOffer) {
       if (offer.tier === 'normal' && mp.pools.normal > 0) mp.pools.normal--;
       if (offer.tier === 'elite' && mp.pools.elite > 0) mp.pools.elite--;
       break;
-    case 'shop_card':     if (mp.pools.shopCard    > 0) mp.pools.shopCard--;    break;
-    case 'shop_remove':   if (mp.pools.shopRemove  > 0) mp.pools.shopRemove--;  break;
-    case 'shop_upgrade':  if (mp.pools.shopUpgrade > 0) mp.pools.shopUpgrade--; break;
-    case 'well':          if (mp.pools.wells       > 0) mp.pools.wells--;       break;
-    case 'next_event':    if (mp.pools.nextEvent   > 0) mp.pools.nextEvent--;   break;
-    case 'boss':          break;
+    case 'shop_card':       if (mp.pools.shopCard      > 0) mp.pools.shopCard--;      break;
+    case 'shop_equipment':  if (mp.pools.shopEquipment > 0) mp.pools.shopEquipment--; break;
+    case 'shop_remove':     if (mp.pools.shopRemove    > 0) mp.pools.shopRemove--;    break;
+    case 'shop_upgrade':    if (mp.pools.shopUpgrade   > 0) mp.pools.shopUpgrade--;   break;
+    case 'well':            if (mp.pools.wells          > 0) mp.pools.wells--;          break;
+    case 'healing_shrine':  if (mp.pools.healingShrine > 0) mp.pools.healingShrine--;  break;
+    case 'next_event':      if (mp.pools.nextEvent     > 0) mp.pools.nextEvent--;      break;
+    case 'boss':            break;
   }
 }
 
@@ -77,13 +81,15 @@ export function rollPageOffers(mp: MapStatePages, r: RNG, _s: GameState): { offe
   }
 
   // สร้าง candidate ตาม pool+weight
-  if (mp.pools.normal   > 0) cand.push({ offer: { kind: 'monster', tier: 'normal' }, w: WEIGHTS.monsterNormal });
-  if (allowElite)             cand.push({ offer: { kind: 'monster', tier: 'elite'  }, w: WEIGHTS.monsterElite });
-  if (mp.pools.shopCard > 0)  cand.push({ offer: { kind: 'shop_card' },             w: WEIGHTS.shopCard });
-  if (mp.pools.shopRemove > 0)cand.push({ offer: { kind: 'shop_remove' },           w: WEIGHTS.shopRemove });
-  if (mp.pools.shopUpgrade > 0)cand.push({ offer: { kind: 'shop_upgrade' },         w: WEIGHTS.shopUpgrade });
-  if (mp.pools.wells > 0)     cand.push({ offer: { kind: 'well' },                  w: WEIGHTS.well });
-  if (allowNext)              cand.push({ offer: { kind: 'next_event' },            w: WEIGHTS.nextEvent });
+  if (mp.pools.normal > 0)        cand.push({ offer: { kind: 'monster', tier: 'normal' }, w: WEIGHTS.monsterNormal });
+  if (allowElite)                 cand.push({ offer: { kind: 'monster', tier: 'elite'  }, w: WEIGHTS.monsterElite });
+  if (mp.pools.shopCard > 0)      cand.push({ offer: { kind: 'shop_card' },               w: WEIGHTS.shopCard });
+  if (mp.pools.shopEquipment > 0) cand.push({ offer: { kind: 'shop_equipment' },          w: WEIGHTS.shopEquipment });
+  if (mp.pools.shopRemove > 0)    cand.push({ offer: { kind: 'shop_remove' },             w: WEIGHTS.shopRemove });
+  if (mp.pools.shopUpgrade > 0)   cand.push({ offer: { kind: 'shop_upgrade' },            w: WEIGHTS.shopUpgrade });
+  if (mp.pools.wells > 0)         cand.push({ offer: { kind: 'well' },                    w: WEIGHTS.well });
+  if (mp.pools.healingShrine > 0) cand.push({ offer: { kind: 'healing_shrine' },          w: WEIGHTS.healingShrine });
+  if (allowNext)                  cand.push({ offer: { kind: 'next_event' },              w: WEIGHTS.nextEvent });
 
   // เติมจนได้ 3 (no replacement โดยกันชนิดซ้ำ ยกเว้น monster ต่าง tier ถือว่าคนละชนิด)
   while (offers.length < 3 && cand.length > 0) {

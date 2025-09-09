@@ -259,6 +259,18 @@ export function choose(s: GameState, cmd: Extract<Command, { type: 'ChooseOffer'
   return { state: s, rng };
     }
 
+    case 'shop_equipment': {
+  if (typeof ShopEv.openShopEquipment !== 'function') {
+    s.log.push('openShopEquipment missing export in shops_events.ts');
+    return { state: s, rng };
+  }
+  const out = ShopEv.openShopEquipment(s, rng);
+  s = out.state; rng = out.rng;
+  mp._activeOfferIndex = ix; mp._shopUsed = false;
+  s.log.push('ChooseOffer → shop_equipment');
+  return { state: s, rng };
+    }
+
     case 'well': {
   if (typeof ShopEv.openWell !== 'function') {
     s.log.push('openWell missing export in shops_events.ts');
@@ -268,6 +280,18 @@ export function choose(s: GameState, cmd: Extract<Command, { type: 'ChooseOffer'
   s = out.state; rng = out.rng;
   mp._activeOfferIndex = ix; mp._shopUsed = false;
   s.log.push('ChooseOffer → well');
+  return { state: s, rng };
+    }
+
+    case 'healing_shrine': {
+  if (typeof ShopEv.openHealingShrine !== 'function') {
+    s.log.push('openHealingShrine missing export in shops_events.ts');
+    return { state: s, rng };
+  }
+  const out = ShopEv.openHealingShrine(s, rng);
+  s = out.state; rng = out.rng;
+  mp._activeOfferIndex = ix; mp._shopUsed = false;
+  s.log.push('ChooseOffer → healing_shrine');
   return { state: s, rng };
     }
 

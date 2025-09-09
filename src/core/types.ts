@@ -225,6 +225,9 @@ export type Command =
   | { type: 'EventTreasureOpen' }
   | { type: 'DoWellUse' }
   | { type: 'DoWellDismiss' }
+  | { type: 'DoHealingShrineUse' }
+  | { type: 'DoHealingShrineDismiss' }
+  | { type: 'TakeShopEquipment'; index: number }
 
   // Pages
   | { type: 'OpenPage' }

@@ -255,11 +255,95 @@ export function openShopUpgrade(s: GameState, r: RNG): { state: GameState; rng: 
   return { state: s, rng: r };
 }
 
+export function openShopEquipment(s: GameState, r: RNG): { state: GameState; rng: RNG } {
+  // สร้าง equipment shop stock
+  const equipmentBase = require('../../../data/packs/base/equipment.json');
+  const arr: any[] = Array.isArray(equipmentBase) ? equipmentBase : [];
+  const pool = arr.filter((e) => e && e.slotCost >= 0);
+  
+  const items: { equipment: any; price: number }[] = [];
+  let rr = r;
+  const bag = pool.slice();
+  
+  for (let k = 0; k < Math.min(3, bag.length); k++) {
+    const ro = int(rr, 0, bag.length - 1);
+    rr = ro.rng;
+    const pick = bag.splice(ro.value, 1)[0];
+    
+    // ราคาตาม rarity
+    const rarityPrice: { [key: string]: number } = {
+      'Common': 80,
+      'Uncommon': 120,
+      'Rare': 180,
+      'Legendary': 250
+    };
+    const price = rarityPrice[pick.rarity] || 100;
+    items.push({ equipment: pick, price });
+  }
+  
+  s.shopStock = items as any;
+  s.shopKind = 'equipment';
+  s.phase = 'shop';
+  s.log.push(`Shop(equipment): ${items.length} items`);
+  return { state: s, rng: rr };
+}
+
 export function openWell(s: GameState, r: RNG): { state: GameState; rng: RNG } {
   // event แบบ well (ใช้/ปฏิเสธได้ 1 ครั้ง)
   s.event = { type: 'well', used: false, dismissed: false } as any;
   s.phase = 'event';
   s.log.push('Event: well open');
+  return { state: s, rng: r };
+}
+
+export function openHealingShrine(s: GameState, r: RNG): { state: GameState; rng: RNG } {
+  // event แบบ healing shrine (ฟื้นฟู HP)
+  s.event = { type: 'healing_shrine', used: false, dismissed: false } as any;
+  s.phase = 'event';
+  s.log.push('Event: healing shrine open');
+  return { state: s, rng: r };
+}
+
+export function doHealingShrineUse(s: GameState, _cmd: Extract<Command, { type: 'DoHealingShrineUse' }>, r: RNG) {
+  if (s.phase !== 'event' || !s.event || (s.event as any).type !== 'healing_shrine') return { state: s, rng: r };
+  if (!(s.event as any).used) {
+    const healAmount = 15; // ฟื้นฟูมากกว่า well
+    s.player.hp = Math.min(s.player.maxHp, s.player.hp + healAmount);
+    (s.event as any).used = true;
+    (s.event as any).dismissed = false;
+    s.log.push(`Healing Shrine: used (+${healAmount} HP).`);
+  }
+  return { state: s, rng: r };
+}
+
+export function doHealingShrineDismiss(s: GameState, _cmd: Extract<Command, { type: 'DoHealingShrineDismiss' }>, r: RNG) {
+  if (s.phase !== 'event' || !s.event || (s.event as any).type !== 'healing_shrine') return { state: s, rng: r };
+  (s.event as any).dismissed = true;
+  (s.event as any).used = false;
+  s.log.push('Healing Shrine: dismissed.');
+  return { state: s, rng: r };
+}
+
+export function takeShopEquipment(s: GameState, cmd: Extract<Command, { type: 'TakeShopEquipment' }>, r: RNG) {
+  if (s.phase !== 'shop' || s.shopKind !== 'equipment' || !s.shopStock) return { state: s, rng: r };
+  const i = cmd.index;
+  const item = s.shopStock[i];
+  if (!item) return { state: s, rng: r };
+  if (s.player.gold < item.price) {
+    s.log.push('Equipment Shop: Not enough gold');
+    return { state: s, rng: r };
+  }
+  
+  // เพิ่ม equipment เข้า inventory (ยังไม่ equip)
+  s.player.gold -= item.price;
+  s.equipment = s.equipment || [];
+  s.equipment.push(JSON.parse(JSON.stringify(item.equipment)));
+  s.shopStock.splice(i, 1);
+  s.log.push(`Equipment Shop: bought ${item.equipment.name} for ${item.price}g`);
+  
+  if (s.mapMode === 'pages' && s.pages) {
+    s.pages._shopUsed = true;
+  }
   return { state: s, rng: r };
 }
 // ============================================================================
