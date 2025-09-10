@@ -12,7 +12,7 @@ export const THAI_MINIONS: Record<string, MinionData> = {
 
   // ===== 👻 สหายของผู้เล่น (Player Allies) =====
 
-  // วิญญาณเพื่อน - ผีที่มาช่วยเหลือ
+  // วิญญาณเพื่อน - ผีที่มาช่วยโจมตีและเสริมพลัง
   ghost_ally: {
     id: 'ghost_ally',
     name: 'วิญญาณเพื่อน',
@@ -20,17 +20,17 @@ export const THAI_MINIONS: Record<string, MinionData> = {
     owner: 'player',
     abilities: [
       {
-        type: 'attack',
-        trigger: 'turn_start',        // โจมตีทุกต้นเทิร์น
+        type: 'attack',               // โจมตีศัตรูได้
+        trigger: 'turn_start',        
         target: 'enemy',              // โจมตีศัตรู
         value: 4,                     // ความเสียหาย 4
-        ignores_block: true,          // ทะลุการป้องกัน (เป็นวิญญาณ)
-        description: 'โจมตีทะลุการป้องกันด้วยพลังวิญญาณ'
+        ignores_block: true,          // ทะลุ block ได้ (เป็นผี)
+        description: 'โจมตีด้วยพลังวิญญาณทะลุการป้องกัน'
       }
     ]
   },
 
-  // ปีศาจสหาย - ปีศาจที่ถูกควบคุม
+  // ปีศาจสหาย - ปีศาจที่โจมตีและป้องกัน
   demon_minion: {
     id: 'demon_minion', 
     name: 'ปีศาจสหาย',
@@ -38,11 +38,11 @@ export const THAI_MINIONS: Record<string, MinionData> = {
     owner: 'player',
     abilities: [
       {
-        type: 'attack',
+        type: 'attack',               // โจมตีศัตรู
         trigger: 'turn_start',
-        target: 'enemy',
-        value: 3,                     // ความเสียหายน้อยกว่าผี แต่ทนทาน
-        description: 'โจมตีด้วยกรงเล็บปีศาจ'
+        target: 'enemy',              // โจมตีศัตรู
+        value: 3,                     // ความเสียหาย 3
+        description: 'กรงเล็บปีศาจฉีกเป็นแผล'
       }
     ]
   },
@@ -64,7 +64,7 @@ export const THAI_MINIONS: Record<string, MinionData> = {
     ]
   },
 
-  // วิญญาณพิษ - วิญญาณที่ใช้พิษโจมตี
+  // วิญญาณพิษ - วิญญาณที่ช่วยใส่ debuff (Support)
   poison_spirit: {
     id: 'poison_spirit',
     name: 'วิญญาณพิษ',
@@ -72,65 +72,66 @@ export const THAI_MINIONS: Record<string, MinionData> = {
     owner: 'player',
     abilities: [
       {
-        type: 'status',               // ใส่สถานะผล
+        type: 'status',               // ใส่สถานะผลลบให้ศัตรู (Support ประเภท debuff)
         trigger: 'turn_start',
-        target: 'enemy',
+        target: 'enemy',              // ยังคงเป็น enemy เพราะเป็น debuff support
         effect: 'poison',             // ใส่พิษ
-        value: 2,                     // 2 ชั้น
-        duration: 3,                  // ยาวนาน 3 เทิร์น
-        description: 'พ่นพิษลึกลับใส่ศัตรู (2 ชั้น, 3 เทิร์น)'
+        value: 1,                     // ลดเหลือ 1 ชั้นเพื่อ balance
+        duration: 2,                  // ลดระยะเวลาเป็น 2 เทิร์น
+        description: 'พ่นพิษลึกลับรบกวนศัตรู (1 ชั้น, 2 เทิร์น)'
       }
     ]
   },
 
-  // ===== 👤 ลูกน้องของศัตรู (Enemy Minions) =====
+  // ===== 🌫️ ลูกน้องของศัตรู (Enemy Support Minions) =====
+  // เปลี่ยนจากโจมตีโดยตรงเป็น support เท่านั้น
 
-  // โคลนเงา - สำเนาเงาของศัตรู
+  // โคลนเงา - โจมตีผู้เล่นและสร้างความสับสน
   shadow_clone: {
     id: 'shadow_clone',
     name: 'โคลนเงา',
-    duration: 4,
+    duration: 3, // ลดระยะเวลาลง
     owner: 'enemy', // เป็นลูกน้องศัตรู
     abilities: [
       {
-        type: 'attack',
+        type: 'attack',               // โจมตีผู้เล่นโดยตรง
         trigger: 'turn_start',
-        target: 'enemy',              // จะถูกเปลี่ยนเป็น 'player' โดยระบบ
-        value: 8,                     // โจมตีแรงมาก
-        description: 'โจมตีด้วยพลังแห่งเงามืด'
+        target: 'player',             // โจมตีผู้เล่น
+        value: 8,                     // ความเสียหาย 8 (สูงกว่าเพราะเป็นศัตรู)
+        description: 'โคลนเงาจู่โจมด้วยพลังความมืด'
       }
     ]
   },
 
-  // ผู้พิทักษ์ต้นไม้ - วิญญาณต้นไม้ยักษ์
+  // ผู้พิทักษ์ต้นไม้ - วิญญาณที่สร้าง debuff และเสริมศัตรู
   tree_guardian: {
     id: 'tree_guardian',
     name: 'ผู้พิทักษ์ต้นไม้',
-    duration: 6, // ทนทานมาก
+    duration: 4, // ลดระยะเวลาลง
     owner: 'enemy',
     abilities: [
       {
-        type: 'attack',
+        type: 'block',                // เปลี่ยนเป็น support ศัตรู
         trigger: 'turn_start',
-        target: 'enemy',              // จะถูกเปลี่ยนเป็น 'player' โดยระบบ
-        value: 5,
-        description: 'โจมตีด้วยกิ่งไม้และราก'
+        target: 'owner',              // ช่วยศัตรู (เจ้าของ)
+        value: 3,
+        description: 'สร้างโล่ธรรมชาติป้องกันเจ้าของ'
       },
       {
-        type: 'status',               // ความสามารถพิเศษ: พันธนาการ
+        type: 'status',               // ยังคง debuff ผู้เล่น
         trigger: 'turn_start',
-        target: 'enemy',              // จะถูกเปลี่ยนเป็น 'player' โดยระบบ  
+        target: 'player',             // ใส่ debuff ให้ผู้เล่น
         effect: 'entangle',           // ใส่สถานะพันธนาการ
         value: 1,
-        duration: 2,
-        description: 'พันด้วยรากไม้ ทำให้ไม่สามารถโจมตีได้'
+        duration: 1,                  // ลดระยะเวลาลง
+        description: 'พันด้วยรากไม้ ทำให้ไม่สามารถใช้ไพ่โจมตีได้'
       }
     ]
   },
 
-  // ===== 🔮 สหายพิเศษ (Special Minions) =====
+  // ===== 🔮 สหายพิเศษ (Special Support Minions) =====
 
-  // วิญญาณนักสู้โบราณ - สหายระดับสูง
+  // วิญญaณนักสู้โบราณ - สหายสนับสนุนระดับสูง
   ancient_warrior_spirit: {
     id: 'ancient_warrior_spirit',
     name: 'วิญญาณนักสู้โบราณ',
@@ -138,18 +139,18 @@ export const THAI_MINIONS: Record<string, MinionData> = {
     owner: 'player',
     abilities: [
       {
-        type: 'attack',
-        trigger: 'turn_start',
-        target: 'enemy',
-        value: 6,                     // โจมตีแรง
-        description: 'โจมตีด้วยทักษะการรบโบราณ'
-      },
-      {
-        type: 'block',                // ความสามารถป้องกัน
+        type: 'block',                // เปลี่ยนจาก attack เป็น defense support
         trigger: 'turn_start',
         target: 'owner',              // ป้องกันผู้เล่น
         value: 3,
-        description: 'ใช้โล่ป้องกันเจ้าของ'
+        description: 'ใช้ประสบการณ์การรบป้องกันเจ้าของ (+3 block)'
+      },
+      {
+        type: 'energy',               // เพิ่มความสามารถ support
+        trigger: 'turn_start',
+        target: 'owner',              // ช่วยผู้เล่น
+        value: 1,
+        description: 'แบ่งปันพลังรบโบราณ (+1 พลังงาน)'
       }
     ]
   },
@@ -171,21 +172,21 @@ export const THAI_MINIONS: Record<string, MinionData> = {
     ]
   },
 
-  // ปีศาจป่า - ลูกน้องศัตรูที่สร้าง debuff
+  // ปีศาจป่า - ลูกน้องศัตรูที่สร้าง debuff (Support)
   forest_demon: {
     id: 'forest_demon',
     name: 'ปีศาจป่า',
-    duration: 5,
+    duration: 3, // ลดระยะเวลาลง
     owner: 'enemy',
     abilities: [
       {
         type: 'status',
         trigger: 'turn_start',
-        target: 'enemy',              // จะถูกเปลี่ยนเป็น 'player' โดยระบบ
+        target: 'player',             // แก้ไขให้ชัดเจน - debuff ผู้เล่น
         effect: 'weakness',           // ใส่ความอ่อนแอ
         value: 1,
-        duration: 2,
-        description: 'สาปให้ผู้เล่นอ่อนแอลง'
+        duration: 1,                  // ลดระยะเวลาลง
+        description: 'สาปให้ผู้เล่นอ่อนแอลง (1 เทิร์น)'
       }
     ]
   }

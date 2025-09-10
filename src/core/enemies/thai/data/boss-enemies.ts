@@ -172,13 +172,176 @@ export const BOSS_ENEMIES: Record<string, EnhancedEnemyData> = {
     preferredEnvironments: ['spirit_realm', 'royal_palace'],
     summonableMinions: ['serpent_guardian', 'water_spirit', 'naga_warrior'],
     maxMinions: 4                       // เรียกลูกน้องได้เยอะ
-  }
+  },
 
-  // TODO: เพิ่มบอสอื่น ๆ เช่น
-  // - ghost_king (ราชาผี)
-  // - demon_lord (เจ้าแห่งปีศาจ)
-  // - ancient_spirit_master (นายวิญญาณโบราณ)
-  // - thai_necromancer (หมอผีไทย)
+  // ===== 👑 ราชาผี - จักรพรรดิแห่งวิญญาณ =====
+  ghost_king: {
+    id: 'ghost_king',
+    name: 'ราชาผี',
+    tier: 'boss',
+    hp: 220,
+    maxHp: 220,
+    block: 15,
+    
+    behaviors: [
+      {
+        id: 'imperial_presence',           // ราชาภิสักดิ์จักรพรรดิ
+        condition: 'always',
+        action: 'apply_status_to_player',
+        actionValue: { statusId: 'fear', stacks: 3, duration: 0 }, // ถาวร
+        priority: 5,
+        oncePerCombat: true
+      },
+      {
+        id: 'spirit_realm_mastery',        // การครองโลกวิญญาณ
+        condition: 'turn_2_or_later',
+        action: 'change_environment',
+        actionValue: 'spirit_throne_room',
+        priority: 9,
+        oncePerCombat: true
+      },
+      {
+        id: 'undead_legion_call',          // การเรียกกองทัพผีดิบ
+        condition: 'turn_4_or_later',
+        action: 'cast_spell',
+        actionValue: 'summon_ghost_army',
+        priority: 8,
+        oncePerCombat: true
+      },
+      {
+        id: 'royal_fury',                  // ความโกรธหลวง
+        condition: 'hp_below_40',
+        action: 'enter_phase_2',
+        priority: 10,
+        oncePerCombat: true
+      }
+    ],
+    
+    spells: [
+      {
+        id: 'summon_ghost_army',
+        name: 'การเรียกกองทัพผีดิบ',
+        description: 'เรียกกองทัพวิญญาณมาช่วยรบ',
+        cost: 6,
+        castTime: 4,
+        effects: [
+          { type: 'summon_minion', value: 4, target: 'enemy', description: 'เรียกทหารผี 4 นาย' },
+          { type: 'apply_status', value: 3, target: 'enemy', statusEffectId: 'strength', duration: 0, description: 'เสริมพลังกองทัพถาวร' },
+          { type: 'apply_status', value: 2, target: 'player', statusEffectId: 'overwhelmed', duration: 5, description: 'ความรู้สึกถูกล้อมรอบ' }
+        ],
+        telegraphed: true,
+        interruptible: true,
+        priority: 9
+      },
+      {
+        id: 'spectral_storm',
+        name: 'พายุวิญญาณ',
+        description: 'เรียกพายุวิญญาณทำลายล้างทุกสิ่ง',
+        cost: 7,
+        castTime: 4,
+        effects: [
+          { type: 'damage', value: 35, target: 'player', description: 'พายุวิญญาณถล่ม' },
+          { type: 'apply_status', value: 4, target: 'player', statusEffectId: 'weakness', duration: 4, description: 'พลังถูกดูดไปด้วยวิญญาณ' },
+          { type: 'drain_energy', value: 3, target: 'player', description: 'ดูดพลังงานไปด้วยพายุ' }
+        ],
+        telegraphed: true,
+        interruptible: true,
+        priority: 8
+      },
+      {
+        id: 'death_domain_control',
+        name: 'การควบคุมอาณาจักรมรณะ',
+        description: 'ขยายอิธิพลของความตายไปทั่วสนามรบ',
+        cost: 8,
+        castTime: 5,
+        effects: [
+          { type: 'change_environment', value: 0, target: 'both', description: 'เปลี่ยนเป็นอาณาจักรมรณะ' },
+          { type: 'apply_status', value: 5, target: 'enemy', statusEffectId: 'regeneration', duration: 0, description: 'ฟื้นฟูต่อเนื่องในอาณาจักรตัวเอง' },
+          { type: 'apply_status', value: 3, target: 'player', statusEffectId: 'decay', duration: 0, description: 'ร่างกายเน่าเปื่อยอย่างช้า ๆ' }
+        ],
+        telegraphed: true,
+        interruptible: true,
+        priority: 7,
+        oncePerCombat: true
+      }
+    ],
+    
+    // การเปลี่ยนเฟส - เฟสที่ 2 เมื่อ HP ต่ำกว่า 40%
+    phaseChangeHP: 88,                    // HP 40% = 88/220
+    phase2Behaviors: [
+      {
+        id: 'imperial_wrath',              // ความโกรธจักรพรรดิ
+        condition: 'always',
+        action: 'triple_attack',           // โจมตี 3 ครั้ง
+        priority: 10,
+        oncePerCombat: false
+      },
+      {
+        id: 'death_preparation',           // การเตรียมความตายขั้นสูงสุด
+        condition: 'turn_odd',
+        action: 'cast_spell',
+        actionValue: 'ultimate_death_magic',
+        priority: 9,
+        oncePerCombat: false
+      }
+    ],
+    
+    // เวทมนตร์เฟส 2
+    phase2Spells: [
+      {
+        id: 'ultimate_death_magic',
+        name: 'เวทมนตร์มรณะสูงสุด',
+        description: 'เวทมนตร์มรณะที่ทรงพลังที่สุดของราชาผี',
+        cost: 10,
+        castTime: 6,                      // ใช้เวลาร่ายนานมาก
+        effects: [
+          { type: 'damage', value: 60, target: 'player', description: 'เวทมนตร์มรณะทำลายล้าง' },
+          { type: 'apply_status', value: 5, target: 'player', statusEffectId: 'doom', duration: 3, description: 'คำสาปมรณะแน่นอน' },
+          { type: 'force_discard', value: 5, target: 'player', description: 'บังคับให้ทิ้งไพ่ 5 ใบ' },
+          { type: 'heal', value: 50, target: 'enemy', description: 'ฟื้นฟูตัวเองด้วยพลังมรณะ' }
+        ],
+        telegraphed: true,
+        interruptible: false,             // ไม่สามารถขัดจังหวะได้!
+        priority: 10,
+        oncePerCombat: true
+      }
+    ],
+    
+    // ภูมิคุ้มกันสถานะผลหลายอย่าง
+    statusImmunities: ['poison', 'corruption', 'charm', 'sleep'],
+    startingStatusEffects: [
+      { id: 'strength', name: 'แข็งแกร่ง', description: 'พลังจักรพรรดิผี', duration: 0, stacks: 3 },
+      { id: 'intimidate', name: 'ข่มขู่', description: 'ราชาภิสักดิ์ที่น่าเกรงขาม', duration: 0, stacks: 2 }
+    ],
+    
+    signatureCards: ['imperial_strike', 'death_command', 'spirit_legion', 'royal_decree'],
+    aiPersonality: 'adaptive',            // ปรับตัวได้และฉลาดมาก
+    aiModifiers: {
+      spellCastingPreference: 85,         // ใช้เวทมนตร์บ่อยมาก
+      behaviorTriggerChance: 95,
+      adaptationRate: 90                  // ปรับตัวได้เร็วที่สุด
+    },
+    
+    scaling: {
+      dmgPerAct: 6,                       // เพิ่มความเสียหายเยอะมาก
+      blockPerAct: 4,
+      hpPerAct: 40,                       // HP เพิ่มขึ้นมหาศาล
+      spellPowerPerAct: 8,
+      newAbilitiesPerAct: ['summon_ghost_generals', 'reality_manipulation', 'time_stop']
+    },
+    
+    // รางวัลบอส - ได้ของดีที่สุด
+    specialLoot: {
+      cardRewards: ['ghost_king_blessing', 'death_mastery', 'imperial_command', 'spirit_dominion'],
+      equipmentRewards: ['ghost_king_crown', 'death_scepter', 'spectral_armor', 'imperial_ring'],
+      blessingRewards: ['blessing_of_ghost_king', 'death_affinity', 'spirit_mastery', 'royal_favor'],
+      goldBonus: 300                      // โบนัสทองสูงสุด
+    },
+    
+    preferredEnvironments: ['spirit_realm', 'royal_palace', 'death_domain'],
+    summonableMinions: ['ghost_general', 'spectral_knight', 'death_herald', 'spirit_guard'],
+    maxMinions: 6                         // เรียกลูกน้องได้มากที่สุด
+  }
 };
 
 /**
@@ -213,7 +376,7 @@ export function hasPhaseTwoMechanics(bossId: string): boolean {
  * สถิติ Boss Enemies
  */
 export const BOSS_ENEMY_STATS = {
-  HP_RANGE: { min: 120, max: 200 },
+  HP_RANGE: { min: 120, max: 220 },
   AVERAGE_SPELLS: 4,
   AVERAGE_BEHAVIORS: 5,
   OVERALL_DIFFICULTY: 9,
@@ -242,6 +405,20 @@ export const BOSS_DIFFICULTY_RATING = {
       "จัดการงูลูกน้องให้หมดก่อนโจมตีตัวจริง",
       "เก็บพลังงานและไพ่ดี ๆ ไว้สำหรับเฟส 2",
       "ระวัง 'สึนามิมหาวินาศ' - เป็นเวทมนตร์ที่ขัดจังหวะไม่ได้!"
+    ]
+  },
+  ghost_king: {
+    difficulty: 10,
+    mechanics: ['phase_change', 'environment_control', 'massive_minion_summoning', 'ultimate_spell', 'status_immunity', 'adaptive_ai'],
+    recommendedLevel: 20,
+    strategyTips: [
+      "เป็นบอสที่ยากที่สุด - ต้องเตรียมตัวอย่างดี",
+      "ขัดจังหวะ 'การเรียกกองทัพผีดิบ' เป็นสำคัญที่สุด",
+      "มีภูมิคุ้มกันหลายสถานะผล - อย่าพึ่งพา debuff มากเกินไป",
+      "เฟส 2 จะโจมตี 3 ครั้งต่อเทิร์น - เตรียม block ให้เพียงพอ",
+      "'เวทมนตร์มรณะสูงสุด' ขัดจังหวะไม่ได้ - หลีกเลี่ยงด้วยการควบคุม HP",
+      "ใช้ไพ่ที่สามารถขัดจังหวะเวทมนตร์ได้หลาย ๆ ใบ",
+      "AI ปรับตัวได้เร็วมาก - เปลี่ยนกลยุทธ์บ่อย ๆ"
     ]
   }
 } as const;

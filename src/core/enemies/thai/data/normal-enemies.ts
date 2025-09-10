@@ -159,8 +159,388 @@ export const NORMAL_ENEMIES: Record<string, EnhancedEnemyData> = {
     preferredEnvironments: ['dark_forest', 'spirit_realm']
   }
 
-  // หมายเหตุ: ในไฟล์จริงจะมีศัตรูอื่น ๆ เพิ่มเติม
-  // แต่เพื่อความชัดเจนในการ demo จึงแสดงแค่ 2 ตัวก่อน
+  },
+
+  // ===== 🕷️ ปอบ - ผีมดลูกพราง =====
+  phi_pop: {
+    id: 'phi_pop',
+    name: 'ปอบ',
+    tier: 'normal',
+    hp: 38,
+    maxHp: 38,
+    block: 2,
+    
+    behaviors: [
+      {
+        id: 'possession_threat',          // คุกคามด้วยการสิง
+        condition: 'player_hp_above_75',
+        action: 'apply_status_to_player',
+        actionValue: { statusId: 'vulnerability', stacks: 2, duration: 3 },
+        priority: 7,
+        oncePerCombat: false
+      },
+      {
+        id: 'invisible_strike',           // การโจมตีแอบแฝง
+        condition: 'turn_odd',           // เทิร์นคี่
+        action: 'apply_status_to_self',
+        actionValue: { statusId: 'stealth', stacks: 1, duration: 1 },
+        priority: 6,
+        oncePerCombat: false
+      }
+    ],
+    
+    spells: [
+      {
+        id: 'soul_drain',
+        name: 'การดูดวิญญาณ',
+        description: 'ดูดพลังชีวิตและพลังงานจากผู้เล่น',
+        cost: 3,
+        castTime: 2,
+        effects: [
+          { 
+            type: 'damage', 
+            value: 12, 
+            target: 'player', 
+            description: 'ดูดพลังชีวิต' 
+          },
+          { 
+            type: 'drain_energy', 
+            value: 1, 
+            target: 'player', 
+            description: 'ดูดพลังงาน 1 หน่วย' 
+          },
+          { 
+            type: 'heal', 
+            value: 6, 
+            target: 'enemy', 
+            description: 'ใช้พลังที่ดูดมารักษาตัว' 
+          }
+        ],
+        telegraphed: true,
+        interruptible: true,
+        priority: 8
+      }
+    ],
+    
+    signatureCards: ['possession_touch', 'invisible_approach', 'soul_siphon'],
+    aiPersonality: 'tactical',
+    aiModifiers: {
+      spellCastingPreference: 50,
+      behaviorTriggerChance: 75,
+      adaptationRate: 40
+    },
+    
+    scaling: {
+      dmgPerAct: 2,
+      blockPerAct: 1,
+      spellPowerPerAct: 2
+    },
+    
+    preferredEnvironments: ['haunted_house', 'dark_forest']
+  },
+
+  // ===== ☠️ ผีตายโหง - วิญญาณผู้เสียชีวิตอย่างไม่สมหวัง =====
+  phi_tai_hong: {
+    id: 'phi_tai_hong',
+    name: 'ผีตายโหง',
+    tier: 'normal',
+    hp: 40,
+    maxHp: 40,
+    block: 0,
+    
+    behaviors: [
+      {
+        id: 'vengeful_wrath',             // ความแค้นสะสม
+        condition: 'hp_below_75',
+        action: 'apply_status_to_self',
+        actionValue: { statusId: 'strength', stacks: 2, duration: 4 },
+        priority: 8,
+        oncePerCombat: true
+      },
+      {
+        id: 'death_curse',               // คำสาปแห่งความตาย
+        condition: 'turn_4_or_later',
+        action: 'apply_status_to_player',
+        actionValue: { statusId: 'curse', stacks: 1, duration: 5 },
+        priority: 7,
+        oncePerCombat: true
+      }
+    ],
+    
+    spells: [
+      {
+        id: 'haunting_scream',
+        name: 'เสียงกรีดร้องหลอน',
+        description: 'เสียงกรีดร้องที่สร้างความหวาดกลัวและความเจ็บปวด',
+        cost: 2,
+        castTime: 1,
+        effects: [
+          { 
+            type: 'damage', 
+            value: 15, 
+            target: 'player', 
+            description: 'เสียงกรีดร้องทำร้าย' 
+          },
+          { 
+            type: 'apply_status', 
+            value: 2, 
+            target: 'player', 
+            statusEffectId: 'fear', 
+            duration: 2, 
+            description: 'สร้างความหวาดกลัว' 
+          }
+        ],
+        telegraphed: false,
+        interruptible: false,
+        priority: 9
+      }
+    ],
+    
+    signatureCards: ['vengeful_strike', 'death_wail', 'cursed_touch'],
+    aiPersonality: 'aggressive',
+    aiModifiers: {
+      spellCastingPreference: 60,
+      behaviorTriggerChance: 85,
+      adaptationRate: 25
+    },
+    
+    scaling: {
+      dmgPerAct: 3,
+      blockPerAct: 0,
+      spellPowerPerAct: 3
+    },
+    
+    preferredEnvironments: ['spirit_realm', 'cursed_forest']
+  },
+
+  // ===== 👹 ผีหัวตัด - วิญญาณนักรบโบราณ =====
+  phi_hua_tad: {
+    id: 'phi_hua_tad',
+    name: 'ผีหัวตัด',
+    tier: 'normal',
+    hp: 42,
+    maxHp: 42,
+    block: 3,
+    
+    behaviors: [
+      {
+        id: 'warrior_instinct',           // สัญชาตญาณนักรบ
+        condition: 'player_attack_count_3',
+        action: 'apply_status_to_self',
+        actionValue: { statusId: 'block_next', stacks: 5, duration: 1 },
+        priority: 8,
+        oncePerCombat: false
+      },
+      {
+        id: 'headless_fury',             // ความโกรธแห่งคนไร้หัว
+        condition: 'hp_below_50',
+        action: 'double_attack',
+        priority: 9,
+        oncePerCombat: false
+      }
+    ],
+    
+    spells: [
+      {
+        id: 'phantom_blade',
+        name: 'ใบมีดผีสาง',
+        description: 'เรียกใบมีดวิญญาณมาโจมตีต่อเนื่อง',
+        cost: 4,
+        castTime: 2,
+        effects: [
+          { 
+            type: 'damage', 
+            value: 10, 
+            target: 'player', 
+            description: 'ใบมีดผีสางฟัน' 
+          },
+          { 
+            type: 'damage', 
+            value: 10, 
+            target: 'player', 
+            description: 'ใบมีดผีสางฟันซ้ำ' 
+          },
+          { 
+            type: 'apply_status', 
+            value: 1, 
+            target: 'player', 
+            statusEffectId: 'bleed', 
+            duration: 3, 
+            description: 'ทำให้เลือดไหล' 
+          }
+        ],
+        telegraphed: true,
+        interruptible: true,
+        priority: 8
+      }
+    ],
+    
+    signatureCards: ['phantom_slash', 'warrior_stance', 'headless_charge'],
+    aiPersonality: 'aggressive',
+    aiModifiers: {
+      spellCastingPreference: 40,
+      behaviorTriggerChance: 80,
+      adaptationRate: 35
+    },
+    
+    scaling: {
+      dmgPerAct: 2,
+      blockPerAct: 1,
+      spellPowerPerAct: 2
+    },
+    
+    preferredEnvironments: ['ancient_battlefield', 'spirit_realm']
+  },
+
+  // ===== 🌸 ผีนางรำ - วิญญาณนักรำโบราณ =====
+  phi_nang_ram: {
+    id: 'phi_nang_ram',
+    name: 'ผีนางรำ',
+    tier: 'normal',
+    hp: 36,
+    maxHp: 36,
+    block: 1,
+    
+    behaviors: [
+      {
+        id: 'hypnotic_dance',             // การเต้นรำมนตร์เสน่ห์
+        condition: 'turn_2_or_later',
+        action: 'apply_status_to_player',
+        actionValue: { statusId: 'charm', stacks: 1, duration: 2 },
+        priority: 7,
+        oncePerCombat: false
+      },
+      {
+        id: 'graceful_evasion',          // การหลบหลีกอย่างสง่างาม
+        condition: 'player_damage_above_15',
+        action: 'apply_status_to_self',
+        actionValue: { statusId: 'dodge_next', stacks: 1, duration: 1 },
+        priority: 6,
+        oncePerCombat: false
+      }
+    ],
+    
+    spells: [
+      {
+        id: 'mesmerizing_performance',
+        name: 'การแสดงสะกดจิต',
+        description: 'การเต้นรำที่สะกดจิตและทำให้สับสน',
+        cost: 3,
+        castTime: 2,
+        effects: [
+          { 
+            type: 'apply_status', 
+            value: 2, 
+            target: 'player', 
+            statusEffectId: 'confusion', 
+            duration: 3, 
+            description: 'ทำให้สับสนไม่รู้ทิศทาง' 
+          },
+          { 
+            type: 'apply_status', 
+            value: 1, 
+            target: 'enemy', 
+            statusEffectId: 'regeneration', 
+            duration: 2, 
+            description: 'ฟื้นฟูตัวเองด้วยพลังการเต้นรำ' 
+          }
+        ],
+        telegraphed: true,
+        interruptible: true,
+        priority: 7
+      }
+    ],
+    
+    signatureCards: ['graceful_strike', 'dance_of_spirits', 'entrancing_gaze'],
+    aiPersonality: 'tactical',
+    aiModifiers: {
+      spellCastingPreference: 55,
+      behaviorTriggerChance: 70,
+      adaptationRate: 45
+    },
+    
+    scaling: {
+      dmgPerAct: 1,
+      blockPerAct: 1,
+      spellPowerPerAct: 3
+    },
+    
+    preferredEnvironments: ['royal_palace', 'spirit_realm']
+  },
+
+  // ===== 🐍 งูผีสาง - วิญญาณงูยักษ์โบราณ =====
+  ngu_phi_sang: {
+    id: 'ngu_phi_sang',
+    name: 'งูผีสาง',
+    tier: 'normal',
+    hp: 44,
+    maxHp: 44,
+    block: 2,
+    
+    behaviors: [
+      {
+        id: 'serpent_coil',               // การพันรัดแบบงู
+        condition: 'player_hp_below_60',
+        action: 'apply_status_to_player',
+        actionValue: { statusId: 'entangle', stacks: 2, duration: 2 },
+        priority: 8,
+        oncePerCombat: false
+      },
+      {
+        id: 'venomous_fangs',            // เขี้ยวพิษ
+        condition: 'turn_3_or_later',
+        action: 'apply_status_to_player',
+        actionValue: { statusId: 'poison', stacks: 2, duration: 4 },
+        priority: 7,
+        oncePerCombat: true
+      }
+    ],
+    
+    spells: [
+      {
+        id: 'phantom_strike',
+        name: 'การจู่โจมผีสาง',
+        description: 'งูผีสางจู่โจมอย่างรวดเร็วด้วยพิษมรณะ',
+        cost: 2,
+        castTime: 1,
+        effects: [
+          { 
+            type: 'damage', 
+            value: 14, 
+            target: 'player', 
+            description: 'การจู่โจมของงูผีสาง' 
+          },
+          { 
+            type: 'apply_status', 
+            value: 3, 
+            target: 'player', 
+            statusEffectId: 'poison', 
+            duration: 3, 
+            description: 'พิษงูผีสางแทรกซึม' 
+          }
+        ],
+        telegraphed: false,
+        interruptible: false,
+        priority: 8
+      }
+    ],
+    
+    signatureCards: ['serpent_bite', 'coiling_attack', 'venom_spit'],
+    aiPersonality: 'aggressive',
+    aiModifiers: {
+      spellCastingPreference: 45,
+      behaviorTriggerChance: 85,
+      adaptationRate: 30
+    },
+    
+    scaling: {
+      dmgPerAct: 2,
+      blockPerAct: 1,
+      spellPowerPerAct: 2
+    },
+    
+    preferredEnvironments: ['dark_forest', 'cursed_forest']
+  }
 };
 
 /**
@@ -233,17 +613,26 @@ export const NORMAL_ENEMY_STATS = {
  */
 export const NORMAL_ENEMY_THEMES = {
   // ผีไทยคลาสสิค
-  CLASSIC_GHOSTS: ['phi_pong', 'phi_krasue'],
+  CLASSIC_GHOSTS: ['phi_pong', 'phi_krasue', 'phi_pop', 'phi_tai_hong', 'phi_hua_tad', 'phi_nang_ram'],
   
   // ศัตรูที่เน้นโจมตี
-  OFFENSIVE: ['phi_krasue'],
+  OFFENSIVE: ['phi_krasue', 'phi_tai_hong', 'phi_hua_tad', 'ngu_phi_sang'],
   
   // ศัตรูที่เน้นหลบหลีก
-  EVASIVE: ['phi_pong'],
+  EVASIVE: ['phi_pong', 'phi_nang_ram'],
+  
+  // ศัตรูที่เน้น debuff และ status effects
+  DEBUFFER: ['phi_pop', 'phi_tai_hong', 'phi_nang_ram', 'ngu_phi_sang'],
   
   // ศัตรูที่เหมาะสำหรับผู้เล่นใหม่
-  BEGINNER_FRIENDLY: ['phi_pong'],
+  BEGINNER_FRIENDLY: ['phi_pong', 'phi_nang_ram'],
   
   // ศัตรูที่ท้าทาย
-  CHALLENGING: ['phi_krasue']
+  CHALLENGING: ['phi_krasue', 'phi_tai_hong', 'phi_hua_tad', 'ngu_phi_sang'],
+  
+  // ศัตรูที่มี tactical AI
+  TACTICAL: ['phi_pop', 'phi_nang_ram'],
+  
+  // ศัตรูที่มี aggressive AI
+  AGGRESSIVE: ['phi_krasue', 'phi_tai_hong', 'phi_hua_tad', 'ngu_phi_sang']
 } as const;

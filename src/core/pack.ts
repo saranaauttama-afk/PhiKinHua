@@ -8,16 +8,20 @@ export const ACTIVE_PACK = 'base' as const;
 
 // --- JSON imports (ต้องเปิด resolveJsonModule ใน tsconfig)
 import cardsJson from '../data/packs/base/cards.json';
-import enemiesJson from '../data/packs/base/enemies.json';
+// import enemiesJson from '../data/packs/base/enemies.json'; // เปลี่ยนใช้ระบบไทยใหม่
 import blessingsJson from '../data/packs/base/blessings.json';
 import EQUIP_LIST from '../data/packs/base/equipment.json';
+
+// === ใช้ระบบศัตรูไทยใหม่แทน ===
+import { THAI_ENEMIES, getRandomEnemyByTier } from './enemies/thai/data';
+import type { EnhancedEnemyData } from './types_extended';
 
 type CardJson = CardData & { starter?: number; inRewards?: boolean; inShop?: boolean };
 type EnemyJson = EnemyState & { tier: 'normal' | 'elite' | 'boss' };
 type BlessingMeta = { id: string; name: string; rarity: Rarity; desc?: string; oncePerTurn?: boolean };
 
 const CARD_LIST: CardJson[] = cardsJson as any;
-const ENEMY_LIST: EnemyJson[] = enemiesJson as any;
+// const ENEMY_LIST: EnemyJson[] = enemiesJson as any; // ใช้ระบบไทยแทน
 const BLESSING_LIST: BlessingMeta[] = blessingsJson as any;
 
 // การ์ดทั้งหมด (ลอกเฉพาะฟิลด์ runtime)
@@ -39,25 +43,47 @@ export const BY_RARITY: Record<Rarity, CardData[]> = {
   Legendary: ALL_CARDS.filter(c => c.rarity === 'Legendary' && (CARD_LIST.find(x => x.id === c.id)?.inRewards ?? true)),
 };
 
-// สุ่มศัตรูตาม tier ด้วย RNG (deterministic)
+// สุ่มศัตรูไทยตาม tier ด้วย RNG (deterministic) - ใช้ระบบใหม่
 export function pickEnemy(rng: RNG, tier: 'normal' | 'elite' | 'boss'): { rng: RNG; enemy: EnemyState } {
   let r = rng;
-  const pool = ENEMY_LIST.filter(e => e.tier === tier);
-  const src = pool.length ? pool : ENEMY_LIST;
-  const roll = int(r, 0, src.length - 1); r = roll.rng;
-  const chosen = src[roll.value];
-  const cycleFromData: string[] | undefined = (chosen as any).cycle;
-  let defaultCycle: string[] = ['claw', 'guard', 'claw']; // ดีฟอลต์พื้นฐาน
-  if (tier === 'elite') defaultCycle = ['swipe', 'swipe', 'brace'];
-  if (tier === 'boss') defaultCycle = ['maul', 'brace', 'maul', 'guard'];
-
-  const cycle = Array.isArray(cycleFromData) && cycleFromData.length > 0
-    ? cycleFromData.slice()
-    : defaultCycle;
-
-  chosen.ai = { cycle, index: 0 };
-  chosen.intentCardId = cycle[0];
-  return { rng: r, enemy: JSON.parse(JSON.stringify(chosen)) };
+  
+  // ดึงศัตรูไทยจากระบบใหม่
+  const thaiEnemies = Object.values(THAI_ENEMIES).filter(e => e.tier === tier);
+  const pool = thaiEnemies.length > 0 ? thaiEnemies : Object.values(THAI_ENEMIES);
+  
+  const roll = int(r, 0, pool.length - 1); 
+  r = roll.rng;
+  const thaiEnemy = pool[roll.value];
+  
+  // แปลงจาก EnhancedEnemyData เป็น EnemyState (ระบบเก่า)
+  const enemy: EnemyState & { 
+    tier?: string, 
+    behaviors?: any[], 
+    spells?: any[], 
+    aiPersonality?: string 
+  } = {
+    id: thaiEnemy.id,
+    name: thaiEnemy.name,
+    hp: thaiEnemy.hp,
+    maxHp: thaiEnemy.maxHp,
+    dmg: thaiEnemy.scaling?.dmgPerAct || 2, // ใช้ scaling หรือค่า default
+    block: thaiEnemy.block,
+    
+    // สร้าง AI cycle จาก signature cards (backward compatibility)
+    ai: {
+      cycle: thaiEnemy.signatureCards || ['claw', 'guard', 'claw'],
+      index: 0
+    },
+    intentCardId: (thaiEnemy.signatureCards && thaiEnemy.signatureCards[0]) || 'claw',
+    
+    // เพิ่มข้อมูลพิเศษจากระบบไทย (สำหรับระบบอื่น ๆ ที่อาจใช้)
+    tier: thaiEnemy.tier,
+    behaviors: thaiEnemy.behaviors,
+    spells: thaiEnemy.spells,
+    aiPersonality: thaiEnemy.aiPersonality
+  };
+  
+  return { rng: r, enemy: JSON.parse(JSON.stringify(enemy)) };
 }
 
 // ----- Blessings (metadata จาก JSON + mapping id → behavior ในโค้ด)

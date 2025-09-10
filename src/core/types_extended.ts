@@ -19,21 +19,45 @@ export type StatusEffectType =
   | 'entangle'    // Cannot play attack cards
   | 'weakness'    // Deal -50% damage
   | 'vulnerable'  // Take +50% damage
+  | 'vulnerability' // Alias for vulnerable
   | 'regeneration' // Heal HP over time
   | 'strength'    // Deal +X damage
   | 'block_next'  // Block next X damage
   | 'energy_boost' // Gain +X energy next turn
   | 'draw_reduction' // Draw X fewer cards
-  | 'spell_charging'; // Charging a spell for X turns
+  | 'spell_charging' // Charging a spell for X turns
+  // เพิ่มสถานะผลใหม่ที่ใช้ในศัตรูไทย
+  | 'stealth'     // Hidden/invisible for next turn
+  | 'dodge_next'  // Avoid next attack
+  | 'charm'       // Controlled by enemy
+  | 'sleep'       // Cannot act next turn
+  | 'nightmare'   // Take damage over time + fear
+  | 'confusion'   // Random card effects
+  | 'silence'     // Cannot use spells/skills
+  | 'bleed'       // Physical damage over time
+  | 'decay'       // Permanent HP reduction
+  | 'doom'        // Countdown to death
+  | 'intimidate'  // Reduce enemy effectiveness
+  | 'divine_protection' // Reduce damage taken
+  | 'overwhelmed' // Too many enemies, reduce effectiveness;
 
 // ===== Dynamic Enemy Behaviors =====
 export type BehaviorCondition = 
   | 'always'
   | 'hp_below_50'
   | 'hp_below_25' 
+  | 'hp_below_75'   // เพิ่ม - ใช้ในศัตรูใหม่
+  | 'hp_below_30'   // เพิ่ม - ใช้ในศัตรูใหม่  
+  | 'hp_below_40'   // เพิ่ม - ใช้ในบอส
   | 'player_has_curse'
   | 'player_hp_below_50'
+  | 'player_hp_below_60'  // เพิ่ม
+  | 'player_hp_above_75'  // เพิ่ม
+  | 'player_attack_count_3'  // เพิ่ม - นับการโจมตีของผู้เล่น
+  | 'player_damage_above_15'  // เพิ่ม - ความเสียหายที่ผู้เล่นทำ
+  | 'turn_2_or_later'  // เพิ่ม
   | 'turn_3_or_later'
+  | 'turn_4_or_later'  // เพิ่ม - ใช้ในบอส
   | 'turn_even'
   | 'turn_odd'
   | 'has_status_effect'
@@ -43,12 +67,14 @@ export type BehaviorCondition =
 export type BehaviorAction =
   | 'play_signature_card'
   | 'double_attack'
+  | 'triple_attack'        // เพิ่ม - โจมตี 3 ครั้ง (ใช้ในบอส)
   | 'heal_self'
   | 'apply_status_to_player'
   | 'apply_status_to_self'
   | 'force_draw_cards'
   | 'gain_extra_energy'
   | 'change_ai_pattern'
+  | 'change_environment'   // เพิ่ม - เปลี่ยนสภาพแวดล้อม
   | 'summon_minion'
   | 'cast_spell'
   | 'enter_phase_2';
@@ -144,13 +170,13 @@ export type EnvironmentEffect = {
 
 // ===== Minion System =====
 export type MinionAbility = {
-  type: 'attack' | 'heal' | 'energy' | 'draw' | 'block' | 'status';
+  type: 'attack' | 'heal' | 'energy' | 'draw' | 'block' | 'status'; // Minions can attack OR support
   trigger: 'turn_start' | 'turn_end' | 'on_summon' | 'on_death';
   target: 'owner' | 'enemy' | 'all_allies' | 'all_enemies';
   value: number;
   effect?: string; // For status type
   duration?: number; // For status type
-  ignores_block?: boolean; // For attack type
+  ignores_block?: boolean; // For attack type - some minions can bypass block
   description: string;
 };
 
