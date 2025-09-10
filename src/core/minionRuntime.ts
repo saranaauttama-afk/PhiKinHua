@@ -195,8 +195,20 @@ function processMinionAbility(
       
     case 'draw':
       if (actualTargetType === 'player') {
-        state.log.push(`🎴 ${minion.name} grants card draw (${ability.value})`);
-        // TODO: Implement card draw
+        // Draw cards using existing system
+        const { drawUpTo } = require('./commands');
+        const currentHand = state.piles?.hand?.length || 0;
+        const targetHand = Math.min(currentHand + ability.value, state.player.maxHandSize || 7);
+        
+        if (targetHand > currentHand && state.piles) {
+          // สร้าง mock RNG object สำหรับการใช้งาน
+          const mockRng = { seed: Math.random() };
+          const result = drawUpTo(state, mockRng, targetHand);
+          Object.assign(state, result.state);
+          state.log.push(`🎴 ${minion.name} grants card draw (+${targetHand - currentHand} cards)`);
+        } else {
+          state.log.push(`🎴 ${minion.name} grants card draw (no piles available)`);
+        }
       }
       break;
       
@@ -210,7 +222,7 @@ function processMinionAbility(
     case 'status':
       if (ability.effect) {
         const { applyStatusEffect } = require('./statusEffectsRuntime');
-        applyStatusEffect(actualTargetType, state, ability.effect, ability.duration || 1, ability.value);
+        applyStatusEffect(actualTargetType, state, ability.effect as any, ability.duration || 1, ability.value || 1);
         state.log.push(`✨ ${minion.name} applies ${ability.effect} to ${actualTargetType}`);
       }
       break;
@@ -366,61 +378,93 @@ export function processEnemyMinions(state: GameState): void {
   
   // Process enemy minion abilities (both attack and support)
   for (const minion of enemyMinions) {
-    // Process minion abilities that trigger during enemy turn
-    for (const ability of minion.abilities) {
-      if (ability.trigger === 'turn_start') {
-        switch (ability.type) {
-          case 'attack':
-            // Enemy minions can attack player
-            if (ability.target === 'player' || ability.target === 'enemy') {
-              const targetEntity = ability.target === 'player' ? state.player : state.enemy;
-              const damage = ability.value;
-              
+    processMinionsAbilities(state, minion, 'enemy');
+  }
+}
+
+export function processPlayerMinions(state: GameState): void {
+  const playerMinions = getPlayerMinions();
+  if (!playerMinions?.length) return;
+  
+  // Process player minion abilities (both attack and support)
+  for (const minion of playerMinions) {
+    processMinionsAbilities(state, minion, 'player');
+  }
+}
+
+function processMinionsAbilities(state: GameState, minion: MinionData, owner: 'player' | 'enemy'): void {
+  // Process minion abilities that trigger during turn
+  for (const ability of minion.abilities) {
+    if (ability.trigger === 'turn_start') {
+      switch (ability.type) {
+        case 'attack':
+          if (ability.target === 'enemy') {
+            // Attack the opponent
+            const targetEntity = owner === 'player' ? state.enemy : state.player;
+            const targetType = owner === 'player' ? 'enemy' : 'player';
+            const damage = ability.value;
+            
+            if (targetEntity) {
               if (ability.ignores_block) {
                 targetEntity.hp = Math.max(0, targetEntity.hp - damage);
-                state.log.push(`👿 ${minion.name} ${ability.description} for ${damage} damage (ignores block)!`);
+                state.log.push(`${owner === 'player' ? '✨' : '👿'} ${minion.name} ${ability.description} for ${damage} damage (ignores block)!`);
               } else {
-                dealMinionDamage(state, minion, targetEntity, ability.target, damage);
+                dealMinionDamage(state, minion, targetEntity, targetType, damage);
               }
             }
-            break;
-            
-          case 'status':
-            // Apply debuff to player or buff to owner
-            if (ability.target === 'player' && ability.effect) {
-              applyStatusEffect(state, 'player', ability.effect, ability.value || 1, ability.duration || 1);
-              state.log.push(`👿 ${minion.name} ${ability.description}`);
-            } else if (ability.target === 'owner' && ability.effect) {
-              applyStatusEffect(state, 'enemy', ability.effect, ability.value || 1, ability.duration || 1);
-              state.log.push(`👿 ${minion.name} ${ability.description}`);
-            }
-            break;
-            
-          case 'energy':
-            // Give energy to owner (enemy gets energy)
-            if (ability.target === 'owner' && state.enemy) {
+          }
+          break;
+          
+        case 'status':
+          if (ability.target === 'enemy' && ability.effect) {
+            // Apply status to opponent
+            const targetType = owner === 'player' ? 'enemy' : 'player';
+            applyStatusEffect(targetType, state, ability.effect as any, ability.duration || 1, ability.value || 1);
+            state.log.push(`${owner === 'player' ? '✨' : '👿'} ${minion.name} ${ability.description}`);
+          } else if (ability.target === 'owner' && ability.effect) {
+            // Apply status to self (owner)
+            applyStatusEffect(owner, state, ability.effect as any, ability.duration || 1, ability.value || 1);
+            state.log.push(`${owner === 'player' ? '✨' : '👿'} ${minion.name} ${ability.description}`);
+          }
+          break;
+          
+        case 'energy':
+          if (ability.target === 'owner') {
+            if (owner === 'player') {
+              state.player.energy += ability.value;
+              state.log.push(`✨ ${minion.name} ${ability.description} (+${ability.value} energy)`);
+            } else {
               // Enemy AI will benefit from extra energy next turn
               state.log.push(`👿 ${minion.name} ${ability.description} (+${ability.value} energy for enemy)`);
             }
-            break;
-            
-          case 'block':
-            // Give block to owner (enemy gets block)
-            if (ability.target === 'owner' && state.enemy) {
+          }
+          break;
+          
+        case 'block':
+          if (ability.target === 'owner') {
+            if (owner === 'player') {
+              state.player.block += ability.value;
+              state.log.push(`✨ ${minion.name} ${ability.description} (+${ability.value} block)`);
+            } else if (state.enemy) {
               state.enemy.block += ability.value;
               state.log.push(`👿 ${minion.name} ${ability.description} (+${ability.value} block)`);
             }
-            break;
-            
-          case 'heal':
-            // Heal owner (enemy gets healed)
-            if (ability.target === 'owner' && state.enemy) {
+          }
+          break;
+          
+        case 'heal':
+          if (ability.target === 'owner') {
+            if (owner === 'player') {
+              const healAmount = Math.min(ability.value, state.player.maxHp - state.player.hp);
+              state.player.hp += healAmount;
+              state.log.push(`✨ ${minion.name} ${ability.description} (+${healAmount} HP)`);
+            } else if (state.enemy) {
               const healAmount = Math.min(ability.value, state.enemy.maxHp - state.enemy.hp);
               state.enemy.hp += healAmount;
               state.log.push(`👿 ${minion.name} ${ability.description} (+${healAmount} HP)`);
             }
-            break;
-        }
+          }
+          break;
       }
     }
   }

@@ -22,6 +22,7 @@ export const BOSS_ENEMIES: Record<string, EnhancedEnemyData> = {
     tier: 'boss',
     hp: 180,
     maxHp: 180,
+    dmg: 25,
     block: 10,
     
     // พฤติกรรมซับซ้อนหลายขั้น
@@ -181,6 +182,7 @@ export const BOSS_ENEMIES: Record<string, EnhancedEnemyData> = {
     tier: 'boss',
     hp: 220,
     maxHp: 220,
+    dmg: 30,
     block: 15,
     
     behaviors: [

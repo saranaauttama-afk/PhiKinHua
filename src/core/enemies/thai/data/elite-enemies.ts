@@ -21,6 +21,7 @@ export const ELITE_ENEMIES: Record<string, EnhancedEnemyData> = {
     tier: 'elite',
     hp: 75,
     maxHp: 75,
+    dmg: 12,
     block: 5,
     
     // พฤติกรรมซับซ้อน
@@ -132,6 +133,7 @@ export const ELITE_ENEMIES: Record<string, EnhancedEnemyData> = {
     tier: 'elite',
     hp: 85,
     maxHp: 85,
+    dmg: 15,
     block: 3,
     
     behaviors: [
@@ -241,6 +243,7 @@ export const ELITE_ENEMIES: Record<string, EnhancedEnemyData> = {
     tier: 'elite',
     hp: 92,
     maxHp: 92,
+    dmg: 18,
     block: 2,
     
     behaviors: [
@@ -348,6 +351,7 @@ export const ELITE_ENEMIES: Record<string, EnhancedEnemyData> = {
     tier: 'elite',
     hp: 88,
     maxHp: 88,
+    dmg: 16,
     block: 4,
     
     behaviors: [
@@ -456,6 +460,7 @@ export const ELITE_ENEMIES: Record<string, EnhancedEnemyData> = {
     tier: 'elite',
     hp: 95,
     maxHp: 95,
+    dmg: 14,
     block: 6,
     
     behaviors: [

@@ -20,6 +20,7 @@ export const NORMAL_ENEMIES: Record<string, EnhancedEnemyData> = {
     tier: 'normal',
     hp: 35,
     maxHp: 35,
+    dmg: 6,
     block: 0,
     
     // พฤติกรรมพิเศษ
@@ -95,6 +96,7 @@ export const NORMAL_ENEMIES: Record<string, EnhancedEnemyData> = {
     tier: 'normal',
     hp: 32,
     maxHp: 32,
+    dmg: 5,
     block: 0,
     
     behaviors: [
@@ -157,8 +159,6 @@ export const NORMAL_ENEMIES: Record<string, EnhancedEnemyData> = {
     },
     
     preferredEnvironments: ['dark_forest', 'spirit_realm']
-  }
-
   },
 
   // ===== 🕷️ ปอบ - ผีมดลูกพราง =====
@@ -168,6 +168,7 @@ export const NORMAL_ENEMIES: Record<string, EnhancedEnemyData> = {
     tier: 'normal',
     hp: 38,
     maxHp: 38,
+    dmg: 7,
     block: 2,
     
     behaviors: [
@@ -246,6 +247,7 @@ export const NORMAL_ENEMIES: Record<string, EnhancedEnemyData> = {
     tier: 'normal',
     hp: 40,
     maxHp: 40,
+    dmg: 9,
     block: 0,
     
     behaviors: [
@@ -320,6 +322,7 @@ export const NORMAL_ENEMIES: Record<string, EnhancedEnemyData> = {
     tier: 'normal',
     hp: 42,
     maxHp: 42,
+    dmg: 10,
     block: 3,
     
     behaviors: [
@@ -399,6 +402,7 @@ export const NORMAL_ENEMIES: Record<string, EnhancedEnemyData> = {
     tier: 'normal',
     hp: 36,
     maxHp: 36,
+    dmg: 8,
     block: 1,
     
     behaviors: [
@@ -475,6 +479,7 @@ export const NORMAL_ENEMIES: Record<string, EnhancedEnemyData> = {
     tier: 'normal',
     hp: 44,
     maxHp: 44,
+    dmg: 12,
     block: 2,
     
     behaviors: [

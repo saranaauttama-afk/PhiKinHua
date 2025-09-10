@@ -48,7 +48,7 @@ export function evaluateCondition(
       
     case 'has_status_effect':
       if (typeof conditionValue === 'string') {
-        return hasStatusEffect('enemy', state, conditionValue as StatusEffectType);
+        return hasStatusEffect('enemy', state, conditionValue as any);
       }
       return false;
       
@@ -375,7 +375,7 @@ export function initializeEnemyBehaviors(state: GameState): void {
   // Apply starting status effects
   if (enemyData.startingStatusEffects) {
     for (const status of enemyData.startingStatusEffects) {
-      applyStatusEffect('enemy', state, status.id as StatusEffectType, status.duration, status.stacks);
+      applyStatusEffect('enemy', state, status.id as any, status.duration, status.stacks);
     }
   }
 

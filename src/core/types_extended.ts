@@ -197,6 +197,7 @@ export type EnhancedEnemyData = {
   tier: 'normal' | 'elite' | 'boss';
   hp: number;
   maxHp: number;
+  dmg?: number; // Optional - for backward compatibility only
   block: number;
   
   // Enhanced mechanics

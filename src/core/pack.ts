@@ -66,7 +66,7 @@ export function pickEnemy(rng: RNG, tier: 'normal' | 'elite' | 'boss'): { rng: R
     name: thaiEnemy.name,
     hp: thaiEnemy.hp,
     maxHp: thaiEnemy.maxHp,
-    dmg: thaiEnemy.scaling?.dmgPerAct || 2, // ใช้ scaling หรือค่า default
+    dmg: thaiEnemy.dmg || thaiEnemy.scaling?.dmgPerAct || 2, // Optional fallback for legacy system
     block: thaiEnemy.block,
     
     // สร้าง AI cycle จาก signature cards (backward compatibility)
