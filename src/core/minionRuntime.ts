@@ -173,7 +173,7 @@ function processMinionAbility(
         actualTarget.hp = Math.max(0, actualTarget.hp - damage);
         state.log.push(`👻 ${minion.name} phases through defenses for ${damage} damage!`);
       } else {
-        dealMinionDamage(state, { ...minion, attack: damage }, actualTarget, actualTargetType);
+        dealMinionDamage(state, minion, actualTarget, actualTargetType, damage);
       }
       break;
       
@@ -219,11 +219,11 @@ function processMinionAbility(
 
 function dealMinionDamage(
   state: GameState,
-  minion: any, // Can have attack property for backwards compatibility
+  minion: MinionData,
   target: any,
-  targetType: 'player' | 'enemy'
+  targetType: 'player' | 'enemy',
+  damage: number
 ): void {
-  let damage = minion.attack || 0;
   
   // Apply environment modifiers if minion is attacking
   const { applyEnvironmentDamageModifier } = require('./environmentRuntime');
@@ -284,6 +284,7 @@ export function processMinionsEndTurn(state: GameState): void {
 }
 
 // ===== Minion Damage Taking =====
+// Note: Minions now use duration instead of HP system
 
 export function damageMinionsByOwner(
   state: GameState,
@@ -293,14 +294,15 @@ export function damageMinionsByOwner(
   const minions = activeMinions.filter(m => m.owner === owner);
   if (!minions.length) return;
   
-  // Distribute damage among minions (or target specific minion)
+  // Reduce duration of random minion instead of HP
   const targetMinion = minions[Math.floor(Math.random() * minions.length)];
-  targetMinion.hp = Math.max(0, targetMinion.hp - damage);
+  const durationLoss = Math.min(damage, targetMinion.duration);
+  targetMinion.duration = Math.max(0, targetMinion.duration - durationLoss);
   
-  state.log.push(`💥 ${targetMinion.name} takes ${damage} damage! (${targetMinion.hp}/${targetMinion.maxHp} HP)`);
+  state.log.push(`💥 ${targetMinion.name} is disrupted, losing ${durationLoss} turn(s)! (${targetMinion.duration} turns remaining)`);
   
-  if (targetMinion.hp <= 0) {
-    state.log.push(`💀 ${targetMinion.name} is defeated!`);
+  if (targetMinion.duration <= 0) {
+    state.log.push(`💀 ${targetMinion.name} is disrupted and fades away!`);
   }
 }
 
@@ -324,7 +326,7 @@ export function processPlayerTurnMinions(state: GameState): void {
   const playerMinions = getPlayerMinions();
   console.log(`🔥 Player minions count: ${playerMinions.length}`);
   playerMinions.forEach((minion, i) => {
-    console.log(`🔥 Minion ${i}: ${minion.name} (${minion.id}), AI: ${minion.ai}`);
+    console.log(`🔥 Minion ${i}: ${minion.name} (${minion.id}), Owner: ${minion.owner}`);
   });
   
   processMinionTurn(state, 'player');
@@ -364,14 +366,16 @@ export function processEnemyMinions(state: GameState): void {
   const enemyMinions = getEnemyMinions();
   if (!enemyMinions?.length) return;
   
-  // Process enemy minion actions
+  // Process enemy minion actions using abilities instead of direct attacks
   for (const minion of enemyMinions) {
-    if (minion.hp > 0) {
-      // Simple AI: attack player
-      const damage = minion.attack || 2;
-      const actualDamage = Math.min(damage, state.player.hp);
-      state.player.hp = Math.max(0, state.player.hp - actualDamage);
-      state.log.push(`👿 ${minion.name} attacks for ${actualDamage} damage`);
+    // Process minion abilities that trigger during enemy turn
+    for (const ability of minion.abilities) {
+      if (ability.trigger === 'turn_start' && ability.type === 'attack') {
+        const damage = ability.value;
+        const actualDamage = Math.min(damage, state.player.hp);
+        state.player.hp = Math.max(0, state.player.hp - actualDamage);
+        state.log.push(`👿 ${minion.name} ${ability.description} for ${actualDamage} damage`);
+      }
     }
   }
 }

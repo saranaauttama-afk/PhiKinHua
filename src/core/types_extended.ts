@@ -134,7 +134,9 @@ export type BattleEnvironment = {
 };
 
 export type EnvironmentEffect = {
-  type: 'card_cost_modifier' | 'damage_modifier' | 'block_modifier' | 'energy_modifier' | 'draw_modifier' | 'status_immunity' | 'spell_boost';
+  type: 'card_cost_modifier' | 'damage_modifier' | 'block_modifier' | 'energy_modifier' | 'draw_modifier' | 'status_immunity' | 'spell_boost' 
+      | 'damage_bonus' | 'damage_penalty' | 'block_bonus' | 'block_penalty' | 'cost_reduction' | 'cost_increase' 
+      | 'energy_bonus' | 'energy_penalty' | 'draw_bonus' | 'draw_penalty';
   value: number;
   condition?: string;
   description: string;
