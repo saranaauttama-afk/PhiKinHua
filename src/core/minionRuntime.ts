@@ -36,7 +36,7 @@ export function summonMinion(
     return;
   }
   
-  console.log(`🔄 Summoning ${count}x ${minionId} for ${owner}`);
+  // Debug: console.log(`🔄 Summoning ${count}x ${minionId} for ${owner}`);
   state.log.push(`🔄 Attempting to summon ${count}x ${minionTemplate.name} for ${owner}`);
 
   for (let i = 0; i < count; i++) {
@@ -138,7 +138,7 @@ function processMinionAction(
   target: any,
   targetType: 'player' | 'enemy'
 ): void {
-  console.log(`🔥 Processing ${minion.name} with ${minion.abilities.length} abilities`);
+  // Debug: console.log(`🔥 Processing ${minion.name} with ${minion.abilities.length} abilities`);
   
   // Process all minion abilities
   for (const ability of minion.abilities) {
@@ -155,7 +155,7 @@ function processMinionAbility(
   target: any,
   targetType: 'player' | 'enemy'
 ): void {
-  console.log(`🔥 Processing ability: ${ability.type} -> ${ability.target} (value: ${ability.value})`);
+  // Debug: console.log(`🔥 Processing ability: ${ability.type} -> ${ability.target} (value: ${ability.value})`);
   
   // Determine actual target based on ability.target and minion.owner
   let actualTarget = target;
@@ -332,12 +332,13 @@ export function initializeCombatMinions(state: GameState): void {
 }
 
 export function processPlayerTurnMinions(state: GameState): void {
-  console.log(`🔥 processPlayerTurnMinions called`);
+  // Debug logs commented out for production
+  // console.log(`🔥 processPlayerTurnMinions called`);
   const playerMinions = getPlayerMinions();
-  console.log(`🔥 Player minions count: ${playerMinions.length}`);
-  playerMinions.forEach((minion, i) => {
-    console.log(`🔥 Minion ${i}: ${minion.name} (${minion.id}), Owner: ${minion.owner}`);
-  });
+  // console.log(`🔥 Player minions count: ${playerMinions.length}`);
+  // playerMinions.forEach((minion, i) => {
+  //   console.log(`🔥 Minion ${i}: ${minion.name} (${minion.id}), Owner: ${minion.owner}`);
+  // });
   
   processMinionTurn(state, 'player');
   syncMinionsToState(state);
@@ -366,10 +367,11 @@ export function getAllMinionTypes(): Record<string, MinionData> {
 }
 
 export function debugMinions(state: GameState): void {
-  console.log('=== MINIONS DEBUG ===');
-  console.log('Active Minions:', activeMinions.length);
-  console.log('Player Minions:', getPlayerMinions().map(m => `${m.name}(${m.duration} turns)`));
-  console.log('Enemy Minions:', getEnemyMinions().map(m => `${m.name}(${m.duration} turns)`));
+  // Debug function - uncomment when needed
+  // console.log('=== MINIONS DEBUG ===');
+  // console.log('Active Minions:', activeMinions.length);
+  // console.log('Player Minions:', getPlayerMinions().map(m => `${m.name}(${m.duration} turns)`));
+  // console.log('Enemy Minions:', getEnemyMinions().map(m => `${m.name}(${m.duration} turns)`));
 }
 
 export function processEnemyMinions(state: GameState): void {
