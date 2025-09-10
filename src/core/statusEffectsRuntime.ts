@@ -13,11 +13,16 @@ export {
   applyStatusEffect,
   removeStatusEffect,
   processStatusEffectsStartTurn,
+  processStatusEffectsStartTurn as processStatusEffectsOnTurnStart, // Alias for backward compatibility
   processStatusEffectsEndTurn,
+  processStatusEffectsEndTurn as processStatusEffectsOnTurnEnd, // Alias for backward compatibility
   hasStatusEffect,
   getStatusEffectStacks,
   clearAllStatusEffects,
-  createStatusEffect
+  createStatusEffect,
+  canPlayAttackCards,
+  modifyCardCostForStatusEffects,
+  modifyDamageForStatusEffects
 } from './combat/status-effects';
 
 /**

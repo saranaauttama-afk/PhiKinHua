@@ -132,22 +132,21 @@ function EventView({ state, dispatch }: EventViewProps) {
         return (
           <Pressable
             onPress={() => {
-              if (needsSubChoice) {
-                // For choices that need sub-selection, just mark the choice and let user select from sub-options
-                dispatch({ type: 'ChooseLevelUpOption', option, index: 0 });
-              } else {
+              if (!needsSubChoice) {
                 // For direct choices, apply immediately
                 dispatch({ type: 'ChooseLevelUpOption', option });
               }
+              // For choices that need sub-selection, do nothing - just show the sub-options
             }}
             style={{
               flex: 1,
               padding: 16,
               marginHorizontal: 4,
               borderRadius: 12,
-              backgroundColor: 'rgba(234, 179, 8, 0.2)',
+              backgroundColor: needsSubChoice ? 'rgba(234, 179, 8, 0.1)' : 'rgba(234, 179, 8, 0.2)',
               borderWidth: 2,
-              borderColor: 'rgba(234, 179, 8, 0.4)',
+              borderColor: needsSubChoice ? 'rgba(234, 179, 8, 0.2)' : 'rgba(234, 179, 8, 0.4)',
+              opacity: needsSubChoice ? 0.6 : 1,
             }}
           >
             <Text style={{ fontSize: 32, textAlign: 'center', marginBottom: 8 }}>{info.icon}</Text>
@@ -203,6 +202,57 @@ function EventView({ state, dispatch }: EventViewProps) {
                   </Pressable>
                 ))}
               </View>
+            </View>
+          )}
+
+          {/* Remove/Upgrade card selection */}
+          {(optionA === 'remove' || optionB === 'remove' || optionA === 'upgrade' || optionB === 'upgrade') && !lu.choice?.selectedOption && (
+            <View style={{ marginTop: 16 }}>
+              <Text style={{ color: 'white', fontWeight: 'bold', marginBottom: 8 }}>
+                Choose a card to {optionA === 'remove' || optionB === 'remove' ? 'remove' : 'upgrade'}:
+              </Text>
+              <View style={{ gap: 8 }}>
+                {state.masterDeck?.map((card, i) => (
+                  <Pressable
+                    key={i}
+                    onPress={() => {
+                      const option = (optionA === 'remove' || optionA === 'upgrade') ? 'A' : 'B';
+                      dispatch({ type: 'ChooseLevelUpOption', option, index: i });
+                    }}
+                    style={{ 
+                      padding: 12, 
+                      borderRadius: 8, 
+                      backgroundColor: 'rgba(239, 68, 68, 0.2)', 
+                      borderWidth: 1, 
+                      borderColor: 'rgba(239, 68, 68, 0.4)' 
+                    }}
+                  >
+                    <Text style={{ color: '#fecaca', fontWeight: 'bold' }}>{card.name}</Text>
+                    <Text style={{ color: '#fca5a5', fontSize: 12 }}>
+                      Cost: {card.cost ?? 0}
+                      {card.dmg && ` | DMG: ${card.dmg}`}
+                      {card.block && ` | Block: ${card.block}`}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+              
+              {/* Back button */}
+              <Pressable
+                onPress={() => dispatch({ type: 'CancelLevelUpChoice' })}
+                style={{
+                  marginTop: 12,
+                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                  borderRadius: 8,
+                  backgroundColor: 'rgba(107, 114, 128, 0.3)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(156, 163, 175, 0.4)',
+                  alignSelf: 'center'
+                }}
+              >
+                <Text style={{ color: '#d1d5db', fontWeight: '600' }}>← Back to rewards</Text>
+              </Pressable>
             </View>
           )}
         </View>

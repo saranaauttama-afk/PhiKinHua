@@ -5,7 +5,14 @@
       "Bash(node:*)",
       "Bash(npx tsc:*)",
       "Bash(find:*)",
-      "Bash(npm run typecheck:*)"
+      "Bash(npm run typecheck:*)",
+      "Bash(cat:*)",
+      "Bash(del test-enemy.ts)",
+      "Bash(sed:*)",
+      "Bash(git add:*)",
+      "Bash(git rm:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

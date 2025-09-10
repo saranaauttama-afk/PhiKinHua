@@ -1,0 +1,281 @@
+[
+  {
+    "id": "claw",
+    "owner": "global",
+    "name": "Claw",
+    "type": "attack",
+    "energyCost": 1,
+    "dmg": 6,
+    "desc": "Basic claw attack dealing moderate damage"
+  },
+  {
+    "id": "swipe", 
+    "owner": "global",
+    "name": "Swipe",
+    "type": "attack",
+    "energyCost": 1,
+    "dmg": 8,
+    "desc": "Quick swipe attack with decent damage"
+  },
+  {
+    "id": "maul",
+    "owner": "global",
+    "name": "Maul",
+    "type": "attack", 
+    "energyCost": 2,
+    "dmg": 13,
+    "desc": "Heavy attack dealing high damage"
+  },
+  {
+    "id": "guard",
+    "owner": "global",
+    "name": "Guard",
+    "type": "skill",
+    "energyCost": 1,
+    "block": 7,
+    "desc": "Basic defensive stance"
+  },
+  {
+    "id": "brace",
+    "owner": "global",
+    "name": "Brace",
+    "type": "skill",
+    "energyCost": 2,
+    "block": 12,
+    "desc": "Strong defensive stance"
+  },
+  {
+    "id": "slime_poke",
+    "owner": "slime", 
+    "name": "Poke",
+    "type": "attack",
+    "energyCost": 1,
+    "dmg": 6,
+    "desc": "Slime pokes with its body"
+  },
+  {
+    "id": "slime_guard",
+    "owner": "slime",
+    "name": "Sticky Guard", 
+    "type": "skill",
+    "energyCost": 1,
+    "block": 5,
+    "desc": "Slime hardens its body for protection"
+  },
+  {
+    "id": "vengeful_strike",
+    "owner": "spirit",
+    "name": "Vengeful Strike",
+    "type": "attack",
+    "energyCost": 2,
+    "dmg": 12,
+    "desc": "A strike filled with vengeance and anger"
+  },
+  {
+    "id": "death_wail",
+    "owner": "spirit",
+    "name": "Death Wail",
+    "type": "attack", 
+    "energyCost": 1,
+    "dmg": 8,
+    "desc": "A haunting cry that damages the soul"
+  },
+  {
+    "id": "cursed_touch",
+    "owner": "spirit",
+    "name": "Cursed Touch",
+    "type": "attack",
+    "energyCost": 1,
+    "dmg": 7,
+    "desc": "A touch that brings misfortune"
+  },
+  {
+    "id": "death_curse",
+    "owner": "spirit", 
+    "name": "Death Curse",
+    "type": "attack",
+    "energyCost": 3,
+    "dmg": 16,
+    "desc": "A powerful curse that brings death"
+  },
+  {
+    "id": "soul_rend",
+    "owner": "spirit",
+    "name": "Soul Rend",
+    "type": "attack",
+    "energyCost": 2,
+    "dmg": 11,
+    "desc": "Tears at the target's soul"
+  },
+  {
+    "id": "wrathful_scream",
+    "owner": "spirit",
+    "name": "Wrathful Scream",
+    "type": "attack",
+    "energyCost": 2,
+    "dmg": 10,
+    "desc": "A scream filled with pure wrath"
+  },
+  {
+    "id": "phase_strike",
+    "owner": "phi_pop",
+    "name": "Phase Strike",
+    "type": "attack",
+    "energyCost": 2,
+    "dmg": 10,
+    "desc": "Phi Pop phases through defenses to strike"
+  },
+  {
+    "id": "floating_dodge",
+    "owner": "phi_pop",
+    "name": "Floating Dodge",
+    "type": "skill",
+    "energyCost": 1,
+    "block": 6,
+    "desc": "Phi Pop floats to avoid attacks"
+  },
+  {
+    "id": "ghost_wail",
+    "owner": "phi_pop",
+    "name": "Ghost Wail",
+    "type": "attack",
+    "energyCost": 1,
+    "dmg": 7,
+    "desc": "Ghostly wail that chills the soul"
+  },
+  {
+    "id": "blood_drain",
+    "owner": "krasue",
+    "name": "Blood Drain",
+    "type": "attack",
+    "energyCost": 2,
+    "dmg": 9,
+    "desc": "Krasue drains blood from its victim"
+  },
+  {
+    "id": "night_hunt",
+    "owner": "krasue",
+    "name": "Night Hunt",
+    "type": "attack",
+    "energyCost": 1,
+    "dmg": 8,
+    "desc": "Hunting in the darkness of night"
+  },
+  {
+    "id": "stealth_approach",
+    "owner": "krasue",
+    "name": "Stealth Approach",
+    "type": "skill",
+    "energyCost": 1,
+    "block": 5,
+    "desc": "Approaches stealthily to avoid detection"
+  },
+  {
+    "id": "possession_touch",
+    "owner": "phi_tai_hong",
+    "name": "Possession Touch",
+    "type": "attack",
+    "energyCost": 2,
+    "dmg": 11,
+    "desc": "Touch that attempts to possess the target"
+  },
+  {
+    "id": "invisible_approach",
+    "owner": "phi_tai_hong",
+    "name": "Invisible Approach",
+    "type": "skill",
+    "energyCost": 1,
+    "block": 7,
+    "desc": "Becomes invisible to avoid attacks"
+  },
+  {
+    "id": "soul_siphon",
+    "owner": "phi_tai_hong",
+    "name": "Soul Siphon",
+    "type": "attack",
+    "energyCost": 1,
+    "dmg": 6,
+    "desc": "Drains energy from the target's soul"
+  },
+  {
+    "id": "phantom_slash",
+    "owner": "phi_krahang",
+    "name": "Phantom Slash",
+    "type": "attack",
+    "energyCost": 2,
+    "dmg": 12,
+    "desc": "Ghostly sword slash from a headless warrior"
+  },
+  {
+    "id": "warrior_stance",
+    "owner": "phi_krahang",
+    "name": "Warrior Stance",
+    "type": "skill",
+    "energyCost": 1,
+    "block": 8,
+    "desc": "Takes a defensive warrior stance"
+  },
+  {
+    "id": "headless_charge",
+    "owner": "phi_krahang",
+    "name": "Headless Charge",
+    "type": "attack",
+    "energyCost": 3,
+    "dmg": 15,
+    "desc": "Reckless charge without a head to guide"
+  },
+  {
+    "id": "graceful_strike",
+    "owner": "kinnaree",
+    "name": "Graceful Strike",
+    "type": "attack",
+    "energyCost": 2,
+    "dmg": 10,
+    "desc": "Elegant and precise strike from a celestial being"
+  },
+  {
+    "id": "dance_of_spirits",
+    "owner": "kinnaree",
+    "name": "Dance of Spirits",
+    "type": "skill",
+    "energyCost": 2,
+    "block": 9,
+    "desc": "Mystical dance that provides spiritual protection"
+  },
+  {
+    "id": "entrancing_gaze",
+    "owner": "kinnaree",
+    "name": "Entrancing Gaze",
+    "type": "attack",
+    "energyCost": 1,
+    "dmg": 6,
+    "desc": "Hypnotic gaze that mesmerizes opponents"
+  },
+  {
+    "id": "serpent_bite",
+    "owner": "naga_minor",
+    "name": "Serpent Bite",
+    "type": "attack",
+    "energyCost": 2,
+    "dmg": 11,
+    "desc": "Venomous bite from serpent fangs"
+  },
+  {
+    "id": "coiling_attack",
+    "owner": "naga_minor",
+    "name": "Coiling Attack",
+    "type": "attack",
+    "energyCost": 2,
+    "dmg": 10,
+    "desc": "Wraps around target while attacking"
+  },
+  {
+    "id": "venom_spit",
+    "owner": "naga_minor",
+    "name": "Venom Spit",
+    "type": "attack",
+    "energyCost": 1,
+    "dmg": 8,
+    "desc": "Spits poisonous venom at target"
+  }
+]

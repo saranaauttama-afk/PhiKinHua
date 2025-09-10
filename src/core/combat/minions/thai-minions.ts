@@ -74,7 +74,7 @@ export const THAI_MINIONS: Record<string, MinionData> = {
       {
         type: 'status',               // ใส่สถานะผลลบให้ศัตรู (Support ประเภท debuff)
         trigger: 'turn_start',
-        target: 'enemy',              // ยังคงเป็น enemy เพราะเป็น debuff support
+        target: 'enemy',              // debuff ศัตรู
         effect: 'poison',             // ใส่พิษ
         value: 1,                     // ลดเหลือ 1 ชั้นเพื่อ balance
         duration: 2,                  // ลดระยะเวลาเป็น 2 เทิร์น
@@ -96,7 +96,7 @@ export const THAI_MINIONS: Record<string, MinionData> = {
       {
         type: 'attack',               // โจมตีผู้เล่นโดยตรง
         trigger: 'turn_start',
-        target: 'player',             // โจมตีผู้เล่น
+        target: 'enemy',              // 'enemy' จากมุม minion = โจมตีผู้เล่น
         value: 8,                     // ความเสียหาย 8 (สูงกว่าเพราะเป็นศัตรู)
         description: 'โคลนเงาจู่โจมด้วยพลังความมืด'
       }
@@ -120,7 +120,7 @@ export const THAI_MINIONS: Record<string, MinionData> = {
       {
         type: 'status',               // ยังคง debuff ผู้เล่น
         trigger: 'turn_start',
-        target: 'player',             // ใส่ debuff ให้ผู้เล่น
+        target: 'enemy',              // 'enemy' จากมุม minion = debuff ผู้เล่น
         effect: 'entangle',           // ใส่สถานะพันธนาการ
         value: 1,
         duration: 1,                  // ลดระยะเวลาลง
@@ -182,7 +182,7 @@ export const THAI_MINIONS: Record<string, MinionData> = {
       {
         type: 'status',
         trigger: 'turn_start',
-        target: 'player',             // แก้ไขให้ชัดเจน - debuff ผู้เล่น
+        target: 'enemy',              // 'enemy' จากมุม minion = debuff ผู้เล่น
         effect: 'weakness',           // ใส่ความอ่อนแอ
         value: 1,
         duration: 1,                  // ลดระยะเวลาลง

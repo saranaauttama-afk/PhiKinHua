@@ -161,6 +161,27 @@ export function endTurn(s: GameState, _cmd: Extract<Command, { type: 'EndTurn' }
 runEquipmentTurnHook(s, 'on_turn_end', 'player');
 
   endEnemyTurn(s);
+  
+  // Check for victory after enemy turn
+  if (isVictory(s)) {
+    r = grantExpAndQueueLevelUp(s, r);
+    s.combatVictoryLock = true;
+    
+    // Clear minions on victory
+    const { clearAllMinions } = require('../../minionRuntime');
+    clearAllMinions(s);
+    
+    // Check if level up is pending - go to levelup phase first
+    if (s.levelUp && !s.levelUp.consumed) {
+      s.phase = 'levelup';
+      s.log.push('Level Up!');
+    } else {
+      s.phase = 'victory';
+      s.log.push('Victory!');
+    }
+    return { state: s, rng: r };
+  }
+  
   if (isDefeat(s)) {
     s.phase = 'defeat';
     s.log.push('Defeat..');

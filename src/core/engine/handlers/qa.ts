@@ -111,16 +111,31 @@ export function qaPrintPage(s: GameState, _cmd: Extract<Command, { type: 'QA_Pri
 }
 
 export function qaSpawnEquippedEnemy(s: GameState, cmd: Extract<Command, { type: 'QA_SpawnEquippedEnemy' }>, r: RNG) {
-  const enemyId = cmd.enemyId || 'armed_bandit';
+  const enemyId = cmd.enemyId || 'phi_pong';
   
-  // โหลด enemy data
-  const ENEMY_LIST = require('../../../data/packs/base/enemies.json');
-  const enemyTemplate = ENEMY_LIST.find((e: any) => e.id === enemyId);
+  // โหลด enemy data จากระบบไทยใหม่
+  const { getEnemyById } = require('../../enemies/thai/data');
+  const thaiEnemyTemplate = getEnemyById(enemyId);
   
-  if (!enemyTemplate) {
+  if (!thaiEnemyTemplate) {
     s.log.push(`QA: Enemy ${enemyId} not found`);
     return { state: s, rng: r };
   }
+  
+  // แปลงจาก EnhancedEnemyData เป็น EnemyState (legacy format)
+  const enemyTemplate = {
+    id: thaiEnemyTemplate.id,
+    name: thaiEnemyTemplate.name,
+    hp: thaiEnemyTemplate.hp,
+    maxHp: thaiEnemyTemplate.maxHp,
+    dmg: thaiEnemyTemplate.dmg || 2,
+    block: thaiEnemyTemplate.block,
+    ai: {
+      cycle: thaiEnemyTemplate.signatureCards || ['claw', 'guard'],
+      index: 0
+    },
+    intentCardId: (thaiEnemyTemplate.signatureCards && thaiEnemyTemplate.signatureCards[0]) || 'claw'
+  };
 
   // ตั้งค่าการต่อสู้
   s.phase = 'combat';
@@ -145,7 +160,7 @@ export function qaSpawnEquippedEnemy(s: GameState, cmd: Extract<Command, { type:
 
   // สร้างเด็คผู้เล่น
   ({ state: s, rng: r } = buildAndShuffleDeck(s, r));
-  ({ state: s, rng: r } = drawUpTo(s, r));
+  ({ state: s, rng: r } = drawUpTo(s, r, s.player.maxHandSize));
 
   // Equipment battle-start hooks
   runEquipmentOnBattleStart(s, 'player');
@@ -329,5 +344,13 @@ export function qaClearCombos(state: GameState, cmd: Command & { type: 'QA_Clear
   const { initializeCombatCombos } = require('../../cardComboSystem');
   initializeCombatCombos(state);
   state.log.push('🧹 All combo progress cleared');
+  return { state, rng };
+}
+
+export function qaLevelUp(state: GameState, cmd: Command & { type: 'QA_LevelUp' }, rng: RNG) {
+  const { grantExpAndQueueLevelUp } = require('../shared');
+  rng = grantExpAndQueueLevelUp(state, rng);
+  state.phase = 'levelup';
+  state.log.push('🎯 QA: Level up triggered');
   return { state, rng };
 }

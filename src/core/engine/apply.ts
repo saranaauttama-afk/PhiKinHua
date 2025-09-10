@@ -32,6 +32,7 @@ const H: { [K in Command['type']]?: Handler<K> } = {
   // Level up
   ChooseLevelUp: lvl.chooseLevelUp,
   ChooseLevelUpOption: lvl.chooseLevelUpOption,
+  CancelLevelUpChoice: lvl.cancelLevelUpChoice,
   SkipLevelUp: lvl.skipLevelUp,
 
   // UI
@@ -86,6 +87,7 @@ const H: { [K in Command['type']]?: Handler<K> } = {
   QA_DebugCombos: qa.qaDebugCombos,
   QA_TriggerCombo: qa.qaTriggerCombo,
   QA_ClearCombos: qa.qaClearCombos,
+  QA_LevelUp: qa.qaLevelUp,
 
   // QA - Original
   QA_KillEnemy: qa.qaKillEnemy,

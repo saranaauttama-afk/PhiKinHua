@@ -44,9 +44,11 @@ function applyBucketChoice(s: GameState, bucket: string, idx: number) {
       break;
     case 'max_energy':
       s.player.maxEnergy += 1;
+      s.log.push(`Max energy size increased to ${s.player.maxEnergy}`);
       break;
     case 'max_hand':
       s.player.maxHandSize += 1;
+      s.log.push(`Hand size: ${s.player.maxHandSize}`);
       break;
     case 'cards': {
       const c = s.levelUp?.cardChoices?.[idx]; if (!c) break;
@@ -85,6 +87,18 @@ function applyBucketChoice(s: GameState, bucket: string, idx: number) {
       s.player.gold += 25;
       break;
   }
+}
+
+export function cancelLevelUpChoice(s: GameState, _cmd: Extract<Command, { type: 'CancelLevelUpChoice' }>, r: RNG) {
+  if (s.phase !== 'levelup' || !s.levelUp || s.levelUp.consumed || !s.levelUp.choice) return { state: s, rng: r };
+  
+  // Reset the selected option to show main choices again
+  if (s.levelUp.choice) {
+    s.levelUp.choice.selectedOption = undefined;
+  }
+  
+  s.log.push('Back to level up choices');
+  return { state: s, rng: r };
 }
 
 export function skipLevelUp(s: GameState, _cmd: Extract<Command, { type: 'SkipLevelUp' }>, r: RNG) {

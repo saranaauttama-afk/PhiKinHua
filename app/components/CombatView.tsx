@@ -254,7 +254,7 @@ function CombatView({ state, dispatch }: CombatViewProps) {
 
       {/* Hand */}
       <View style={{ marginBottom: 16 }}>
-        <Text style={{ color: 'white', fontWeight: '600', marginBottom: 8 }}>🃏 Hand ({hand.length})</Text>
+        <Text style={{ color: 'white', fontWeight: '600', marginBottom: 8 }}>🃏 Hand ({hand.length}/{player.maxHandSize || 3})</Text>
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
           {hand.map((c, i) => {
             const disabled = state.combatVictoryLock || player.energy < (c.cost ?? 0);

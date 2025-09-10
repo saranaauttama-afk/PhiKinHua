@@ -41,7 +41,10 @@ export {
   hasStatusEffect,
   getStatusEffectStacks,
   clearAllStatusEffects,
-  createStatusEffect
+  createStatusEffect,
+  canPlayAttackCards,
+  modifyCardCostForStatusEffects,
+  modifyDamageForStatusEffects
 } from './runtime';
 
 // ===== Backward Compatibility =====

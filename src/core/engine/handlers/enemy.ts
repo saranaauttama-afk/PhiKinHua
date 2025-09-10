@@ -153,8 +153,14 @@ function enemyDrawUpToHand(s: GameState) {
 
 function enemyPlayCardId(s: GameState, idx: number): boolean {
   const piles = (s as any).enemyPiles as { draw: string[]; hand: string[]; discard: string[] } | undefined;
-  if (!s.enemy || !piles) return false;
-  if (idx < 0 || idx >= piles.hand.length) return false;
+  if (!s.enemy || !piles) {
+    s.log.push(`DEBUG: enemyPlayCardId - No enemy or piles`);
+    return false;
+  }
+  if (idx < 0 || idx >= piles.hand.length) {
+    s.log.push(`DEBUG: enemyPlayCardId - Invalid index ${idx}, hand size: ${piles.hand.length}`);
+    return false;
+  }
 
   const id = piles.hand[idx];
   const def = enemyCardById(id);
@@ -166,7 +172,12 @@ s.log.push(`Enemy discards unknown card ${id}.`);
   }
 
   const cost = typeof def.energyCost === 'number' ? def.energyCost : 1;
-  if (((s as any).enemyEnergy ?? 0) < cost) return false; // เล่นไม่ได้
+  const currentEnergy = (s as any).enemyEnergy ?? 0;
+  s.log.push(`DEBUG: enemyPlayCardId - Card: ${def.name ?? id}, Cost: ${cost}, Energy: ${currentEnergy}`);
+  if (currentEnergy < cost) {
+    s.log.push(`DEBUG: enemyPlayCardId - Not enough energy to play ${def.name ?? id}`);
+    return false; // เล่นไม่ได้
+  }
 
   // หักค่า energy
   (s as any).enemyEnergy = ((s as any).enemyEnergy ?? 0) - cost;
@@ -189,6 +200,7 @@ s.log.push(`Enemy discards unknown card ${id}.`);
   // ย้ายการ์ดไป discard
   const [cardId] = piles.hand.splice(idx, 1);
   piles.discard.push(cardId);
+  s.log.push(`DEBUG: enemyPlayCardId - Successfully played ${def.name ?? id}`);
   return true;
 }
 
@@ -201,7 +213,14 @@ function enemyDiscardHand(s: GameState) {
 }
 
 export function runEnemyTurn(s: GameState) {
-  if (!s.enemy || !(s as any).enemyPiles) return;
+  if (!s.enemy) {
+    s.log.push(`DEBUG: runEnemyTurn - No enemy found`);
+    return;
+  }
+  if (!(s as any).enemyPiles) {
+    s.log.push(`DEBUG: runEnemyTurn - No enemy piles found, enemy deck not initialized`);
+    return;
+  }
 
   // Import behavior system
   const { processEnemyTurnBehaviors } = require('../../enemyBehaviorRuntime');
@@ -236,6 +255,7 @@ export function runEnemyTurn(s: GameState) {
 
   // Log เริ่มเทิร์น
   s.log.push(`Enemy turn: hand=${startHand}, energy=${(s as any).enemyEnergy}`);
+  s.log.push(`DEBUG: Enemy hand contents: [${piles.hand.join(', ')}]`);
 
   // เล่นการ์ดจากซ้ายไปขวา เท่าที่พลังงานพอ / ไม่เกินขนาดมือเริ่มต้น
   while (true) {

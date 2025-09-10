@@ -336,8 +336,8 @@ export default function Home() {
         {state.log.length > 0 && (
           <View style={{ marginTop: 24, borderRadius: 16, padding: 16, backgroundColor: 'rgba(39, 39, 42, 0.5)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }}>
             <Text style={{ color: 'white', fontWeight: '600', marginBottom: 8 }}>📜 Game Log</Text>
-            <ScrollView style={{ maxHeight: 128 }} showsVerticalScrollIndicator={false}>
-              {state.log.slice(-10).map((entry, i) => {
+            <ScrollView style={{ maxHeight: 200 }} showsVerticalScrollIndicator={true}>
+              {state.log.slice(-20).map((entry, i) => {
                 // Enhanced log formatting for different system messages
                 const getLogColor = (text: string) => {
                   if (text.includes('🎆') || text.includes('✨')) return '#fbbf24'; // Combo messages - gold
@@ -471,7 +471,7 @@ export default function Home() {
           </View>
 
           {/* Shops & Spawns */}
-          <View>
+          <View style={{ marginBottom: 12 }}>
             <Text style={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: 12, marginBottom: 4 }}>Shops & Spawns:</Text>
             <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
               <Pressable 
@@ -485,6 +485,12 @@ export default function Home() {
                 style={{ paddingHorizontal: 8, paddingVertical: 6, borderRadius: 4, backgroundColor: 'rgba(185, 28, 28, 0.3)' }}
               >
                 <Text style={{ color: '#fecaca', fontSize: 12 }}>👹 Boss Fight</Text>
+              </Pressable>
+              <Pressable 
+                onPress={() => dispatch({ type: 'QA_LevelUp' })} 
+                style={{ paddingHorizontal: 8, paddingVertical: 6, borderRadius: 4, backgroundColor: 'rgba(234, 179, 8, 0.3)' }}
+              >
+                <Text style={{ color: '#fde68a', fontSize: 12 }}>⬆️ Level Up</Text>
               </Pressable>
             </View>
           </View>

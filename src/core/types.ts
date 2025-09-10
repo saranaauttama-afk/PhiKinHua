@@ -222,6 +222,7 @@ export type Command =
   // Level Up
   | { type: 'ChooseLevelUp'; index?: number }
   | { type: 'ChooseLevelUpOption'; option: 'A' | 'B'; index?: number }
+  | { type: 'CancelLevelUpChoice' }
   | { type: 'SkipLevelUp' }
 
   // UI
@@ -291,6 +292,7 @@ export type Command =
   | { type: 'QA_ResetAILearning' }
   | { type: 'QA_DebugCombos' }
   | { type: 'QA_TriggerCombo'; comboId: string }
-  | { type: 'QA_ClearCombos' };
+  | { type: 'QA_ClearCombos' }
+  | { type: 'QA_LevelUp' };
 
 export type TurnCtx = { state: GameState };

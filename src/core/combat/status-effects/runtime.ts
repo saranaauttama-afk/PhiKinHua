@@ -408,3 +408,67 @@ export function createStatusEffect(
     tags: statusDef?.tags
   };
 }
+
+/**
+ * ตรวจสอบว่าผู้เล่นสามารถเล่นการ์ดโจมตีได้หรือไม่
+ * ใช้สำหรับตรวจสอบสถานะผลเช่น entangle
+ */
+export function canPlayAttackCards(state: GameState): boolean {
+  // ตรวจสอบว่าผู้เล่นถูก entangle หรือไม่
+  return !hasStatusEffect('player', state, 'entangle');
+}
+
+/**
+ * ปรับต้นทุนการ์ดตามสถานะผล
+ * ใช้สำหรับสถานะผลที่เปลี่ยนต้นทุนการ์ด เช่น corruption
+ */
+export function modifyCardCostForStatusEffects(state: GameState, cardCost: number): number {
+  if (!state.player) return cardCost;
+  
+  let modifiedCost = cardCost;
+  
+  // ตรวจสอบ corruption - เพิ่มต้นทุนการ์ด
+  if (hasStatusEffect('player', state, 'corruption')) {
+    const stacks = getStatusEffectStacks('player', state, 'corruption');
+    modifiedCost += stacks;
+  }
+  
+  return Math.max(0, modifiedCost); // ต้นทุนต่ำสุดคือ 0
+}
+
+/**
+ * ปรับความเสียหายตามสถานะผล
+ * ใช้สำหรับสถานะผลที่เปลี่ยนความเสียหาย เช่น strength, weakness
+ */
+export function modifyDamageForStatusEffects(state: GameState, baseDamage: number, isPlayerAttack: boolean = true): number {
+  const targetState = isPlayerAttack ? state.player : state.enemy;
+  if (!targetState) return baseDamage;
+  
+  let modifiedDamage = baseDamage;
+  
+  if (isPlayerAttack) {
+    // ผู้เล่นโจมตี - ตรวจสอบ strength และ weakness
+    if (hasStatusEffect('player', state, 'strength')) {
+      const stacks = getStatusEffectStacks('player', state, 'strength');
+      modifiedDamage += stacks;
+    }
+    
+    if (hasStatusEffect('player', state, 'weakness')) {
+      const stacks = getStatusEffectStacks('player', state, 'weakness');
+      modifiedDamage = Math.floor(modifiedDamage * 0.75); // ลดความเสียหาย 25%
+    }
+  } else {
+    // ศัตรูโจมตี - ตรวจสอบสถานะผลของศัตรู
+    if (hasStatusEffect('enemy', state, 'strength')) {
+      const stacks = getStatusEffectStacks('enemy', state, 'strength');
+      modifiedDamage += stacks;
+    }
+    
+    if (hasStatusEffect('enemy', state, 'weakness')) {
+      const stacks = getStatusEffectStacks('enemy', state, 'weakness');
+      modifiedDamage = Math.floor(modifiedDamage * 0.75);
+    }
+  }
+  
+  return Math.max(0, modifiedDamage); // ความเสียหายต่ำสุดคือ 0
+}

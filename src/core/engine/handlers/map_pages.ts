@@ -181,7 +181,7 @@ export function choose(s: GameState, cmd: Extract<Command, { type: 'ChooseOffer'
 
       // สร้างเด็คผู้เล่น + จั่วมือแรก
       ({ state: s, rng } = buildAndShuffleDeck(s, rng));
-      ({ state: s, rng } = drawUpTo(s, rng));
+      ({ state: s, rng } = drawUpTo(s, rng, s.player.maxHandSize));
 
       // ★ Equipment: battle-start hook (NOTM-style)
       runEquipmentOnEquip(s); // Player equipment
@@ -230,7 +230,7 @@ export function choose(s: GameState, cmd: Extract<Command, { type: 'ChooseOffer'
       (s as any).enemyIntentCardId = (s as any).enemyPiles?.draw?.[0] ?? null;
 
       ({ state: s, rng } = buildAndShuffleDeck(s, rng));
-      ({ state: s, rng } = drawUpTo(s, rng));
+      ({ state: s, rng } = drawUpTo(s, rng, s.player.maxHandSize));
 
       // ★ Equipment: battle-start hook (NOTM-style)
       runEquipmentOnEquip(s); // Player equipment

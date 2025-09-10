@@ -77,10 +77,15 @@ export function drawUpTo(s: GameState, rng: RNG, targetHandSize = HAND_SIZE): { 
   let r = rng;
   let guard = 0;              // ฝากันลูปผิดพลาด
   const GUARD_MAX = 200;
+  const startHand = s.piles.hand.length;
   while (s.piles.hand.length < targetHandSize && guard++ < GUARD_MAX) {
     const res = drawOne(s, r);
     r = res.rng;
     if (!res.drew) break;     // ไม่มีไพ่ให้จั่ว -> ออกทันที
+  }
+  const endHand = s.piles.hand.length;
+  if (targetHandSize > 3) { // Only log when trying to draw more than default
+    s.log.push(`Drew ${endHand - startHand} cards (${startHand}→${endHand}, target:${targetHandSize})`);
   }
   return { state: s, rng: r };
 }
@@ -168,11 +173,41 @@ export function applyCardEffect(state: GameState, idxInHand: number) {
 
   // Effect - Damage with status effect and environment modifications
   if (modifiedCard.dmg && state.enemy) {
-    let modifiedDamage = modifyDamageForStatusEffects('player', 'enemy', state, modifiedCard.dmg);
+    console.log(`🔥 Original card damage: ${modifiedCard.dmg}`);
+    let modifiedDamage = modifyDamageForStatusEffects(state, modifiedCard.dmg, true); // true = player attack
+    console.log(`🔥 After status effects: ${modifiedDamage}`);
+    
+    // Safety check for NaN
+    if (isNaN(modifiedDamage)) {
+      console.error('🔥 ERROR: modifiedDamage is NaN, using original damage');
+      modifiedDamage = modifiedCard.dmg;
+    }
+    
     modifiedDamage = applyEnvironmentDamageModifier(state, modifiedDamage, 'player');
-    // Apply adaptive AI damage multiplier  
+    
+    // Safety check for NaN after environment modifier
+    if (isNaN(modifiedDamage)) {
+      console.error('🔥 ERROR: modifiedDamage is NaN after environment modifier, using original damage');
+      modifiedDamage = modifiedCard.dmg;
+    }
+    
+    // Apply adaptive AI damage multiplier with safety check
     const adaptiveMult = getAdaptiveDamageMultiplier();
-    const finalDamage = Math.round(modifiedDamage * (1 / adaptiveMult)); // Inverse for player damage
+    let finalDamage;
+    
+    if (isNaN(adaptiveMult) || adaptiveMult === 0) {
+      console.error('🔥 ERROR: adaptiveMult is invalid:', adaptiveMult);
+      finalDamage = Math.round(modifiedDamage);
+    } else {
+      finalDamage = Math.round(modifiedDamage * (1 / adaptiveMult)); // Inverse for player damage
+      
+      // Final safety check
+      if (isNaN(finalDamage)) {
+        console.error('🔥 ERROR: finalDamage is NaN, using modifiedDamage directly');
+        finalDamage = Math.round(modifiedDamage);
+      }
+    }
+    
     state.enemy.hp = Math.max(0, state.enemy.hp - finalDamage);
     
     if (finalDamage !== card.dmg) {
