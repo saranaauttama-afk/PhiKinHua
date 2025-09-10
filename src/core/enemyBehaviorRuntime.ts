@@ -32,7 +32,7 @@ export function evaluateCondition(
       return (state.enemy.hp / state.enemy.maxHp) < 0.25;
       
     case 'player_has_curse':
-      return hasStatusEffect(state.player, 'curse');
+      return hasStatusEffect('player', state, 'curse');
       
     case 'player_hp_below_50':
       return (state.player.hp / state.player.maxHp) < 0.5;
@@ -48,7 +48,7 @@ export function evaluateCondition(
       
     case 'has_status_effect':
       if (typeof conditionValue === 'string') {
-        return hasStatusEffect(state.enemy, conditionValue as StatusEffectType);
+        return hasStatusEffect('enemy', state, conditionValue as StatusEffectType);
       }
       return false;
       

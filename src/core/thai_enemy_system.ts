@@ -11,109 +11,14 @@ import type {
   MinionData
 } from './types_extended';
 
-// ===== Status Effect Registry =====
-export const STATUS_EFFECTS: Record<StatusEffectType, StatusEffectDefinition> = {
-  fear: {
-    id: 'fear',
-    name: 'Fear',
-    description: 'Reduce energy by 1 and randomly discard 1 card',
-    defaultDuration: 2,
-    stackable: true,
-    maxStacks: 3,
-    onTurnStart: (target, stacks) => {
-      // Implementation will be in combat system
-    }
-  },
-  poison: {
-    id: 'poison',
-    name: 'Poison',
-    description: 'Take damage at end of turn',
-    defaultDuration: 3,
-    stackable: true,
-    maxStacks: 10
-  },
-  curse: {
-    id: 'curse',
-    name: 'Curse',
-    description: 'Take +1 damage from all sources per stack',
-    defaultDuration: 5,
-    stackable: true,
-    maxStacks: 5
-  },
-  corruption: {
-    id: 'corruption',
-    name: 'Corruption',
-    description: 'Cards in hand cost +1 energy',
-    defaultDuration: 3,
-    stackable: false
-  },
-  entangle: {
-    id: 'entangle',
-    name: 'Entangle',
-    description: 'Cannot play attack cards',
-    defaultDuration: 2,
-    stackable: false
-  },
-  weakness: {
-    id: 'weakness', 
-    name: 'Weakness',
-    description: 'Deal 50% less damage',
-    defaultDuration: 2,
-    stackable: false
-  },
-  vulnerable: {
-    id: 'vulnerable',
-    name: 'Vulnerable',
-    description: 'Take 50% more damage',
-    defaultDuration: 2,
-    stackable: false
-  },
-  regeneration: {
-    id: 'regeneration',
-    name: 'Regeneration', 
-    description: 'Heal HP at start of turn',
-    defaultDuration: 5,
-    stackable: true,
-    maxStacks: 5
-  },
-  strength: {
-    id: 'strength',
-    name: 'Strength',
-    description: 'Deal +X damage per stack',
-    defaultDuration: 0, // Permanent until removed
-    stackable: true,
-    maxStacks: 10
-  },
-  block_next: {
-    id: 'block_next',
-    name: 'Block Next',
-    description: 'Block next X damage',
-    defaultDuration: 1,
-    stackable: true
-  },
-  energy_boost: {
-    id: 'energy_boost',
-    name: 'Energy Boost',
-    description: 'Gain +X energy next turn',
-    defaultDuration: 1,
-    stackable: true
-  },
-  draw_reduction: {
-    id: 'draw_reduction',
-    name: 'Draw Reduction',
-    description: 'Draw X fewer cards',
-    defaultDuration: 2,
-    stackable: true,
-    maxStacks: 3
-  },
-  spell_charging: {
-    id: 'spell_charging',
-    name: 'Spell Charging',
-    description: 'Charging a powerful spell',
-    defaultDuration: 0, // Special handling
-    stackable: false
-  }
-};
+// ===== Status Effects - ย้ายไปใช้ระบบใหม่แล้ว =====
+// ระบบ Status Effects ถูกย้ายไปที่ src/core/combat/status-effects/
+// ใช้ import จาก './combat/status-effects' แทน
+
+// Re-export เพื่อ backward compatibility
+export { 
+  STATUS_EFFECTS_REGISTRY as STATUS_EFFECTS
+} from './combat/status-effects';
 
 // ===== Battle Environments =====
 export const THAI_ENVIRONMENTS: Record<string, BattleEnvironment> = {
@@ -640,24 +545,11 @@ export function getEnemySpells(enemyId: string): EnemySpell[] {
   return THAI_ENEMIES[enemyId]?.spells || [];
 }
 
-export function getStatusEffect(statusId: StatusEffectType): StatusEffectDefinition {
-  return STATUS_EFFECTS[statusId];
-}
+// ===== Status Effect Functions - ย้ายไปใช้ระบบใหม่แล้ว =====
+// ฟังก์ชันเหล่านี้ถูกย้ายไปที่ src/core/combat/status-effects/
 
-export function createStatusEffect(
-  statusId: StatusEffectType,
-  duration?: number,
-  stacks = 1,
-  value?: number
-): StatusEffect {
-  const def = STATUS_EFFECTS[statusId];
-  return {
-    id: statusId,
-    name: def.name,
-    description: def.description,
-    duration: duration ?? def.defaultDuration,
-    stacks: def.stackable ? stacks : 1,
-    value,
-    tags: def.tags
-  };
-}
+// Re-export เพื่อ backward compatibility  
+export { 
+  getStatusEffectDefinition as getStatusEffect,
+  createStatusEffect
+} from './combat/status-effects';
