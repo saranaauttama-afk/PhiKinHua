@@ -1,4 +1,4 @@
-// src/core/thai_enemy_system.ts — Full Thai Enemy Mechanics Implementation
+// src/core/thai_enemy_system.ts — ระบบศัตรูไทยแบบใหม่ (Refactored)
 
 import type { 
   EnhancedEnemyData, 
@@ -11,6 +11,18 @@ import type {
   MinionData
 } from './types_extended';
 
+// ===== สำคัญ: ระบบถูก Refactor แล้ว! =====
+/**
+ * ระบบศัตรูไทยถูกแยกออกเป็นหลายส่วนเพื่อความชัดเจน:
+ * 
+ * 📁 Status Effects: src/core/combat/status-effects/
+ * 📁 Environments: src/core/combat/environments/
+ * 📁 Minions: src/core/combat/minions/
+ * 📁 Enemy Data: src/core/enemies/thai/data/
+ * 
+ * ไฟล์นี้ทำหน้าที่เป็น wrapper เพื่อ backward compatibility
+ */
+
 // ===== Status Effects - ย้ายไปใช้ระบบใหม่แล้ว =====
 // ระบบ Status Effects ถูกย้ายไปที่ src/core/combat/status-effects/
 // ใช้ import จาก './combat/status-effects' แทน
@@ -20,536 +32,65 @@ export {
   STATUS_EFFECTS_REGISTRY as STATUS_EFFECTS
 } from './combat/status-effects';
 
-// ===== Battle Environments =====
-export const THAI_ENVIRONMENTS: Record<string, BattleEnvironment> = {
-  haunted_house: {
-    id: 'haunted_house',
-    name: 'Haunted House',
-    description: 'The spirits of the old house whisper dark magic',
-    playerEffects: [
-      { type: 'card_cost_modifier', value: 1, description: 'All cards cost +1 energy' }
-    ],
-    enemyEffects: [
-      { type: 'damage_modifier', value: 2, description: 'All attacks deal +2 damage' }
-    ],
-    neutralEffects: []
-  },
-  dark_forest: {
-    id: 'dark_forest',
-    name: 'Dark Forest',
-    description: 'Ancient trees hide malevolent spirits',
-    playerEffects: [
-      { type: 'draw_modifier', value: -1, description: 'Draw 1 fewer card per turn' }
-    ],
-    enemyEffects: [
-      { type: 'energy_modifier', value: 1, description: 'Start each turn with +1 energy' }
-    ],
-    neutralEffects: [
-      { type: 'spell_boost', value: 25, description: 'All spells 25% more powerful' }
-    ]
-  },
-  royal_palace: {
-    id: 'royal_palace',
-    name: 'Royal Palace',
-    description: 'Divine power flows through the ancient halls',
-    playerEffects: [
-      { type: 'block_modifier', value: -2, description: 'All block effects reduced by 2' }
-    ],
-    enemyEffects: [
-      { type: 'status_immunity', value: 0, condition: 'curse,poison', description: 'Immune to curse and poison' }
-    ],
-    neutralEffects: []
-  },
-  spirit_realm: {
-    id: 'spirit_realm',
-    name: 'Spirit Realm',
-    description: 'The boundary between life and death grows thin',
-    playerEffects: [
-      { type: 'energy_modifier', value: 1, description: 'Start with +1 energy' }
-    ],
-    enemyEffects: [
-      { type: 'energy_modifier', value: 1, description: 'Start with +1 energy' }
-    ],
-    neutralEffects: [
-      { type: 'spell_boost', value: 50, description: 'All magical effects 50% stronger' }
-    ]
-  }
-};
+// ===== Battle Environments - ย้ายไปใช้ระบบใหม่แล้ว =====
+// ระบบสภาพแวดล้อมถูกย้ายไปที่ src/core/combat/environments/
+// ใช้ import จาก './combat/environments' แทน
 
-// ===== Minion Definitions =====
-export const THAI_MINIONS: Record<string, MinionData> = {
-  ghost_ally: {
-    id: 'ghost_ally',
-    name: 'Ghost Ally',
-    duration: 3,
-    owner: 'player',
-    abilities: [
-      {
-        type: 'attack',
-        trigger: 'turn_start',
-        target: 'enemy',
-        value: 4,
-        ignores_block: true,
-        description: 'Phase attack through defenses'
-      }
-    ]
-  },
-  demon_minion: {
-    id: 'demon_minion', 
-    name: 'Demon Minion',
-    duration: 5,
-    owner: 'player',
-    abilities: [
-      {
-        type: 'attack',
-        trigger: 'turn_start',
-        target: 'enemy',
-        value: 3,
-        description: 'Demonic assault'
-      }
-    ]
-  },
-  kuman_spirit: {
-    id: 'kuman_spirit',
-    name: 'Kuman Spirit',
-    duration: 6, // 6 turns instead of permanent
-    owner: 'player',
-    abilities: [
-      {
-        type: 'heal',
-        trigger: 'turn_start',
-        target: 'owner',
-        value: 2,
-        description: 'Channels healing energy'
-      }
-    ]
-  },
-  poison_spirit: {
-    id: 'poison_spirit',
-    name: 'Poison Spirit',
-    duration: 4,
-    owner: 'player',
-    abilities: [
-      {
-        type: 'status',
-        trigger: 'turn_start',
-        target: 'enemy',
-        effect: 'poison',
-        value: 2,
-        duration: 3,
-        description: 'Apply poison (2 stacks, 3 turns)'
-      }
-    ]
-  },
-  shadow_clone: {
-    id: 'shadow_clone',
-    name: 'Shadow Clone',
-    duration: 4,
-    owner: 'enemy',
-    abilities: [
-      {
-        type: 'attack',
-        trigger: 'turn_start',
-        target: 'enemy',  // This will be flipped to 'player' for enemy minions
-        value: 8,
-        description: 'Powerful shadow strike'
-      }
-    ]
-  },
-  tree_guardian: {
-    id: 'tree_guardian',
-    name: 'Tree Guardian',
-    duration: 6,
-    owner: 'enemy',
-    abilities: [
-      {
-        type: 'attack',
-        trigger: 'turn_start',
-        target: 'enemy',  // This will be flipped to 'player' for enemy minions
-        value: 5,
-        description: 'Root strike'
-      },
-      {
-        type: 'status',
-        trigger: 'turn_start',
-        target: 'enemy',  // This will be flipped to 'player' for enemy minions
-        effect: 'entangle',
-        value: 1,
-        duration: 2,
-        description: 'Entangle with roots'
-      }
-    ]
-  }
-};
+// Re-export เพื่อ backward compatibility
+export { THAI_ENVIRONMENTS } from './combat/environments';
 
-// ===== Thai Enemy Definitions =====
-export const THAI_ENEMIES: Record<string, EnhancedEnemyData> = {
-  // ===== NORMAL ENEMIES =====
-  phi_pong: {
-    id: 'phi_pong',
-    name: 'ผีโป่ง',
-    tier: 'normal',
-    hp: 35,
-    maxHp: 35,
-    block: 0,
-    
-    behaviors: [
-      {
-        id: 'floating_evasion',
-        condition: 'player_hp_below_50',
-        action: 'apply_status_to_self',
-        actionValue: { statusId: 'block_next', stacks: 8, duration: 1 },
-        priority: 8,
-        oncePerCombat: false
-      },
-      {
-        id: 'fear_wail',
-        condition: 'turn_3_or_later', 
-        action: 'apply_status_to_player',
-        actionValue: { statusId: 'fear', stacks: 1, duration: 2 },
-        priority: 6,
-        oncePerCombat: false
-      }
-    ],
-    
-    spells: [
-      {
-        id: 'ghostly_phase',
-        name: 'Ghostly Phase',
-        description: 'Become untouchable for 2 turns',
-        cost: 2,
-        castTime: 2,
-        effects: [
-          { type: 'apply_status', value: 2, target: 'enemy', statusEffectId: 'block_next', duration: 2, description: 'Block all damage for 2 turns' }
-        ],
-        telegraphed: true,
-        interruptible: false,
-        priority: 7
-      }
-    ],
-    
-    signatureCards: ['phase_strike', 'floating_dodge', 'ghost_wail'],
-    aiPersonality: 'chaotic',
-    aiModifiers: {
-      spellCastingPreference: 30,
-      behaviorTriggerChance: 70,
-      adaptationRate: 20
-    },
-    
-    scaling: {
-      dmgPerAct: 1,
-      blockPerAct: 1,
-      spellPowerPerAct: 2
-    },
-    
-    preferredEnvironments: ['haunted_house', 'spirit_realm']
-  },
+// ===== Minion Definitions - ย้ายไปใช้ระบบใหม่แล้ว =====
+// ระบบสหายและลูกน้องถูกย้ายไปที่ src/core/combat/minions/
+// ใช้ import จาก './combat/minions' แทน
 
-  phi_krasue: {
-    id: 'phi_krasue',
-    name: 'ผีกระสือ',
-    tier: 'normal',
-    hp: 32,
-    maxHp: 32,
-    block: 0,
-    
-    behaviors: [
-      {
-        id: 'night_hunter',
-        condition: 'turn_even',
-        action: 'double_attack',
-        priority: 9,
-        oncePerCombat: false
-      },
-      {
-        id: 'blood_frenzy',
-        condition: 'hp_below_50',
-        action: 'apply_status_to_self',
-        actionValue: { statusId: 'strength', stacks: 3, duration: 0 },
-        priority: 8,
-        oncePerCombat: true
-      }
-    ],
-    
-    spells: [
-      {
-        id: 'blood_moon_hunt',
-        name: 'Blood Moon Hunt', 
-        description: 'Devastating night attack that grows stronger with each kill',
-        cost: 3,
-        castTime: 2,
-        effects: [
-          { type: 'damage', value: 18, target: 'player', description: 'Deal massive damage' },
-          { type: 'heal', value: 8, target: 'enemy', description: 'Heal from the hunt' }
-        ],
-        telegraphed: true,
-        interruptible: true,
-        priority: 9
-      }
-    ],
-    
-    signatureCards: ['blood_drain', 'night_hunt', 'stealth_approach'],
-    aiPersonality: 'aggressive',
-    aiModifiers: {
-      spellCastingPreference: 40,
-      behaviorTriggerChance: 80,
-      adaptationRate: 30
-    },
-    
-    scaling: {
-      dmgPerAct: 2,
-      blockPerAct: 0,
-      spellPowerPerAct: 3
-    },
-    
-    preferredEnvironments: ['dark_forest', 'spirit_realm']
-  },
+// Re-export เพื่อ backward compatibility
+export { THAI_MINIONS } from './combat/minions';
 
-  // ===== ELITE ENEMIES =====
-  nang_tani_elite: {
-    id: 'nang_tani_elite',
-    name: 'นางตานี',
-    tier: 'elite',
-    hp: 85,
-    maxHp: 85,
-    block: 0,
-    
-    phaseChangeHP: 40,
-    
-    behaviors: [
-      {
-        id: 'forest_command',
-        condition: 'always',
-        action: 'summon_minion',
-        actionValue: { minionId: 'tree_guardian', maxCount: 2 },
-        priority: 7,
-        oncePerCombat: false
-      },
-      {
-        id: 'nature_regeneration',
-        condition: 'hp_below_50',
-        action: 'apply_status_to_self',
-        actionValue: { statusId: 'regeneration', stacks: 5, duration: 5 },
-        priority: 8,
-        oncePerCombat: true
-      }
-    ],
-    
-    phase2Behaviors: [
-      {
-        id: 'forest_wrath',
-        condition: 'phase_2',
-        action: 'cast_spell',
-        actionValue: 'forest_awakening',
-        priority: 10,
-        oncePerCombat: true
-      }
-    ],
-    
-    spells: [
-      {
-        id: 'vine_prison',
-        name: 'Vine Prison',
-        description: 'Entangle the player with supernatural vines',
-        cost: 2,
-        castTime: 1,
-        effects: [
-          { type: 'apply_status', value: 3, target: 'player', statusEffectId: 'entangle', duration: 3, description: 'Cannot play attack cards' },
-          { type: 'damage', value: 6, target: 'player', description: 'Crushing vine damage' }
-        ],
-        telegraphed: true,
-        interruptible: true,
-        priority: 7
-      },
-      {
-        id: 'forest_awakening',
-        name: 'Forest Awakening',
-        description: 'Call forth the ancient power of the forest',
-        cost: 4,
-        castTime: 3,
-        effects: [
-          { type: 'summon_minion', value: 3, target: 'enemy', description: 'Summon 3 Tree Guardians' },
-          { type: 'apply_status', value: 10, target: 'enemy', statusEffectId: 'regeneration', duration: 10, description: 'Massive regeneration' },
-          { type: 'change_environment', value: 0, target: 'both', description: 'Transform battlefield to Dark Forest' }
-        ],
-        telegraphed: true,
-        interruptible: false,
-        oncePerCombat: true,
-        priority: 10
-      }
-    ],
-    
-    signatureCards: ['vine_entangle', 'poison_fruit', 'tree_regeneration', 'forest_command'],
-    aiPersonality: 'tactical',
-    aiModifiers: {
-      spellCastingPreference: 60,
-      behaviorTriggerChance: 85,
-      adaptationRate: 40
-    },
-    
-    scaling: {
-      dmgPerAct: 2,
-      blockPerAct: 1,
-      hpPerAct: 15,
-      spellPowerPerAct: 5
-    },
-    
-    summonableMinions: ['tree_guardian'],
-    maxMinions: 3,
-    
-    preferredEnvironments: ['dark_forest'],
-    environmentBonuses: {
-      dark_forest: [
-        { type: 'spell_boost', value: 50, description: 'Forest spells 50% more powerful' }
-      ]
-    },
-    
-    specialLoot: {
-      cardRewards: ['nature_blessing', 'tree_ally'],
-      equipmentRewards: ['bark_armor', 'living_wood_staff'],
-      goldBonus: 15
-    }
-  },
+// ===== Thai Enemy Definitions - ย้ายไปใช้ระบบใหม่แล้ว =====
+// ระบบศัตรูไทยถูกย้ายไปที่ src/core/enemies/thai/data/
+// แยกตามระดับความยาก: normal-enemies.ts, elite-enemies.ts, boss-enemies.ts
+// ใช้ import จาก './enemies/thai/data' แทน
 
-  // ===== BOSS ENEMIES =====
-  mara_boss: {
-    id: 'mara_boss',
-    name: 'มาร',
-    tier: 'boss',
-    hp: 190,
-    maxHp: 190,
-    block: 0,
-    
-    phaseChangeHP: 95,
-    
-    behaviors: [
-      {
-        id: 'corruption_aura',
-        condition: 'always',
-        action: 'apply_status_to_player',
-        actionValue: { statusId: 'corruption', stacks: 1, duration: 3 },
-        priority: 9,
-        oncePerCombat: false
-      },
-      {
-        id: 'ultimate_evil',
-        condition: 'hp_below_25',
-        action: 'cast_spell',
-        actionValue: 'apocalypse',
-        priority: 10,
-        oncePerCombat: true
-      }
-    ],
-    
-    phase2Behaviors: [
-      {
-        id: 'shadow_clones',
-        condition: 'phase_2',
-        action: 'summon_minion',
-        actionValue: { minionId: 'shadow_clone', maxCount: 2 },
-        priority: 9,
-        oncePerCombat: true
-      },
-      {
-        id: 'environment_corruption',
-        condition: 'phase_2',
-        action: 'change_ai_pattern', // Fixed invalid action type
-        actionValue: 'spirit_realm',
-        priority: 8,
-        oncePerCombat: true
-      }
-    ],
-    
-    spells: [
-      {
-        id: 'mind_corruption',
-        name: 'Mind Corruption',
-        description: 'Corrupt the player\'s mind and cards',
-        cost: 3,
-        castTime: 2,
-        effects: [
-          { type: 'apply_status', value: 2, target: 'player', statusEffectId: 'corruption', duration: 5, description: 'Cards cost +1 energy' },
-          { type: 'force_discard', value: 3, target: 'player', description: 'Discard 3 cards' },
-          { type: 'drain_energy', value: 2, target: 'player', description: 'Lose 2 energy' }
-        ],
-        telegraphed: true,
-        interruptible: true,
-        priority: 8
-      },
-      {
-        id: 'apocalypse',
-        name: 'Apocalypse',
-        description: 'The ultimate expression of evil power',
-        cost: 5,
-        castTime: 4,
-        effects: [
-          { type: 'damage', value: 35, target: 'player', description: 'Devastating apocalyptic damage' },
-          { type: 'apply_status', value: 5, target: 'player', statusEffectId: 'curse', duration: 10, description: 'Permanent curse' },
-          { type: 'apply_status', value: 10, target: 'enemy', statusEffectId: 'strength', duration: 0, description: 'Massive power boost' },
-          { type: 'summon_minion', value: 2, target: 'enemy', description: 'Summon apocalyptic minions' }
-        ],
-        telegraphed: true,
-        interruptible: false,
-        oncePerCombat: true,
-        priority: 10
-      }
-    ],
-    
-    signatureCards: ['darkness_wave', 'corrupt_mind', 'evil_regeneration', 'apocalypse_herald'],
-    aiPersonality: 'adaptive',
-    aiModifiers: {
-      spellCastingPreference: 80,
-      behaviorTriggerChance: 95,
-      adaptationRate: 70
-    },
-    
-    scaling: {
-      dmgPerAct: 3,
-      blockPerAct: 2,
-      hpPerAct: 30,
-      spellPowerPerAct: 10,
-      newAbilitiesPerAct: ['shadow_mastery', 'reality_distortion']
-    },
-    
-    statusImmunities: ['fear', 'poison'],
-    startingStatusEffects: [
-      { id: 'strength', name: 'Ultimate Evil', description: 'Inherent malevolent power', duration: 0, stacks: 5 }
-    ],
-    
-    summonableMinions: ['shadow_clone', 'demon_minion'],
-    maxMinions: 4,
-    
-    preferredEnvironments: ['spirit_realm'],
-    environmentBonuses: {
-      spirit_realm: [
-        { type: 'spell_boost', value: 100, description: 'All spells doubled in power' },
-        { type: 'damage_modifier', value: 5, description: 'All attacks deal +5 damage' }
-      ]
-    },
-    
-    specialLoot: {
-      cardRewards: ['darkness_mastery', 'evil_transcendence'],
-      equipmentRewards: ['mara_crown', 'corruption_essence'],
-      blessingRewards: ['conquered_darkness'],
-      goldBonus: 50
-    }
-  }
-};
+// Re-export เพื่อ backward compatibility
+export { THAI_ENEMIES } from './enemies/thai/data';
 
-// Helper functions for system integration
+// ===== Helper Functions - ยังคงไว้ที่เดิม =====
+// ฟังก์ชันเหล่านี้ยังคงทำงานเหมือนเดิม แต่ใช้ข้อมูลจากระบบใหม่
+
+import { THAI_ENEMIES } from './enemies/thai/data';
+
+// ดึงพฤติกรรมของศัตรูตาม ID
 export function getEnemyBehaviors(enemyId: string): EnemyBehavior[] {
   return THAI_ENEMIES[enemyId]?.behaviors || [];
 }
 
+// ดึงเวทมนตร์ของศัตรูตาม ID  
 export function getEnemySpells(enemyId: string): EnemySpell[] {
   return THAI_ENEMIES[enemyId]?.spells || [];
 }
 
-// ===== Status Effect Functions - ย้ายไปใช้ระบบใหม่แล้ว =====
-// ฟังก์ชันเหล่านี้ถูกย้ายไปที่ src/core/combat/status-effects/
-
-// Re-export เพื่อ backward compatibility  
+// Re-export ฟังก์ชัน Status Effect Functions เพื่อ backward compatibility  
 export { 
   getStatusEffectDefinition as getStatusEffect,
   createStatusEffect
 } from './combat/status-effects';
+
+// ===== Migration Guide =====
+/**
+ * 🚀 คำแนะนำการ Migrate ไปใช้ระบบใหม่:
+ * 
+ * เดิม:
+ *   import { STATUS_EFFECTS, THAI_ENEMIES, THAI_MINIONS } from './thai_enemy_system';
+ * 
+ * ใหม่:
+ *   import { STATUS_EFFECTS_REGISTRY } from './combat/status-effects';
+ *   import { THAI_ENEMIES } from './enemies/thai/data';
+ *   import { THAI_MINIONS } from './combat/minions';
+ * 
+ * ประโยชน์ของระบบใหม่:
+ * ✅ คอมเมนต์ภาษาไทยครบถ้วน
+ * ✅ แยกไฟล์ตามหน้าที่ชัดเจน
+ * ✅ ง่ายต่อการบำรุงรักษา
+ * ✅ ลดขนาดไฟล์แต่ละตัว
+ * ✅ ระบบ type safety ที่ดีกว่า
+ */
