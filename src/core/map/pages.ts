@@ -91,6 +91,11 @@ export function rollPageOffers(mp: MapStatePages, r: RNG, s: GameState): { offer
     else if (allowElite)     offers.push({ kind: 'monster', tier: 'elite'  });
   }
 
+  // Ensure deletedShops exists (fallback for existing saves) - MUST BE FIRST
+  if (!mp.deletedShops) {
+    mp.deletedShops = new Set();
+  }
+
   // Generate static shop IDs based on page and position
   const pageId = mp.pageIndex + 1;
   let slotId = 0; // Counter for generating unique shop IDs
@@ -105,11 +110,6 @@ export function rollPageOffers(mp: MapStatePages, r: RNG, s: GameState): { offer
   }
   if (mp.pools.shopEquipment > 0) {
     cand.push({ offer: { kind: 'shop_equipment', shopId: `equipment_${pageId}_${++slotId}` }, w: WEIGHTS.shopEquipment });
-  }
-  
-  // Ensure deletedShops exists (fallback for existing saves)
-  if (!mp.deletedShops) {
-    mp.deletedShops = new Set();
   }
 
   // Sequential remove shops

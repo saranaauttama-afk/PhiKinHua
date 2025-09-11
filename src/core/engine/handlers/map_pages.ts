@@ -74,6 +74,12 @@ function ensurePages(s: GameState, r: RNG): { rng: RNG; mp: MapStatePages } {
     s.pages = out.map;
     return { rng: out.rng, mp: s.pages };
   }
+  
+  // Ensure deletedShops exists for existing saves
+  if (!s.pages.deletedShops) {
+    s.pages.deletedShops = new Set();
+  }
+  
   return { rng: r, mp: s.pages };
 }
 
