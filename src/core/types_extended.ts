@@ -25,7 +25,6 @@ export type StatusEffectType =
   | 'block_next'  // Block next X damage
   | 'energy_boost' // Gain +X energy next turn
   | 'draw_reduction' // Draw X fewer cards
-  | 'spell_charging' // Charging a spell for X turns
   // เพิ่มสถานะผลใหม่ที่ใช้ในศัตรูไทย
   | 'stealth'     // Hidden/invisible for next turn
   | 'dodge_next'  // Avoid next attack
@@ -33,7 +32,6 @@ export type StatusEffectType =
   | 'sleep'       // Cannot act next turn
   | 'nightmare'   // Take damage over time + fear
   | 'confusion'   // Random card effects
-  | 'silence'     // Cannot use spells/skills
   | 'bleed'       // Physical damage over time
   | 'decay'       // Permanent HP reduction
   | 'doom'        // Countdown to death
@@ -74,9 +72,8 @@ export type BehaviorAction =
   | 'force_draw_cards'
   | 'gain_extra_energy'
   | 'change_ai_pattern'
-  | 'change_environment'   // เพิ่ม - เปลี่ยนสภาพแวดล้อม
+  // (change_environment removed - environment system discontinued)
   | 'summon_minion'
-  | 'cast_spell'
   | 'enter_phase_2';
 
 export type EnemyBehavior = {
@@ -111,72 +108,21 @@ export type DelayedEffectType =
   | 'destroy_equipment'
   | 'double_next_attack';
 
-// ===== Enemy Spell System =====
-export type EnemySpell = {
-  id: string;
-  name: string;
-  description: string;
-  cost: number; // Energy cost
-  castTime: number; // Turns needed to charge
-  currentCharge?: number; // Current charging progress
-  effects: SpellEffect[];
-  telegraphed: boolean; // Show warning to player
-  interruptible: boolean; // Can player interrupt this?
-  oncePerCombat?: boolean;
-  priority: number; // Spell casting priority
-};
 
-export type SpellEffect = {
-  type: SpellEffectType;
-  value: number;
-  target: 'player' | 'enemy' | 'both' | 'all_minions';
-  statusEffectId?: string; // If applying status effect
-  duration?: number;
-  description: string;
-};
-
-export type SpellEffectType = 
-  | 'damage'
-  | 'heal'
-  | 'apply_status'
-  | 'summon_minion'
-  | 'force_discard'
-  | 'drain_energy'
-  | 'destroy_equipment'
-  | 'transform_cards'
-  | 'create_delayed_effect'
-  | 'change_environment';
-
-// ===== Environmental Effects =====
-export type BattleEnvironment = {
-  id: string;
-  name: string;
-  description: string;
-  playerEffects: EnvironmentEffect[];
-  enemyEffects: EnvironmentEffect[];
-  neutralEffects: EnvironmentEffect[];
-  duration?: number; // Some environments are temporary
-  visualTheme?: string;
-};
-
-export type EnvironmentEffect = {
-  type: 'card_cost_modifier' | 'damage_modifier' | 'block_modifier' | 'energy_modifier' | 'draw_modifier' | 'status_immunity' | 'spell_boost' 
-      | 'damage_bonus' | 'damage_penalty' | 'block_bonus' | 'block_penalty' | 'cost_reduction' | 'cost_increase' 
-      | 'energy_bonus' | 'energy_penalty' | 'draw_bonus' | 'draw_penalty';
-  value: number;
-  condition?: string;
-  description: string;
-};
+// ===== Environmental Effects ===== (REMOVED - Environment system discontinued)
 
 // ===== Minion System =====
 export type MinionAbility = {
-  type: 'attack' | 'heal' | 'energy' | 'draw' | 'block' | 'status'; // Minions can attack OR support
+  type: 'attack' | 'heal' | 'energy' | 'draw' | 'block' | 'status' 
+       | 'damage_over_time' | 'modify_damage' | 'block_cards' | 'cleanse'; // Extended for status effects
   trigger: 'turn_start' | 'turn_end' | 'on_summon' | 'on_death';
   target: 'owner' | 'enemy' | 'all_allies' | 'all_enemies';
   value: number;
   effect?: string; // For status type
   duration?: number; // For status type
   ignores_block?: boolean; // For attack type - some minions can bypass block
+  modifyType?: 'multiply' | 'add' | 'reduce'; // For modify_damage type
+  cardTypes?: string[]; // For block_cards type - which card types to block
   description: string;
 };
 
@@ -187,6 +133,9 @@ export type MinionData = {
   owner: 'player' | 'enemy';
   abilities: MinionAbility[];
   statusEffects?: StatusEffect[]; // Runtime effects on the minion
+  isStatusEffect?: boolean; // True if this minion represents a status effect
+  invisible?: boolean; // True if this shouldn't show in minion UI (for status effects)
+  stacks?: number; // For stackable status effects
 };
 
 // ===== Enhanced Enemy Definition =====
@@ -202,18 +151,14 @@ export type EnhancedEnemyData = {
   
   // Enhanced mechanics
   behaviors: EnemyBehavior[];
-  spells: EnemySpell[];
   phaseChangeHP?: number; // HP threshold for phase 2
   phase2Behaviors?: EnemyBehavior[]; // Additional behaviors in phase 2
-  phase2Spells?: EnemySpell[]; // Additional spells in phase 2
   
   // Status effects and immunities
   statusImmunities?: StatusEffectType[];
   startingStatusEffects?: StatusEffect[];
   
-  // Environment preferences
-  preferredEnvironments?: string[];
-  environmentBonuses?: { [envId: string]: EnvironmentEffect[] };
+  // (Environment system removed)
   
   // Minion summoning
   summonableMinions?: string[];
@@ -225,7 +170,6 @@ export type EnhancedEnemyData = {
   // AI enhancements
   aiPersonality: 'aggressive' | 'defensive' | 'tactical' | 'chaotic' | 'adaptive';
   aiModifiers?: {
-    spellCastingPreference: number; // 0-100, higher = prefers spells over cards
     behaviorTriggerChance: number; // 0-100, chance to trigger behaviors
     adaptationRate: number; // How quickly AI adapts to player strategy
   };
@@ -235,7 +179,6 @@ export type EnhancedEnemyData = {
     dmgPerAct: number;
     blockPerAct: number;
     hpPerAct?: number;
-    spellPowerPerAct?: number;
     newAbilitiesPerAct?: string[];
   };
   
@@ -251,11 +194,9 @@ export type EnhancedEnemyData = {
 // ===== Runtime State Extensions =====
 export type CombatState = {
   turn: number;
-  phase: 'player' | 'enemy' | 'environment';
-  environment?: BattleEnvironment;
+  phase: 'player' | 'enemy'; // (environment phase removed)
   delayedEffects: DelayedEffect[];
   activeMinions: MinionData[];
-  spellsCharging: { [enemyId: string]: EnemySpell[] };
   behaviorHistory: string[]; // Track which behaviors have been triggered
   adaptationState?: { // For adaptive AI
     playerPreferences: { [cardType: string]: number };

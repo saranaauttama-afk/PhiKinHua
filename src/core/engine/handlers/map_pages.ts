@@ -166,13 +166,11 @@ export function choose(s: GameState, cmd: Extract<Command, { type: 'ChooseOffer'
       s.enemy = res.enemy;
       ({ state: s, rng } = buildAndShuffleEnemyDeck(s, rng));
       
-      // Initialize enemy behaviors, environment, and minions
+      // Initialize enemy behaviors and minions
       const { initializeEnemyBehaviors } = require('../../enemyBehaviorRuntime');
-      const { initializeCombatEnvironment } = require('../../environmentRuntime');
       const { syncMinionsToState } = require('../../minionRuntime');
       
       initializeEnemyBehaviors(s);
-      initializeCombatEnvironment(s);
       // Don't clear minions on combat start - let them persist from previous summons
       syncMinionsToState(s);
       
@@ -217,13 +215,11 @@ export function choose(s: GameState, cmd: Extract<Command, { type: 'ChooseOffer'
       s.enemy = res.enemy;
       ({ state: s, rng } = buildAndShuffleEnemyDeck(s, rng));
       
-      // Initialize boss behaviors, environment, and minions
+      // Initialize boss behaviors and minions
       const { initializeEnemyBehaviors } = require('../../enemyBehaviorRuntime');
-      const { initializeCombatEnvironment } = require('../../environmentRuntime');
       const { syncMinionsToState } = require('../../minionRuntime');
       
       initializeEnemyBehaviors(s);
-      initializeCombatEnvironment(s);
       // Don't clear minions on combat start - let them persist from previous summons
       syncMinionsToState(s);
       

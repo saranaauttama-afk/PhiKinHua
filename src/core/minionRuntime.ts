@@ -166,6 +166,12 @@ function processMinionAbility(
     actualTargetType = minion.owner;
   }
   
+  // Safety check - if no target, skip this ability
+  if (!actualTarget) {
+    state.log.push(`⚠️ ${minion.name} ability skipped - no target available`);
+    return;
+  }
+  
   switch (ability.type) {
     case 'attack':
       const damage = ability.value;
@@ -226,6 +232,40 @@ function processMinionAbility(
         state.log.push(`✨ ${minion.name} applies ${ability.effect} to ${actualTargetType}`);
       }
       break;
+      
+    // New status effect abilities
+    case 'damage_over_time':
+      const dotDamage = ability.value;
+      // Apply damage through block system like normal damage
+      dealMinionDamage(state, minion, actualTarget, actualTargetType, dotDamage);
+      break;
+      
+    case 'modify_damage':
+      // This would be handled during damage calculation - just log for now
+      const modifier = ability.modifyType === 'multiply' ? `x${ability.value}` : 
+                     ability.modifyType === 'reduce' ? `-${ability.value}` : `+${ability.value}`;
+      state.log.push(`⚡ ${minion.name} modifies damage (${modifier})`);
+      break;
+      
+    case 'block_cards':
+      // This would be handled during card play validation - just log for now
+      const blockedTypes = ability.cardTypes?.join(', ') || 'cards';
+      state.log.push(`🚫 ${minion.name} blocks ${blockedTypes} this turn`);
+      break;
+      
+    case 'cleanse':
+      // Remove status effect minions from the target
+      const beforeCount = activeMinions.length;
+      const targetOwner = actualTargetType;
+      activeMinions.splice(0, activeMinions.length, 
+        ...activeMinions.filter(m => !(m.isStatusEffect && m.owner === targetOwner))
+      );
+      const cleansed = beforeCount - activeMinions.length;
+      if (cleansed > 0) {
+        state.log.push(`✨ ${minion.name} cleanses ${cleansed} status effects from ${targetOwner}`);
+        syncMinionsToState(state);
+      }
+      break;
   }
 }
 
@@ -237,18 +277,17 @@ function dealMinionDamage(
   damage: number
 ): void {
   
-  // Apply environment modifiers if minion is attacking
-  const { applyEnvironmentDamageModifier } = require('./environmentRuntime');
-  damage = applyEnvironmentDamageModifier(state, damage, minion.owner);
+  // (Environment system removed - using base damage)
   
-  // Apply block for player targets
-  if (targetType === 'player' && target.block > 0) {
-    const blockedDamage = Math.min(damage, target.block);
-    target.block -= blockedDamage;
+  // Apply block system for both player and enemy targets
+  const blockBefore = target.block || 0;
+  if (blockBefore > 0) {
+    const blockedDamage = Math.min(damage, blockBefore);
+    target.block = blockBefore - blockedDamage;
     damage -= blockedDamage;
     
     if (blockedDamage > 0) {
-      state.log.push(`🛡️ Player blocks ${blockedDamage} damage from ${minion.name}`);
+      state.log.push(`🛡️ ${targetType} blocks ${blockedDamage} damage from ${minion.name} (${target.block} block remaining)`);
     }
   }
   

@@ -59,7 +59,6 @@ export function pickEnemy(rng: RNG, tier: 'normal' | 'elite' | 'boss'): { rng: R
   const enemy: EnemyState & { 
     tier?: string, 
     behaviors?: any[], 
-    spells?: any[], 
     aiPersonality?: string 
   } = {
     id: thaiEnemy.id,
@@ -79,7 +78,6 @@ export function pickEnemy(rng: RNG, tier: 'normal' | 'elite' | 'boss'): { rng: R
     // เพิ่มข้อมูลพิเศษจากระบบไทย (สำหรับระบบอื่น ๆ ที่อาจใช้)
     tier: thaiEnemy.tier,
     behaviors: thaiEnemy.behaviors,
-    spells: thaiEnemy.spells,
     aiPersonality: thaiEnemy.aiPersonality
   };
   

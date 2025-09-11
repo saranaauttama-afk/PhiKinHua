@@ -392,6 +392,12 @@ export default function Home() {
               >
                 <Text style={{ color: '#fde68a', fontSize: 14 }}>+Energy</Text>
               </Pressable>
+              <Pressable 
+                onPress={() => newRun(Math.random().toString(36).substring(2, 8))} 
+                style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 4, backgroundColor: 'rgba(34, 197, 94, 0.3)' }}
+              >
+                <Text style={{ color: '#bbf7d0', fontSize: 14 }}>New Game</Text>
+              </Pressable>
             </View>
           </View>
 

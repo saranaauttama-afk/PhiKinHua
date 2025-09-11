@@ -157,6 +157,10 @@ export function endTurn(s: GameState, _cmd: Extract<Command, { type: 'EndTurn' }
   // Process status effects at end of player turn
   processStatusEffectsOnTurnEnd('player', s);
 
+  // Process minions at end of turn (duration countdown, etc.)
+  const { processMinionsEndTurn } = require('../../minionRuntime');
+  processMinionsEndTurn(s);
+
   // ★ ปลายเทิร์นผู้เล่น → ยิงอุปกรณ์ก่อนสลับฝั่ง
 runEquipmentTurnHook(s, 'on_turn_end', 'player');
 

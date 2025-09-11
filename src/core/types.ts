@@ -280,10 +280,8 @@ export type Command =
   | { type: 'QA_ClearEnemyStatus' }
   // Enemy Behavior Debug Commands
   | { type: 'QA_TriggerEnemyBehavior' }
-  | { type: 'QA_StartSpellCasting'; spellId: string }
   | { type: 'QA_ForcePhase2' }
-  // Environment & Minion Debug Commands
-  | { type: 'QA_SetEnvironment'; environmentId: string }
+  // Minion Debug Commands
   | { type: 'QA_SummonPlayerMinion'; minionId: string }
   | { type: 'QA_SummonEnemyMinion'; minionId: string }
   | { type: 'QA_ClearAllMinions' }

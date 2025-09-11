@@ -16,7 +16,6 @@ import type {
  * ระบบศัตรูไทยถูกแยกออกเป็นหลายส่วนเพื่อความชัดเจน:
  * 
  * 📁 Status Effects: src/core/combat/status-effects/
- * 📁 Environments: src/core/combat/environments/
  * 📁 Minions: src/core/combat/minions/
  * 📁 Enemy Data: src/core/enemies/thai/data/
  * 
@@ -32,12 +31,8 @@ export {
   STATUS_EFFECTS_REGISTRY as STATUS_EFFECTS
 } from './combat/status-effects';
 
-// ===== Battle Environments - ย้ายไปใช้ระบบใหม่แล้ว =====
-// ระบบสภาพแวดล้อมถูกย้ายไปที่ src/core/combat/environments/
-// ใช้ import จาก './combat/environments' แทน
-
-// Re-export เพื่อ backward compatibility
-export { THAI_ENVIRONMENTS } from './combat/environments';
+// ===== Battle Environments - REMOVED FOR SIMPLIFICATION =====
+// Environment system has been removed to simplify gameplay
 
 // ===== Minion Definitions - ย้ายไปใช้ระบบใหม่แล้ว =====
 // ระบบสหายและลูกน้องถูกย้ายไปที่ src/core/combat/minions/

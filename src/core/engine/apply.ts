@@ -72,7 +72,6 @@ const H: { [K in Command['type']]?: Handler<K> } = {
   QA_ClearPlayerStatus: qa.qaClearPlayerStatus,
   QA_ClearEnemyStatus: qa.qaClearEnemyStatus,
   QA_TriggerEnemyBehavior: qa.qaTriggerEnemyBehavior,
-  QA_StartSpellCasting: qa.qaStartSpellCasting,
   QA_ForcePhase2: qa.qaForcePhase2,
   
   // QA - Environment & Minions  

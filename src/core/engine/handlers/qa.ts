@@ -238,18 +238,6 @@ export function qaTriggerEnemyBehavior(state: GameState, cmd: Command & { type: 
   return { state, rng };
 }
 
-export function qaStartSpellCasting(state: GameState, cmd: Command & { type: 'QA_StartSpellCasting' }, rng: RNG) {
-  if (!state.enemy) {
-    state.log.push(`❌ No enemy to cast spells`);
-    return { state, rng };
-  }
-  
-  const { startSpellCasting } = require('../../enemyBehaviorRuntime');
-  const spellId = cmd.spellId || 'shadow_bolt';
-  startSpellCasting(state, spellId);
-  state.log.push(`⚡ Started spell casting: ${spellId}`);
-  return { state, rng };
-}
 
 export function qaForcePhase2(state: GameState, cmd: Command & { type: 'QA_ForcePhase2' }, rng: RNG) {
   if (!state.enemy) {
@@ -266,11 +254,8 @@ export function qaForcePhase2(state: GameState, cmd: Command & { type: 'QA_Force
 // ===== Phase 3 Debug Commands: Environment & Minions =====
 
 export function qaSetEnvironment(state: GameState, cmd: Command & { type: 'QA_SetEnvironment' }, rng: RNG) {
-  const { setEnvironment } = require('../../environmentRuntime');
-  const environmentId = cmd.environmentId || 'haunted_temple';
-  
-  setEnvironment(state, environmentId);
-  state.log.push(`🌿 Environment set to: ${environmentId}`);
+  // Environment system removed - this is a no-op now
+  state.log.push(`🌿 Environment system disabled`);
   return { state, rng };
 }
 

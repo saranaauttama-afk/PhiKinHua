@@ -189,7 +189,90 @@ export const THAI_MINIONS: Record<string, MinionData> = {
         description: 'สาปให้ผู้เล่นอ่อนแอลง (1 เทิร์น)'
       }
     ]
+  },
+
+  // ===== 💀 Status Effect Minions (Invisible) =====
+  // These represent status effects as minions for unified system
+
+  // พิษ - Status Effect as Minion
+  poison_status: {
+    id: 'poison_status',
+    name: 'พิษ',
+    duration: 4,
+    owner: 'enemy', // Will be set dynamically based on target
+    isStatusEffect: true,
+    invisible: true,
+    stacks: 3,
+    abilities: [
+      {
+        type: 'damage_over_time',
+        trigger: 'turn_start',
+        target: 'owner',
+        value: 3,
+        description: 'ได้รับความเสียหาย 3 จากพิษ'
+      }
+    ]
+  },
+
+  // ความอ่อนแอ - Status Effect as Minion
+  weakness_status: {
+    id: 'weakness_status',
+    name: 'ความอ่อนแอ',
+    duration: 3,
+    owner: 'player', // Will be set dynamically based on target
+    isStatusEffect: true,
+    invisible: true,
+    abilities: [
+      {
+        type: 'modify_damage',
+        trigger: 'turn_start',
+        target: 'owner',
+        value: 0.5,
+        modifyType: 'multiply',
+        description: 'ลดความเสียหายที่สร้างได้ 50%'
+      }
+    ]
+  },
+
+  // พันธนาการ - Status Effect as Minion  
+  entangle_status: {
+    id: 'entangle_status',
+    name: 'พันธนาการ',
+    duration: 2,
+    owner: 'player', // Will be set dynamically based on target
+    isStatusEffect: true,
+    invisible: true,
+    abilities: [
+      {
+        type: 'block_cards',
+        trigger: 'turn_start',
+        target: 'owner',
+        value: 1,
+        cardTypes: ['attack'],
+        description: 'ไม่สามารถเล่นไพ่โจมตีได้'
+      }
+    ]
+  },
+
+  // การรักษา - Positive Status Effect as Minion
+  regeneration_status: {
+    id: 'regeneration_status',
+    name: 'การฟื้นฟู',
+    duration: 5,
+    owner: 'player', // Will be set dynamically based on target
+    isStatusEffect: true,
+    invisible: true,
+    abilities: [
+      {
+        type: 'heal',
+        trigger: 'turn_start',
+        target: 'owner',
+        value: 2,
+        description: 'ฟื้นฟู HP 2 ต่อเทิร์น'
+      }
+    ]
   }
+
 };
 
 /**

@@ -1,21 +1,17 @@
-// src/core/enemies/thai/data/boss-enemies.ts — บอสในระบบไทย
+// src/core/enemies/thai/data/boss-enemies.ts — Simple Boss Enemies (Night of the Full Moon style)
 
 import type { EnhancedEnemyData } from '../../../types_extended';
 
 /**
- * คลังข้อมูลบอส (Boss Tier)
- * 
- * ลักษณะของบอส:
- * - HP: 120-200+ หน่วย
- * - หลายเฟสการต่อสู้
- * - เวทมนตร์ทรงพลัง 3-5 ตัว
- * - มีลูกน้องและสหาย
- * - ปรับตัวตามการเล่นของผู้เล่น (Adaptive AI)
- * - รางวัลใหญ่และไอเทมเอกสิทธิ์
+ * Simplified Boss Enemies
+ * - No complex behaviors or multiple phases
+ * - No spells or multi-turn abilities
+ * - Just higher stats and larger decks than elite enemies
+ * - Simple, straightforward boss fights
  */
 export const BOSS_ENEMIES: Record<string, EnhancedEnemyData> = {
 
-  // ===== 👑 พระยานาค - ราชาแห่งพญานาค =====
+  // ===== 👑 พระยานาค - Simple Naga King Boss =====
   phraya_naga_boss: {
     id: 'phraya_naga_boss',
     name: 'พระยานาค',
@@ -25,402 +21,121 @@ export const BOSS_ENEMIES: Record<string, EnhancedEnemyData> = {
     dmg: 25,
     block: 10,
     
-    // พฤติกรรมซับซ้อนหลายขั้น
-    behaviors: [
-      {
-        id: 'royal_presence',            // ราชาภิสักดิ์
-        condition: 'always',
-        action: 'apply_status_to_player',
-        actionValue: { statusId: 'fear', stacks: 1, duration: 2 },
-        priority: 5,
-        oncePerCombat: true              // เริ่มต้นเท่านั้น
-      },
-      {
-        id: 'water_domain_control',      // ควบคุมอาณาจักรน้ำ
-        condition: 'turn_3_or_later',
-        action: 'cast_spell',            // เปลี่ยนเป็น cast_spell
-        actionValue: 'water_domain_spell',
-        priority: 8,
-        oncePerCombat: true
-      },
-      {
-        id: 'naga_fury',                 // ความเดือดดาลของนาค
-        condition: 'hp_below_50',
-        action: 'enter_phase_2',
-        priority: 10,
-        oncePerCombat: true
-      }
-    ],
-    
-    // เวทมนตร์ทรงพลังหลายตัว
-    spells: [
-      {
-        id: 'monsoon_summoning',
-        name: 'การเรียกพายุมรสุม',
-        description: 'เรียกพายุใหญ่ถล่มสนามรบ สร้างความเสียหายต่อเนื่อง',
-        cost: 5,
-        castTime: 3,
-        effects: [
-          { type: 'damage', value: 25, target: 'player', description: 'พายุถล่ม สร้างความเสียหายสูง' },
-          { type: 'apply_status', value: 3, target: 'player', statusEffectId: 'weakness', duration: 4, description: 'ลมแรงทำให้อ่อนแอ' },
-          { type: 'change_environment', value: 0, target: 'both', description: 'เปลี่ยนสภาพแวดล้อมเป็นโลกน้ำ' }
-        ],
-        telegraphed: true,
-        interruptible: true,
-        priority: 9
-      },
-      {
-        id: 'serpent_army_call',
-        name: 'การเรียกกองทัพงู',
-        description: 'เรียกงูพันธุ์ต่าง ๆ มาช่วยรบ',
-        cost: 4,
-        castTime: 2,
-        effects: [
-          { type: 'summon_minion', value: 3, target: 'enemy', description: 'เรียกงูยักษ์ 3 ตัว' }
-        ],
-        telegraphed: true,
-        interruptible: true,
-        priority: 7
-      },
-      {
-        id: 'naga_regeneration',
-        name: 'การฟื้นฟูของนาค',
-        description: 'ใช้พลังเทพเจ้าฟื้นฟูร่างกาย',
-        cost: 6,
-        castTime: 4,
-        effects: [
-          { type: 'heal', value: 40, target: 'enemy', description: 'รักษา HP 40 หน่วย' },
-          { type: 'apply_status', value: 5, target: 'enemy', statusEffectId: 'regeneration', duration: 5, description: 'ฟื้นฟูต่อเนื่อง 5 เทิร์น' },
-          { type: 'apply_status', value: 1, target: 'enemy', statusEffectId: 'strength', duration: 0, description: 'แข็งแกร่งขึ้นถาวร' }
-        ],
-        telegraphed: true,
-        interruptible: true,
-        priority: 6,
-        oncePerCombat: true
-      }
-    ],
-    
-    // การเปลี่ยนเฟส - เฟสที่ 2 เมื่อ HP ต่ำกว่า 50%
-    phaseChangeHP: 90,                  // HP 50% = 90/180
-    phase2Behaviors: [
-      {
-        id: 'divine_wrath',              // ความโกรธศักดิ์สิทธิ์
-        condition: 'always',
-        action: 'double_attack',
-        priority: 10,
-        oncePerCombat: false
-      },
-      {
-        id: 'tsunami_preparation',       // เตรียมสึนามิ
-        condition: 'turn_even',
-        action: 'cast_spell',
-        actionValue: 'ultimate_tsunami',
-        priority: 9,
-        oncePerCombat: false
-      }
-    ],
-    
-    // เวทมนตร์เฟส 2
-    phase2Spells: [
-      {
-        id: 'ultimate_tsunami',
-        name: 'สึนามิมหาวินาศ',
-        description: 'คลื่นยักษ์ถล่มทุกสิ่ง - เวทมนตร์สุดท้ายของพระยานาค',
-        cost: 8,
-        castTime: 5,                    // ใช้เวลาร่ายนาน
-        effects: [
-          { type: 'damage', value: 50, target: 'player', description: 'คลื่นสึนามิทำลายล้าง' },
-          { type: 'force_discard', value: 3, target: 'player', description: 'น้ำท่วมพัดไพ่ไป 3 ใบ' },
-          { type: 'drain_energy', value: 2, target: 'player', description: 'กระแสน้ำดูดพลังงาน' }
-        ],
-        telegraphed: true,
-        interruptible: false,           // ไม่สามารถขัดจังหวะได้!
-        priority: 10,
-        oncePerCombat: true
-      }
-    ],
-    
-    // ภูมิคุ้มกันสถานะผล
-    statusImmunities: ['poison', 'corruption'],
-    startingStatusEffects: [
-      { id: 'strength', name: 'แข็งแกร่ง', description: 'พลังแห่งเทพนาค', duration: 0, stacks: 2 }
-    ],
-    
-    signatureCards: ['naga_strike', 'water_control', 'serpent_magic', 'divine_protection'],
-    aiPersonality: 'adaptive',          // ปรับตัวตามผู้เล่น
-    aiModifiers: {
-      spellCastingPreference: 80,       // ใช้เวทมนตร์บ่อยมาก
-      behaviorTriggerChance: 95,
-      adaptationRate: 80                // ปรับตัวได้เร็วมาก
-    },
-    
-    scaling: {
-      dmgPerAct: 5,                     // เพิ่มความเสียหายเยอะ
-      blockPerAct: 3,
-      hpPerAct: 30,                     // HP เพิ่มขึ้นมาก
-      spellPowerPerAct: 6,
-      newAbilitiesPerAct: ['summon_naga_guards', 'weather_control']
-    },
-    
-    // รางวัลบอส - ได้ของดี ๆ
-    specialLoot: {
-      cardRewards: ['naga_blessing', 'water_mastery', 'divine_protection'],
-      equipmentRewards: ['naga_crown', 'serpent_staff', 'water_armor'],
-      blessingRewards: ['blessing_of_naga_king', 'water_affinity', 'divine_favor'],
-      goldBonus: 200                    // โบนัสทอง
-    },
-    
-    preferredEnvironments: ['spirit_realm', 'royal_palace'],
-    summonableMinions: ['serpent_guardian', 'water_spirit', 'naga_warrior'],
-    maxMinions: 4                       // เรียกลูกน้องได้เยอะ
+    // Boss deck - very powerful cards, more energy and hand size
+    deck: {
+      lists: [
+        {
+          id: 'boss_naga_deck',
+          weight: 1,
+          cards: [
+            'maul', 'maul', 'maul', 'swipe', 'swipe', 
+            'brace', 'guard', 'maul', 'swipe', 'brace',
+            'maul', 'guard', 'swipe', 'brace', 'maul'
+          ]
+        }
+      ],
+      handSize: 5,
+      maxEnergy: 5
+    }
   },
 
-  // ===== 👑 ราชาผี - จักรพรรดิแห่งวิญญาณ =====
-  ghost_king: {
-    id: 'ghost_king',
-    name: 'ราชาผี',
+  // ===== 👹 มหาผีสาง - Simple Great Demon Boss =====
+  maha_phi_sang_boss: {
+    id: 'maha_phi_sang_boss',
+    name: 'มหาผีสาง',
     tier: 'boss',
-    hp: 220,
-    maxHp: 220,
-    dmg: 30,
+    hp: 200,
+    maxHp: 200,
+    dmg: 22,
     block: 15,
     
-    behaviors: [
-      {
-        id: 'imperial_presence',           // ราชาภิสักดิ์จักรพรรดิ
-        condition: 'always',
-        action: 'apply_status_to_player',
-        actionValue: { statusId: 'fear', stacks: 3, duration: 0 }, // ถาวร
-        priority: 5,
-        oncePerCombat: true
-      },
-      {
-        id: 'spirit_realm_mastery',        // การครองโลกวิญญาณ
-        condition: 'turn_2_or_later',
-        action: 'change_environment',
-        actionValue: 'spirit_throne_room',
-        priority: 9,
-        oncePerCombat: true
-      },
-      {
-        id: 'undead_legion_call',          // การเรียกกองทัพผีดิบ
-        condition: 'turn_4_or_later',
-        action: 'cast_spell',
-        actionValue: 'summon_ghost_army',
-        priority: 8,
-        oncePerCombat: true
-      },
-      {
-        id: 'royal_fury',                  // ความโกรธหลวง
-        condition: 'hp_below_40',
-        action: 'enter_phase_2',
-        priority: 10,
-        oncePerCombat: true
-      }
-    ],
+    // Boss deck - defensive and aggressive mix
+    deck: {
+      lists: [
+        {
+          id: 'boss_demon_deck',
+          weight: 1,
+          cards: [
+            'maul', 'maul', 'swipe', 'swipe', 'brace', 
+            'brace', 'guard', 'guard', 'maul', 'swipe',
+            'brace', 'guard', 'maul', 'swipe', 'brace'
+          ]
+        }
+      ],
+      handSize: 5,
+      maxEnergy: 5
+    }
+  },
+
+  // ===== 🐉 พญานาคราช - Simple Dragon King Boss =====
+  naga_king_ultimate: {
+    id: 'naga_king_ultimate',
+    name: 'พญานาคราช',
+    tier: 'boss',
+    hp: 240,
+    maxHp: 240,
+    dmg: 28,
+    block: 8,
     
-    spells: [
-      {
-        id: 'summon_ghost_army',
-        name: 'การเรียกกองทัพผีดิบ',
-        description: 'เรียกกองทัพวิญญาณมาช่วยรบ',
-        cost: 6,
-        castTime: 4,
-        effects: [
-          { type: 'summon_minion', value: 4, target: 'enemy', description: 'เรียกทหารผี 4 นาย' },
-          { type: 'apply_status', value: 3, target: 'enemy', statusEffectId: 'strength', duration: 0, description: 'เสริมพลังกองทัพถาวร' },
-          { type: 'apply_status', value: 2, target: 'player', statusEffectId: 'overwhelmed', duration: 5, description: 'ความรู้สึกถูกล้อมรอบ' }
-        ],
-        telegraphed: true,
-        interruptible: true,
-        priority: 9
-      },
-      {
-        id: 'spectral_storm',
-        name: 'พายุวิญญาณ',
-        description: 'เรียกพายุวิญญาณทำลายล้างทุกสิ่ง',
-        cost: 7,
-        castTime: 4,
-        effects: [
-          { type: 'damage', value: 35, target: 'player', description: 'พายุวิญญาณถล่ม' },
-          { type: 'apply_status', value: 4, target: 'player', statusEffectId: 'weakness', duration: 4, description: 'พลังถูกดูดไปด้วยวิญญาณ' },
-          { type: 'drain_energy', value: 3, target: 'player', description: 'ดูดพลังงานไปด้วยพายุ' }
-        ],
-        telegraphed: true,
-        interruptible: true,
-        priority: 8
-      },
-      {
-        id: 'death_domain_control',
-        name: 'การควบคุมอาณาจักรมรณะ',
-        description: 'ขยายอิธิพลของความตายไปทั่วสนามรบ',
-        cost: 8,
-        castTime: 5,
-        effects: [
-          { type: 'change_environment', value: 0, target: 'both', description: 'เปลี่ยนเป็นอาณาจักรมรณะ' },
-          { type: 'apply_status', value: 5, target: 'enemy', statusEffectId: 'regeneration', duration: 0, description: 'ฟื้นฟูต่อเนื่องในอาณาจักรตัวเอง' },
-          { type: 'apply_status', value: 3, target: 'player', statusEffectId: 'decay', duration: 0, description: 'ร่างกายเน่าเปื่อยอย่างช้า ๆ' }
-        ],
-        telegraphed: true,
-        interruptible: true,
-        priority: 7,
-        oncePerCombat: true
-      }
-    ],
-    
-    // การเปลี่ยนเฟส - เฟสที่ 2 เมื่อ HP ต่ำกว่า 40%
-    phaseChangeHP: 88,                    // HP 40% = 88/220
-    phase2Behaviors: [
-      {
-        id: 'imperial_wrath',              // ความโกรธจักรพรรดิ
-        condition: 'always',
-        action: 'triple_attack',           // โจมตี 3 ครั้ง
-        priority: 10,
-        oncePerCombat: false
-      },
-      {
-        id: 'death_preparation',           // การเตรียมความตายขั้นสูงสุด
-        condition: 'turn_odd',
-        action: 'cast_spell',
-        actionValue: 'ultimate_death_magic',
-        priority: 9,
-        oncePerCombat: false
-      }
-    ],
-    
-    // เวทมนตร์เฟส 2
-    phase2Spells: [
-      {
-        id: 'ultimate_death_magic',
-        name: 'เวทมนตร์มรณะสูงสุด',
-        description: 'เวทมนตร์มรณะที่ทรงพลังที่สุดของราชาผี',
-        cost: 10,
-        castTime: 6,                      // ใช้เวลาร่ายนานมาก
-        effects: [
-          { type: 'damage', value: 60, target: 'player', description: 'เวทมนตร์มรณะทำลายล้าง' },
-          { type: 'apply_status', value: 5, target: 'player', statusEffectId: 'doom', duration: 3, description: 'คำสาปมรณะแน่นอน' },
-          { type: 'force_discard', value: 5, target: 'player', description: 'บังคับให้ทิ้งไพ่ 5 ใบ' },
-          { type: 'heal', value: 50, target: 'enemy', description: 'ฟื้นฟูตัวเองด้วยพลังมรณะ' }
-        ],
-        telegraphed: true,
-        interruptible: false,             // ไม่สามารถขัดจังหวะได้!
-        priority: 10,
-        oncePerCombat: true
-      }
-    ],
-    
-    // ภูมิคุ้มกันสถานะผลหลายอย่าง
-    statusImmunities: ['poison', 'corruption', 'charm', 'sleep'],
-    startingStatusEffects: [
-      { id: 'strength', name: 'แข็งแกร่ง', description: 'พลังจักรพรรดิผี', duration: 0, stacks: 3 },
-      { id: 'intimidate', name: 'ข่มขู่', description: 'ราชาภิสักดิ์ที่น่าเกรงขาม', duration: 0, stacks: 2 }
-    ],
-    
-    signatureCards: ['imperial_strike', 'death_command', 'spirit_legion', 'royal_decree'],
-    aiPersonality: 'adaptive',            // ปรับตัวได้และฉลาดมาก
-    aiModifiers: {
-      spellCastingPreference: 85,         // ใช้เวทมนตร์บ่อยมาก
-      behaviorTriggerChance: 95,
-      adaptationRate: 90                  // ปรับตัวได้เร็วที่สุด
-    },
-    
-    scaling: {
-      dmgPerAct: 6,                       // เพิ่มความเสียหายเยอะมาก
-      blockPerAct: 4,
-      hpPerAct: 40,                       // HP เพิ่มขึ้นมหาศาล
-      spellPowerPerAct: 8,
-      newAbilitiesPerAct: ['summon_ghost_generals', 'reality_manipulation', 'time_stop']
-    },
-    
-    // รางวัลบอส - ได้ของดีที่สุด
-    specialLoot: {
-      cardRewards: ['ghost_king_blessing', 'death_mastery', 'imperial_command', 'spirit_dominion'],
-      equipmentRewards: ['ghost_king_crown', 'death_scepter', 'spectral_armor', 'imperial_ring'],
-      blessingRewards: ['blessing_of_ghost_king', 'death_affinity', 'spirit_mastery', 'royal_favor'],
-      goldBonus: 300                      // โบนัสทองสูงสุด
-    },
-    
-    preferredEnvironments: ['spirit_realm', 'royal_palace', 'death_domain'],
-    summonableMinions: ['ghost_general', 'spectral_knight', 'death_herald', 'spirit_guard'],
-    maxMinions: 6                         // เรียกลูกน้องได้มากที่สุด
+    // Boss deck - ultimate boss power
+    deck: {
+      lists: [
+        {
+          id: 'boss_ultimate_deck',
+          weight: 1,
+          cards: [
+            'maul', 'maul', 'maul', 'maul', 'swipe', 
+            'swipe', 'swipe', 'brace', 'guard', 'maul',
+            'swipe', 'brace', 'maul', 'swipe', 'guard',
+            'maul', 'swipe', 'brace'
+          ]
+        }
+      ],
+      handSize: 6,
+      maxEnergy: 6
+    }
   }
 };
 
 /**
- * ฟังก์ชันช่วยเหลือสำหรับ Boss Enemies
+ * Helper functions for Boss Enemies
  */
 
+// Get boss enemy by ID
 export function getBossEnemyById(enemyId: string): EnhancedEnemyData | undefined {
   return BOSS_ENEMIES[enemyId];
 }
 
+// Get all boss enemies
 export function getAllBossEnemies(): Record<string, EnhancedEnemyData> {
   return BOSS_ENEMIES;
 }
 
+// Get boss enemy IDs
 export function getBossEnemyIds(): string[] {
   return Object.keys(BOSS_ENEMIES);
 }
 
+// Get random boss enemy
 export function getRandomBossEnemy(): EnhancedEnemyData {
   const enemyIds = getBossEnemyIds();
   const randomId = enemyIds[Math.floor(Math.random() * enemyIds.length)];
   return BOSS_ENEMIES[randomId];
 }
 
-// ตรวจสอบว่าบอสมีการเปลี่ยนเฟสหรือไม่
-export function hasPhaseTwoMechanics(bossId: string): boolean {
-  const boss = getBossEnemyById(bossId);
-  return !!(boss?.phaseChangeHP && boss?.phase2Behaviors?.length);
-}
-
 /**
- * สถิติ Boss Enemies
+ * Boss Enemy Stats (simplified)
  */
 export const BOSS_ENEMY_STATS = {
-  HP_RANGE: { min: 120, max: 220 },
-  AVERAGE_SPELLS: 4,
-  AVERAGE_BEHAVIORS: 5,
-  OVERALL_DIFFICULTY: 9,
-  PHASE_MECHANICS: true,
-  ADAPTIVE_AI: true,
+  // HP Range
+  HP_RANGE: { min: 180, max: 240 },
   
-  PLAYER_TIPS: [
-    "บอสมีหลายเฟส - เตรียมตัวสำหรับการเปลี่ยนแปลง",
-    "การขัดจังหวะเวทมนตร์สำคัญมาก โดยเฉพาะเวทย์ใหญ่",
-    "สังเกต pattern และปรับกลยุทธ์ให้เหมาะสม",
-    "เก็บทรัพยากรไว้สำหรับเฟสสุดท้าย",
-    "ระวังการเรียกลูกน้อง - จัดการก่อนที่จะล้นหลาม"
-  ]
-} as const;
-
-/**
- * ระบบความยาก Boss แต่ละตัว
- */
-export const BOSS_DIFFICULTY_RATING = {
-  phraya_naga_boss: {
-    difficulty: 8,
-    mechanics: ['phase_change', 'environment_control', 'minion_summoning', 'ultimate_spell'],
-    recommendedLevel: 15,
-    strategyTips: [
-      "ขัดจังหวะ 'การเรียกพายุมรสุม' ก่อนที่จะร่ายเสร็จ",
-      "จัดการงูลูกน้องให้หมดก่อนโจมตีตัวจริง",
-      "เก็บพลังงานและไพ่ดี ๆ ไว้สำหรับเฟส 2",
-      "ระวัง 'สึนามิมหาวินาศ' - เป็นเวทมนตร์ที่ขัดจังหวะไม่ได้!"
-    ]
-  },
-  ghost_king: {
-    difficulty: 10,
-    mechanics: ['phase_change', 'environment_control', 'massive_minion_summoning', 'ultimate_spell', 'status_immunity', 'adaptive_ai'],
-    recommendedLevel: 20,
-    strategyTips: [
-      "เป็นบอสที่ยากที่สุด - ต้องเตรียมตัวอย่างดี",
-      "ขัดจังหวะ 'การเรียกกองทัพผีดิบ' เป็นสำคัญที่สุด",
-      "มีภูมิคุ้มกันหลายสถานะผล - อย่าพึ่งพา debuff มากเกินไป",
-      "เฟส 2 จะโจมตี 3 ครั้งต่อเทิร์น - เตรียม block ให้เพียงพอ",
-      "'เวทมนตร์มรณะสูงสุด' ขัดจังหวะไม่ได้ - หลีกเลี่ยงด้วยการควบคุม HP",
-      "ใช้ไพ่ที่สามารถขัดจังหวะเวทมนตร์ได้หลาย ๆ ใบ",
-      "AI ปรับตัวได้เร็วมาก - เปลี่ยนกลยุทธ์บ่อย ๆ"
-    ]
-  }
+  // Average damage
+  AVERAGE_DAMAGE: 25,
+  
+  // Average block
+  AVERAGE_BLOCK: 11,
+  
+  // Difficulty level (1-10)
+  OVERALL_DIFFICULTY: 9
 } as const;

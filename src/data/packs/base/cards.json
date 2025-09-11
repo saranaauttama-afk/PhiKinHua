@@ -212,14 +212,11 @@
     "rarity": "Common",
     "starter": 1,
     "inShop": true,
-    "statusEffect": {
-      "target": "enemy",
-      "effect": "poison", 
-      "value": 3,
-      "duration": 4
-    },
-    "tags": ["thai", "shaman", "status", "poison"],
-    "desc": "เสกคาถาพิษโดยตรง ให้ศัตรู Poison 3 stacks นาน 4 turns"
+    "exhaust": true,
+    "summonMinion": "poison_status",
+    "minionTarget": "enemy",
+    "tags": ["thai", "shaman", "status", "poison", "exhaust"],
+    "desc": "เสกคาถาพิษโดยตรง ให้ศัตรู Poison 3 damage/turn นาน 4 turns (ใช้ได้ครั้งเดียว)"
   },
   {
     "id": "salt_circle",

@@ -46,7 +46,6 @@ function CombatView({ state, dispatch }: CombatViewProps) {
                       case 'curse': return '🖤';
                       case 'corruption': return '🌀';
                       case 'entangle': return '🕸️';
-                      case 'spell_charging': return '⚡';
                       case 'block_next': return '🛡️✨';
                       case 'energy_drain': return '⚡💔';
                       default: return '✨';
@@ -119,7 +118,6 @@ function CombatView({ state, dispatch }: CombatViewProps) {
                       case 'curse': return '🖤';
                       case 'corruption': return '🌀';
                       case 'entangle': return '🕸️';
-                      case 'spell_charging': return '⚡';
                       case 'block_next': return '🛡️✨';
                       case 'energy_drain': return '⚡💔';
                       default: return '✨';

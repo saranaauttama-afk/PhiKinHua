@@ -222,28 +222,20 @@ export function runEnemyTurn(s: GameState) {
     return;
   }
 
-  // Import behavior system
+  // Simple behavior system - Night of the Full Moon style
   const { processEnemyTurnBehaviors } = require('../../enemyBehaviorRuntime');
-  const { processStatusEffectsOnTurnStart } = require('../../statusEffectsRuntime');
-
+  
   // PATCH: equipment once-per-turn reset and start-turn hook for ENEMY
   resetEquipmentTurnFlags(s);
   runEquipmentTurnHook(s, 'on_turn_start', 'enemy');
 
-  // Process status effects at start of enemy turn
-  processStatusEffectsOnTurnStart('enemy', s);
-
-  // Process enemy behaviors and spells
+  // Process simple enemy behaviors (just basic defend/attack patterns)
   processEnemyTurnBehaviors(s);
 
-  // Import environment and minion systems
-  const { applyEnvironmentEnergyModifier } = require('../../environmentRuntime');
-  const { processEnemyTurnMinions } = require('../../minionRuntime');
-
-  // เริ่มเทิร์นศัตรู with environment modifications
+  // เริ่มเทิร์นศัตรู
   s.enemy.block = 0;
   const baseEnemyEnergy = (s as any).enemyMaxEnergy ?? ENEMY_MAX_ENERGY_NORMAL;
-  (s as any).enemyEnergy = applyEnvironmentEnergyModifier(s, baseEnemyEnergy, 'enemy');
+  (s as any).enemyEnergy = baseEnemyEnergy;
 
   // จั่วถึงขนาดมือ
   enemyDrawUpToHand(s);
@@ -277,16 +269,7 @@ export function runEnemyTurn(s: GameState) {
   enemyDiscardHand(s);
   s.log.push(`Enemy end turn: played ${plays}/${startHand}, leftover=${endHandBeforeDiscard - plays}`);
 
-  // Process enemy minions actions
-  processEnemyTurnMinions(s);
-
-  // Process status effects at end of enemy turn
-  const { processStatusEffectsOnTurnEnd } = require('../../statusEffectsRuntime');
-  processStatusEffectsOnTurnEnd('enemy', s);
-
-  // Process minion end turn effects
-  const { processMinionsEndTurn } = require('../../minionRuntime');
-  processMinionsEndTurn(s);
+  // Simplified - no complex minion or status effect processing
 
   // PATCH: equipment end-turn hook for ENEMY
   runEquipmentTurnHook(s, 'on_turn_end', 'enemy');
