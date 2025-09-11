@@ -282,79 +282,87 @@ export function choose(s: GameState, cmd: Extract<Command, { type: 'ChooseOffer'
     }
 
     case 'shop_remove': {
-      // Check if this is a respawn shop
-      if (offer.respawnShopId) {
-        const shop = s.shopRegistry?.find(shop => shop.id === offer.respawnShopId);
-        if (shop) {
-          s.shopKind = 'remove';
-          s.shopBoughtItems = []; // Reset bought items tracker
-          s.phase = 'shop';
-          mp._activeOfferIndex = ix; mp._shopUsed = false;
-          s.log.push(`ChooseOffer → respawn shop_remove`);
-          return { state: s, rng };
-        }
+      // Check if shop exists in registry (persistent shop)
+      const existingShop = s.shopRegistry?.find(shop => shop.id === offer.shopId);
+      
+      if (existingShop) {
+        // Use existing shop
+        s.shopKind = 'remove';
+        s.shopBoughtItems = []; // Reset bought items tracker
+        s.currentShopId = offer.shopId; // Track current shop ID
+        s.phase = 'shop';
+        mp._activeOfferIndex = ix; mp._shopUsed = false;
+        s.log.push(`ChooseOffer → existing shop_remove (${offer.shopId})`);
+        return { state: s, rng };
       }
       
+      // Create new shop
       if (typeof ShopEv.openShopRemove !== 'function') {
         s.log.push('openShopRemove missing export in shops_events.ts');
         return { state: s, rng };
       }
       const out = ShopEv.openShopRemove(s, rng);
       s = out.state; rng = out.rng;
+      s.currentShopId = offer.shopId; // Track current shop ID
       mp._activeOfferIndex = ix; mp._shopUsed = false;
-      s.log.push('ChooseOffer → shop_remove');
+      s.log.push(`ChooseOffer → new shop_remove (${offer.shopId})`);
       return { state: s, rng };
     }
 
     case 'shop_upgrade': {
-      // Check if this is a respawn shop
-      if (offer.respawnShopId) {
-        const shop = s.shopRegistry?.find(shop => shop.id === offer.respawnShopId);
-        if (shop) {
-          s.shopKind = 'upgrade';
-          s.shopBoughtItems = []; // Reset bought items tracker
-          s.phase = 'shop';
-          mp._activeOfferIndex = ix; mp._shopUsed = false;
-          s.log.push(`ChooseOffer → respawn shop_upgrade`);
-          return { state: s, rng };
-        }
+      // Check if shop exists in registry (persistent shop)
+      const existingShop = s.shopRegistry?.find(shop => shop.id === offer.shopId);
+      
+      if (existingShop) {
+        // Use existing shop
+        s.shopKind = 'upgrade';
+        s.shopBoughtItems = []; // Reset bought items tracker
+        s.currentShopId = offer.shopId; // Track current shop ID
+        s.phase = 'shop';
+        mp._activeOfferIndex = ix; mp._shopUsed = false;
+        s.log.push(`ChooseOffer → existing shop_upgrade (${offer.shopId})`);
+        return { state: s, rng };
       }
       
+      // Create new shop
       if (typeof ShopEv.openShopUpgrade !== 'function') {
         s.log.push('openShopUpgrade missing export in shops_events.ts');
         return { state: s, rng };
       }
       const out = ShopEv.openShopUpgrade(s, rng);
       s = out.state; rng = out.rng;
+      s.currentShopId = offer.shopId; // Track current shop ID
       mp._activeOfferIndex = ix; mp._shopUsed = false;
-      s.log.push('ChooseOffer → shop_upgrade');
+      s.log.push(`ChooseOffer → new shop_upgrade (${offer.shopId})`);
       return { state: s, rng };
     }
 
     case 'shop_equipment': {
-      // Check if this is a respawn shop
-      if (offer.respawnShopId) {
-        const shop = s.shopRegistry?.find(shop => shop.id === offer.respawnShopId);
-        if (shop) {
-          // Use existing shop inventory for equipment
-          s.shopStock = shop.inventory.map(item => ({ equipment: item.equipment, price: item.price }));
-          s.shopKind = 'equipment';
-          s.shopBoughtItems = []; // Reset bought items tracker
-          s.phase = 'shop';
-          mp._activeOfferIndex = ix; mp._shopUsed = false;
-          s.log.push(`ChooseOffer → respawn shop_equipment (${shop.inventory.length} items)`);
-          return { state: s, rng };
-        }
+      // Check if shop exists in registry (persistent shop)
+      const existingShop = s.shopRegistry?.find(shop => shop.id === offer.shopId);
+      
+      if (existingShop) {
+        // Use existing shop inventory for equipment
+        s.shopStock = existingShop.inventory.map(item => ({ equipment: item.equipment, price: item.price }));
+        s.shopKind = 'equipment';
+        s.shopBoughtItems = []; // Reset bought items tracker
+        s.currentShopId = offer.shopId; // Track current shop ID
+        s.phase = 'shop';
+        mp._activeOfferIndex = ix; mp._shopUsed = false;
+        s.log.push(`ChooseOffer → existing shop_equipment (${existingShop.inventory.length} items)`);
+        return { state: s, rng };
       }
       
+      // Create new shop
       if (typeof ShopEv.openShopEquipment !== 'function') {
         s.log.push('openShopEquipment missing export in shops_events.ts');
         return { state: s, rng };
       }
       const out = ShopEv.openShopEquipment(s, rng);
       s = out.state; rng = out.rng;
+      s.currentShopId = offer.shopId; // Track current shop ID
       mp._activeOfferIndex = ix; mp._shopUsed = false;
-      s.log.push('ChooseOffer → shop_equipment');
+      s.log.push(`ChooseOffer → new shop_equipment (${offer.shopId})`);
   return { state: s, rng };
     }
 

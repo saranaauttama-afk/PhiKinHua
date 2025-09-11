@@ -17,6 +17,9 @@ function ShopView({ state, dispatch }: ShopViewProps) {
   const renderCardShop = () => (
     <View style={{ marginTop: 16, borderRadius: 16, padding: 16, backgroundColor: 'rgba(39, 39, 42, 0.8)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }}>
       <Text style={{ color: 'white', fontSize: 18, fontWeight: '600', marginBottom: 8 }}>🛒 Card Shop</Text>
+      {state.currentShopId && (
+        <Text style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: 12, marginBottom: 4 }}>Shop ID: {state.currentShopId}</Text>
+      )}
       <Text style={{ color: 'rgba(255, 255, 255, 0.8)', marginBottom: 8 }}>Gold: {state.player.gold}g</Text>
       
       <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
@@ -55,6 +58,9 @@ function ShopView({ state, dispatch }: ShopViewProps) {
   const renderEquipmentShop = () => (
     <View className="mt-4 rounded-2xl p-4 bg-zinc-800/80 border border-amber-500/20">
       <Text className="text-white text-lg font-semibold mb-2">⚔️ Equipment Shop</Text>
+      {state.currentShopId && (
+        <Text style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: 12, marginBottom: 4 }}>Shop ID: {state.currentShopId}</Text>
+      )}
       <Text className="text-white/80 mb-2">Gold: {state.player.gold}g</Text>
       
       <View className="flex-row gap-2 flex-wrap">
@@ -81,6 +87,9 @@ function ShopView({ state, dispatch }: ShopViewProps) {
     return (
       <View className="mt-4 rounded-2xl p-4 bg-red-900/30 border border-red-500/30">
         <Text className="text-white text-lg font-semibold mb-2">🗑️ Remove Cards</Text>
+        {state.currentShopId && (
+          <Text style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: 12, marginBottom: 4 }}>Shop ID: {state.currentShopId}</Text>
+        )}
         <Text className="text-white/80 mb-2">Gold: {state.player.gold}g</Text>
         <Text className="text-red-300 mb-3">Cost: {removeCost}g (removed {removeCount} cards)</Text>
         
@@ -107,6 +116,9 @@ function ShopView({ state, dispatch }: ShopViewProps) {
     return (
       <View className="mt-4 rounded-2xl p-4 bg-green-900/30 border border-green-500/30">
         <Text className="text-white text-lg font-semibold mb-2">⬆️ Upgrade Cards</Text>
+        {state.currentShopId && (
+          <Text style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: 12, marginBottom: 4 }}>Shop ID: {state.currentShopId}</Text>
+        )}
         <Text className="text-white/80 mb-2">Gold: {state.player.gold}g</Text>
         <Text className="text-green-300 mb-3">Cost: {upgradeCost}g (upgraded {upgradeCount} cards)</Text>
         
