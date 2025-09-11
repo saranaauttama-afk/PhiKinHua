@@ -26,7 +26,7 @@ export type MapStatePages = {
     wells: number; healingShrine: number; nextEvent: number;
   };
   // Track deleted shops for sequential logic
-  deletedShops: Set<string>;
+  deletedShops: string[];
   current?: { offers: PageOffer[]; resolved: boolean[] };
   _closeAfterCombat?: boolean;
   _advanceAfterLevelup?: boolean;
@@ -39,7 +39,7 @@ export function initPageMap(r: RNG) {
     totalPages: PAGES_TOTAL,
     pageIndex: 0,
     pools: { ...POOL_DEFAULT },
-    deletedShops: new Set(),
+    deletedShops: [],
   };
   return { map, rng: r };
 }
@@ -93,7 +93,7 @@ export function rollPageOffers(mp: MapStatePages, r: RNG, s: GameState): { offer
 
   // Ensure deletedShops exists (fallback for existing saves) - MUST BE FIRST
   if (!mp.deletedShops) {
-    mp.deletedShops = new Set();
+    mp.deletedShops = [];
   }
 
   // Generate static shop IDs based on page and position
@@ -113,18 +113,18 @@ export function rollPageOffers(mp: MapStatePages, r: RNG, s: GameState): { offer
   }
 
   // Sequential remove shops
-  if (mp.pools.shopRemove1 > 0 && !mp.deletedShops.has('remove_1')) {
+  if (mp.pools.shopRemove1 > 0 && !mp.deletedShops.includes('remove_1')) {
     cand.push({ offer: { kind: 'shop_remove', shopId: 'remove_1', phase: 1 }, w: WEIGHTS.shopRemove1 });
   }
-  if (mp.pools.shopRemove2 > 0 && mp.deletedShops.has('remove_1') && !mp.deletedShops.has('remove_2')) {
+  if (mp.pools.shopRemove2 > 0 && mp.deletedShops.includes('remove_1') && !mp.deletedShops.includes('remove_2')) {
     cand.push({ offer: { kind: 'shop_remove', shopId: 'remove_2', phase: 2 }, w: WEIGHTS.shopRemove2 });
   }
   
   // Sequential upgrade shops
-  if (mp.pools.shopUpgrade1 > 0 && !mp.deletedShops.has('upgrade_1')) {
+  if (mp.pools.shopUpgrade1 > 0 && !mp.deletedShops.includes('upgrade_1')) {
     cand.push({ offer: { kind: 'shop_upgrade', shopId: 'upgrade_1', phase: 1 }, w: WEIGHTS.shopUpgrade1 });
   }
-  if (mp.pools.shopUpgrade2 > 0 && mp.deletedShops.has('upgrade_1') && !mp.deletedShops.has('upgrade_2')) {
+  if (mp.pools.shopUpgrade2 > 0 && mp.deletedShops.includes('upgrade_1') && !mp.deletedShops.includes('upgrade_2')) {
     cand.push({ offer: { kind: 'shop_upgrade', shopId: 'upgrade_2', phase: 2 }, w: WEIGHTS.shopUpgrade2 });
   }
   

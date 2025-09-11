@@ -77,7 +77,7 @@ function ensurePages(s: GameState, r: RNG): { rng: RNG; mp: MapStatePages } {
   
   // Ensure deletedShops exists for existing saves
   if (!s.pages.deletedShops) {
-    s.pages.deletedShops = new Set();
+    s.pages.deletedShops = [];
   }
   
   return { rng: r, mp: s.pages };
@@ -544,10 +544,12 @@ export function deleteShop(s: GameState, _cmd: Extract<Command, { type: 'DeleteS
   if ('shopId' in offer && offer.shopId) {
     // Ensure deletedShops exists (fallback for existing saves)
     if (!mp.deletedShops) {
-      mp.deletedShops = new Set();
+      mp.deletedShops = [];
     }
-    mp.deletedShops.add(offer.shopId);
-    console.log('🗑️ Added shop to deleted set:', offer.shopId);
+    if (!mp.deletedShops.includes(offer.shopId)) {
+      mp.deletedShops.push(offer.shopId);
+    }
+    console.log('🗑️ Added shop to deleted list:', offer.shopId);
     
     // Remove from registry if exists
     if (s.shopRegistry) {
