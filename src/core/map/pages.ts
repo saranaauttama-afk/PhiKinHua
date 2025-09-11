@@ -107,6 +107,11 @@ export function rollPageOffers(mp: MapStatePages, r: RNG, s: GameState): { offer
     cand.push({ offer: { kind: 'shop_equipment', shopId: `equipment_${pageId}_${++slotId}` }, w: WEIGHTS.shopEquipment });
   }
   
+  // Ensure deletedShops exists (fallback for existing saves)
+  if (!mp.deletedShops) {
+    mp.deletedShops = new Set();
+  }
+
   // Sequential remove shops
   if (mp.pools.shopRemove1 > 0 && !mp.deletedShops.has('remove_1')) {
     cand.push({ offer: { kind: 'shop_remove', shopId: 'remove_1', phase: 1 }, w: WEIGHTS.shopRemove1 });

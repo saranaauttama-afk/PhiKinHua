@@ -536,6 +536,10 @@ export function deleteShop(s: GameState, _cmd: Extract<Command, { type: 'DeleteS
 
   // Track deleted shop for sequential logic
   if ('shopId' in offer && offer.shopId) {
+    // Ensure deletedShops exists (fallback for existing saves)
+    if (!mp.deletedShops) {
+      mp.deletedShops = new Set();
+    }
     mp.deletedShops.add(offer.shopId);
     console.log('🗑️ Added shop to deleted set:', offer.shopId);
     
