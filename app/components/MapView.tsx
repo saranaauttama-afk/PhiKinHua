@@ -14,7 +14,33 @@ function MapView({ state, dispatch }: MapViewProps) {
   
   if (!inMap || !isPages) return null;
 
-  const canProceedPage = page?.resolved.every(Boolean) ?? false;
+  // Check if can proceed - combat must be completed
+  const canProceedPage = (() => {
+    if (!page) return false;
+    
+    let hasCombat = false;
+    let combatCompleted = false;
+    
+    for (let i = 0; i < page.offers.length; i++) {
+      const offer = page.offers[i];
+      const isResolved = page.resolved[i];
+      
+      if (offer.kind === 'monster') {
+        hasCombat = true;
+        if (isResolved) {
+          combatCompleted = true;
+        }
+      }
+    }
+    
+    // Must have combat and complete it
+    if (hasCombat && !combatCompleted) {
+      return false;
+    }
+    
+    // All resolved = can proceed
+    return page.resolved.every(Boolean);
+  })();
 
   return (
     <View style={{ marginTop: 16, borderRadius: 16, padding: 16, backgroundColor: 'rgba(39, 39, 42, 0.7)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }}>
@@ -102,7 +128,7 @@ function MapView({ state, dispatch }: MapViewProps) {
                               borderColor: 'rgba(248, 113, 113, 0.5)'
                             }}
                           >
-                            <Text style={{ color: '#fecaca' }}>Skip</Text>
+                            <Text style={{ color: '#fecaca' }}>Delete</Text>
                           </Pressable>
                         </>
                       )}

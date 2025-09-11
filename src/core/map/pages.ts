@@ -6,10 +6,10 @@ import type { GameState } from '../types';
 
 export type PageOffer =
   | { kind: 'monster', tier: 'normal' | 'elite' }
-  | { kind: 'shop_card' }
-  | { kind: 'shop_equipment' }
-  | { kind: 'shop_remove' }
-  | { kind: 'shop_upgrade' }
+  | { kind: 'shop_card'; respawnShopId?: string }
+  | { kind: 'shop_equipment'; respawnShopId?: string }
+  | { kind: 'shop_remove'; respawnShopId?: string }
+  | { kind: 'shop_upgrade'; respawnShopId?: string }
   | { kind: 'well' }
   | { kind: 'healing_shrine' }
   | { kind: 'next_event' } // ไปหน้าถัดไปแบบเหตุการณ์พิเศษ
@@ -60,9 +60,17 @@ export function consumeToken(mp: MapStatePages, offer: PageOffer) {
 }
 
 // สุ่ม 3 ตัวเลือก/หน้า (กฎ: normal ต้องหมดก่อน elite; ต้องเหลือมอนอย่างน้อย 1 สลอตถ้ายังมีมอน; next_event ต้องไม่ทำให้ soft-lock)
-export function rollPageOffers(mp: MapStatePages, r: RNG, _s: GameState): { offers: PageOffer[]; rng: RNG } {
+export function rollPageOffers(mp: MapStatePages, r: RNG, s: GameState): { offers: PageOffer[]; rng: RNG } {
   const offers: PageOffer[] = [];
   const cand: Array<{ offer: PageOffer; w: number }> = [];
+  
+  // Check for shop respawn opportunities
+  const { selectShopsForRespawn } = require('../shopRegistry');
+  const respawnShops = selectShopsForRespawn(s, 2, () => {
+    const rollOut = require('../rng').int(r, 0, 999);
+    r = rollOut.rng;
+    return rollOut.value / 1000;
+  });
 
   const monsLeft = monstersLeft(mp);
   const pLeft    = pagesLeft(mp);
@@ -78,6 +86,17 @@ export function rollPageOffers(mp: MapStatePages, r: RNG, _s: GameState): { offe
   if (monsLeft > 0) {
     if (mp.pools.normal > 0) offers.push({ kind: 'monster', tier: 'normal' });
     else if (allowElite)     offers.push({ kind: 'monster', tier: 'elite'  });
+  }
+
+  // เพิ่ม respawn shops ลงใน candidates ก่อน
+  for (const shop of respawnShops) {
+    const offerKind = shop.kind === 'card' ? 'shop_card' as const : 
+                      shop.kind === 'equipment' ? 'shop_equipment' as const :
+                      shop.kind === 'remove' ? 'shop_remove' as const : 'shop_upgrade' as const;
+    cand.push({ 
+      offer: { kind: offerKind, respawnShopId: shop.id }, 
+      w: WEIGHTS.shopCard * 1.5 // Higher weight for respawn shops
+    });
   }
 
   // สร้าง candidate ตาม pool+weight

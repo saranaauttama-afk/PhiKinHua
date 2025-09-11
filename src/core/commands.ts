@@ -37,6 +37,7 @@ export function baseNewState(seed: string): GameState {
     combatVictoryLock: false,    
     masterDeck: [],               // ✅ ใส่ค่าเริ่มต้นว่างไว้ เดี๋ยว NewRun จะตั้งจริง
     deckOpen: false,
+    shopRegistry: [],
   };
 }
 

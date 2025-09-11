@@ -65,6 +65,9 @@ const H: { [K in Command['type']]?: Handler<K> } = {
   ChooseOffer: mappages.choose,
   DismissOffer: mappages.dismiss,
   Proceed: mappages.proceed,
+  
+  // Shop Management
+  DeleteShop: mappages.deleteShop,
 
   // QA - Status Effects & Enemy Behavior
   QA_ApplyStatusToPlayer: qa.qaApplyStatusToPlayer,

@@ -396,11 +396,8 @@ export function completeNode(s: GameState, _cmd: Extract<Command, { type: 'Compl
       removeTemporaryEquipment(s);
     }
     else if (s.phase === 'shop') {
-      // ซื้อสำเร็จสักครั้งในร้านนี้ → ถือว่าใช้ช่องนี้
-      if (mp._shopUsed) {
-        mp.current.resolved[ix] = true;
-        consumeToken(mp, offer);
-      }
+      // Leave Shop - ไม่ resolve shop, เพียงกลับไปแมพ
+      // Shop จะยังคงอยู่ใน map สำหรับการเข้าใหม่
       s.shopStock = undefined;
       s.shopKind = undefined;
       s.phase = 'map';
@@ -425,8 +422,82 @@ export function completeNode(s: GameState, _cmd: Extract<Command, { type: 'Compl
   }
 
   // เคลียร์ครบ 3 ช่อง → ไปหน้าถัดไป
-  if (mp.current.resolved.every(Boolean)) {
+  if (canProceedToNextMap(s)) {
     return proceed(s, { type: 'Proceed' } as any, rng);
   }
   return { state: s, rng };
+}
+
+export function deleteShop(s: GameState, _cmd: Extract<Command, { type: 'DeleteShop' }>, rng: RNG) {
+  if (s.phase !== 'shop' || s.mapMode !== 'pages' || !s.pages) {
+    return { state: s, rng };
+  }
+
+  const mp = s.pages;
+  const ix = mp._activeOfferIndex;
+  
+  if (ix === undefined || !mp.current?.offers[ix]) {
+    return { state: s, rng };
+  }
+
+  const offer = mp.current.offers[ix];
+
+  // Delete shop - resolve ทันที
+  mp.current.resolved[ix] = true;
+  consumeToken(mp, offer);
+  
+  s.shopStock = undefined;
+  s.shopKind = undefined;
+  s.phase = 'map';
+  s.log.push('🗑️ Shop deleted permanently');
+
+  // reset flags
+  mp._activeOfferIndex = undefined;
+  mp._shopUsed = false;
+
+  // เคลียร์ครบ 3 ช่อง → ไปหน้าถัดไป
+  if (canProceedToNextMap(s)) {
+    return proceed(s, { type: 'Proceed' } as any, rng);
+  }
+
+  return { state: s, rng };
+}
+
+/**
+ * ตรวจสอบว่าสามารถไปหน้าถัดไปได้หรือไม่
+ * เงื่อนไข:
+ * 1. Combat ต้องเสร็จ (resolved = true)  
+ * 2. Shop/Event ไม่บังคับ แต่ถ้ายังไม่ resolved ก็ยังไปไม่ได้
+ */
+function canProceedToNextMap(s: GameState): boolean {
+  if (s.mapMode !== 'pages' || !s.pages?.current) return false;
+  
+  const mp = s.pages;
+  const offers = mp.current.offers;
+  const resolved = mp.current.resolved;
+  
+  let hasCombat = false;
+  let combatCompleted = false;
+  
+  for (let i = 0; i < offers.length; i++) {
+    const offer = offers[i];
+    const isResolved = resolved[i];
+    
+    if (offer.kind === 'monster') {
+      hasCombat = true;
+      if (isResolved) {
+        combatCompleted = true;
+      }
+    }
+  }
+  
+  // Must have combat and complete it
+  if (hasCombat && !combatCompleted) {
+    return false;
+  }
+  
+  // Combat completed - check if we can proceed
+  // All resolved = proceed (traditional way)
+  // OR Combat done + no mandatory unresolved slots = proceed 
+  return resolved.every(Boolean);
 }

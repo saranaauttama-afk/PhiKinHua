@@ -62,6 +62,7 @@ const makeEmptyState = (): GameState => ({
   mapMode: 'pages',
   pages: undefined,
   shopKind: undefined,
+  shopRegistry: [],
 });
 
 const useGame = create<Store>((set, get) => ({

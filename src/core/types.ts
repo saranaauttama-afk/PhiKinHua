@@ -119,6 +119,17 @@ export type ShopItem =
   | { equipment: any; price: number };
 export type ShopKind = 'card' | 'remove' | 'upgrade' | 'equipment';
 
+export type ShopState = 'unused' | 'visited' | 'completed';
+
+export type PersistentShop = {
+  id: string;
+  kind: ShopKind;
+  inventory: ShopItem[];
+  boughtItems: ShopItem[];
+  timesEncountered: number;
+  itemsBought: number;
+};
+
 export type MapMode = 'pages';
 export type MapStatePages = import('./map/pages').MapStatePages;
 
@@ -206,6 +217,9 @@ export type GameState = {
   runtime?: {
     equipment?: EquipmentRuntimeState;
   };
+
+  // Shop Registry System
+  shopRegistry?: PersistentShop[];
 };
 
 // ===== Commands =====
@@ -254,6 +268,9 @@ export type Command =
   | { type: 'ChooseOffer'; index: number }
   | { type: 'DismissOffer'; index: number }
   | { type: 'Proceed' }
+  
+  // Shop Management
+  | { type: 'DeleteShop' }
 
   // Equipment Management
   | { type: 'EquipFromDeck'; cardId: string }

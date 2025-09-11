@@ -133,12 +133,12 @@ function ShopView({ state, dispatch }: ShopViewProps) {
       {shopKind === 'remove' && renderRemoveShop()}
       {shopKind === 'upgrade' && renderUpgradeShop()}
       
-      {/* Close Shop Button */}
-      <View style={{ marginTop: 16, flexDirection: 'row', justifyContent: 'center' }}>
+      {/* Shop Control Buttons */}
+      <View style={{ marginTop: 16, flexDirection: 'row', justifyContent: 'center', gap: 12 }}>
         <Pressable
           onPress={() => dispatch({ type: 'CompleteNode' })}
           style={{
-            paddingHorizontal: 24,
+            paddingHorizontal: 20,
             paddingVertical: 12,
             borderRadius: 12,
             backgroundColor: 'rgba(63, 63, 70, 0.5)',
@@ -147,6 +147,19 @@ function ShopView({ state, dispatch }: ShopViewProps) {
           }}
         >
           <Text style={{ color: 'white', fontWeight: '600' }}>🚪 Leave Shop</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => dispatch({ type: 'DeleteShop' })}
+          style={{
+            paddingHorizontal: 20,
+            paddingVertical: 12,
+            borderRadius: 12,
+            backgroundColor: 'rgba(220, 38, 38, 0.5)',
+            borderWidth: 1,
+            borderColor: 'rgba(248, 113, 113, 0.5)'
+          }}
+        >
+          <Text style={{ color: '#fecaca', fontWeight: '600' }}>🗑️ Delete Shop</Text>
         </Pressable>
       </View>
     </View>
