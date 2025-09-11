@@ -421,8 +421,8 @@ export function completeNode(s: GameState, _cmd: Extract<Command, { type: 'Compl
     mp._shopUsed = false;
   }
 
-  // เคลียร์ครบ 3 ช่อง → ไปหน้าถัดไป
-  if (canProceedToNextMap(s)) {
+  // เคลียร์ครบ 3 ช่อง → ไปหน้าถัดไป auto
+  if (s.pages?.current?.resolved.every(Boolean)) {
     return proceed(s, { type: 'Proceed' } as any, rng);
   }
   return { state: s, rng };
@@ -455,8 +455,8 @@ export function deleteShop(s: GameState, _cmd: Extract<Command, { type: 'DeleteS
   mp._activeOfferIndex = undefined;
   mp._shopUsed = false;
 
-  // เคลียร์ครบ 3 ช่อง → ไปหน้าถัดไป
-  if (canProceedToNextMap(s)) {
+  // เคลียร์ครบ 3 ช่อง → ไปหน้าถัดไป auto
+  if (s.pages?.current?.resolved.every(Boolean)) {
     return proceed(s, { type: 'Proceed' } as any, rng);
   }
 

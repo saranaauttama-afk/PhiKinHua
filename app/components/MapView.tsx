@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import type { GameState, Command } from '../../src/core/types';
 
@@ -13,6 +13,8 @@ function MapView({ state, dispatch }: MapViewProps) {
   const page = state.pages?.current;
   
   if (!inMap || !isPages) return null;
+
+  // Note: Auto-proceed handled by backend when all resolved
 
   // Check if can proceed - combat must be completed
   const canProceedPage = (() => {
@@ -38,8 +40,9 @@ function MapView({ state, dispatch }: MapViewProps) {
       return false;
     }
     
-    // All resolved = can proceed
-    return page.resolved.every(Boolean);
+    // Combat completed - can proceed even with unfinished shops/events
+    // User can choose to continue or complete remaining encounters
+    return true;
   })();
 
   return (
@@ -117,19 +120,21 @@ function MapView({ state, dispatch }: MapViewProps) {
                           >
                             <Text style={{ color: '#bfdbfe', fontWeight: '600' }}>Enter</Text>
                           </Pressable>
-                          <Pressable
-                            onPress={() => dispatch({ type: 'DismissOffer', index: i })}
-                            style={{
-                              paddingHorizontal: 12,
-                              paddingVertical: 8,
-                              borderRadius: 8,
-                              backgroundColor: 'rgba(220, 38, 38, 0.5)',
-                              borderWidth: 1,
-                              borderColor: 'rgba(248, 113, 113, 0.5)'
-                            }}
-                          >
-                            <Text style={{ color: '#fecaca' }}>Delete</Text>
-                          </Pressable>
+                          {o.kind !== 'monster' && (
+                            <Pressable
+                              onPress={() => dispatch({ type: 'DismissOffer', index: i })}
+                              style={{
+                                paddingHorizontal: 12,
+                                paddingVertical: 8,
+                                borderRadius: 8,
+                                backgroundColor: 'rgba(220, 38, 38, 0.5)',
+                                borderWidth: 1,
+                                borderColor: 'rgba(248, 113, 113, 0.5)'
+                              }}
+                            >
+                              <Text style={{ color: '#fecaca' }}>Delete</Text>
+                            </Pressable>
+                          )}
                         </>
                       )}
                     </View>
