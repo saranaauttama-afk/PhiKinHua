@@ -9,8 +9,10 @@ export const POOL_DEFAULT = {
   elite: 3,
   shopCard: 4,
   shopEquipment: 2,
-  shopRemove: 2,
-  shopUpgrade: 2,
+  shopRemove1: 1, // Phase 1: early game
+  shopRemove2: 1, // Phase 2: late game (after phase 1 deleted)
+  shopUpgrade1: 1, // Phase 1: early game
+  shopUpgrade2: 1, // Phase 2: late game (after phase 1 deleted)
   wells: 2,
   healingShrine: 2,
   nextEvent: 2, // next_page แบบ event พิเศษ
@@ -21,8 +23,10 @@ export const WEIGHTS = {
   monsterElite: 2,
   shopCard: 3,
   shopEquipment: 2,
-  shopRemove: 2,
-  shopUpgrade: 2,
+  shopRemove1: 2,
+  shopRemove2: 2,
+  shopUpgrade1: 2,
+  shopUpgrade2: 2,
   well: 1,
   healingShrine: 2,
   nextEvent: 1,

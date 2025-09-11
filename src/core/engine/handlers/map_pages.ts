@@ -243,35 +243,35 @@ export function choose(s: GameState, cmd: Extract<Command, { type: 'ChooseOffer'
 
     case 'shop_card': {
       console.log('🛒 Shop_card handler debug:', {
-        hasRespawnId: !!offer.respawnShopId,
-        respawnId: offer.respawnShopId,
+        shopId: offer.shopId,
         registryLength: s.shopRegistry?.length || 0
       });
       
-      // Check if this is a respawn shop
-      if (offer.respawnShopId) {
-        const shop = s.shopRegistry?.find(shop => shop.id === offer.respawnShopId);
-        console.log('🛒 Found respawn shop:', shop ? 'YES' : 'NO', shop?.inventory.length);
-        if (shop) {
-          // Use existing shop inventory
-          s.shopStock = shop.inventory.map(item => ({ card: item.card, price: item.price }));
-          s.shopKind = 'card';
-          s.shopBoughtItems = []; // Reset bought items tracker
-          s.phase = 'shop';
-          mp._activeOfferIndex = ix; mp._shopUsed = false;
-          s.log.push(`ChooseOffer → respawn shop_card (${shop.inventory.length} items)`);
-          return { state: s, rng };
-        }
+      // Check if shop exists in registry (persistent shop)
+      const existingShop = s.shopRegistry?.find(shop => shop.id === offer.shopId);
+      console.log('🛒 Found existing shop:', existingShop ? 'YES' : 'NO', existingShop?.inventory.length);
+      
+      if (existingShop) {
+        // Use existing shop inventory
+        s.shopStock = existingShop.inventory.map(item => ({ card: item.card, price: item.price }));
+        s.shopKind = 'card';
+        s.shopBoughtItems = []; // Reset bought items tracker
+        s.phase = 'shop';
+        mp._activeOfferIndex = ix; mp._shopUsed = false;
+        s.log.push(`ChooseOffer → existing shop_card (${existingShop.inventory.length} items)`);
+        return { state: s, rng };
       }
       
+      // Create new shop
       if (typeof ShopEv.openShopCard !== 'function') {
         s.log.push('openShopCard missing export in shops_events.ts');
         return { state: s, rng };
       }
       const out = ShopEv.openShopCard(s, rng);
       s = out.state; rng = out.rng;
+      s.currentShopId = offer.shopId; // Track current shop ID
       mp._activeOfferIndex = ix; mp._shopUsed = false;
-      s.log.push('ChooseOffer → shop_card');
+      s.log.push(`ChooseOffer → new shop_card (${offer.shopId})`);
       return { state: s, rng };
     }
 
@@ -459,38 +459,39 @@ export function completeNode(s: GameState, _cmd: Extract<Command, { type: 'Compl
       removeTemporaryEquipment(s);
     }
     else if (s.phase === 'shop') {
-      // Leave Shop - save to registry for persistence
-      const offer = mp.current.offers[ix] as PageOffer;
-      
+      // Leave Shop - save to registry for persistence using static shop ID
       console.log('🛒 Leave shop debug:', {
-        hasOffer: !!offer,
-        hasRespawnId: offer && 'respawnShopId' in offer && !!offer.respawnShopId,
-        respawnId: offer && 'respawnShopId' in offer ? offer.respawnShopId : null,
+        currentShopId: s.currentShopId,
         shopUsed: mp._shopUsed,
         shopKind: s.shopKind,
         stockCount: s.shopStock?.length || 0,
         boughtCount: s.shopBoughtItems?.length || 0
       });
       
-      if (offer && 'respawnShopId' in offer && offer.respawnShopId) {
-        // Update existing registry shop
-        const { updateShopInRegistry } = require('../../shopRegistry');
+      if (s.currentShopId && s.shopStock && s.shopKind) {
+        const existingShop = s.shopRegistry?.find(shop => shop.id === s.currentShopId);
+        const { addShopToRegistry, updateShopInRegistry } = require('../../shopRegistry');
         const boughtItems = s.shopBoughtItems || [];
-        updateShopInRegistry(s, offer.respawnShopId, s.shopStock || [], boughtItems);
-        console.log('🛒 Updated existing shop in registry');
-      } else if (s.shopStock && s.shopKind && mp._shopUsed) {
-        // First time leaving shop that was used - add to registry
-        const { addShopToRegistry } = require('../../shopRegistry');
-        const boughtItems = s.shopBoughtItems || [];
-        addShopToRegistry(s, s.shopKind as any, s.shopStock, boughtItems);
-        console.log('🛒 Added new shop to registry');
+        
+        if (existingShop) {
+          // Update existing shop
+          updateShopInRegistry(s, s.currentShopId, s.shopStock, boughtItems);
+          console.log('🛒 Updated existing shop in registry');
+        } else if (mp._shopUsed || boughtItems.length > 0) {
+          // Add new shop to registry (only if used)
+          addShopToRegistry(s, s.shopKind as any, s.shopStock, boughtItems, s.currentShopId);
+          console.log('🛒 Added new shop to registry');
+        } else {
+          console.log('🛒 Shop not saved to registry (not used)');
+        }
       } else {
-        console.log('🛒 Shop not saved to registry (not used or missing data)');
+        console.log('🛒 Shop not saved to registry (missing data)');
       }
       
       s.shopStock = undefined;
       s.shopKind = undefined;
       s.shopBoughtItems = undefined; // Clear bought items tracker
+      s.currentShopId = undefined; // Clear current shop ID
       s.phase = 'map';
     }
     else if (s.phase === 'event') {
@@ -531,7 +532,22 @@ export function deleteShop(s: GameState, _cmd: Extract<Command, { type: 'DeleteS
     return { state: s, rng };
   }
 
-  const offer = mp.current.offers[ix];
+  const offer = mp.current.offers[ix] as PageOffer;
+
+  // Track deleted shop for sequential logic
+  if ('shopId' in offer && offer.shopId) {
+    mp.deletedShops.add(offer.shopId);
+    console.log('🗑️ Added shop to deleted set:', offer.shopId);
+    
+    // Remove from registry if exists
+    if (s.shopRegistry) {
+      const shopIndex = s.shopRegistry.findIndex(shop => shop.id === offer.shopId);
+      if (shopIndex >= 0) {
+        s.shopRegistry.splice(shopIndex, 1);
+        console.log('🗑️ Removed shop from registry:', offer.shopId);
+      }
+    }
+  }
 
   // Delete shop - resolve ทันที
   mp.current.resolved[ix] = true;
@@ -539,6 +555,8 @@ export function deleteShop(s: GameState, _cmd: Extract<Command, { type: 'DeleteS
   
   s.shopStock = undefined;
   s.shopKind = undefined;
+  s.currentShopId = undefined;
+  s.shopBoughtItems = undefined;
   s.phase = 'map';
   s.log.push('🗑️ Shop deleted permanently');
 

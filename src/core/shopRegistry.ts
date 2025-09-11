@@ -26,18 +26,22 @@ export function addShopToRegistry(
   state: GameState,
   kind: ShopKind,
   inventory: ShopItem[],
-  boughtItems: ShopItem[]
+  boughtItems: ShopItem[],
+  shopId?: string
 ): void {
   if (!state.shopRegistry) {
     state.shopRegistry = [];
   }
 
   const shop = createPersistentShop(kind, inventory);
+  if (shopId) {
+    shop.id = shopId; // Use provided static ID
+  }
   shop.boughtItems = [...boughtItems];
   shop.itemsBought = boughtItems.length;
   
   state.shopRegistry.push(shop);
-  state.log.push(`📝 Shop registered for future encounters`);
+  state.log.push(`📝 Shop ${shop.id} registered for future encounters`);
 }
 
 /**
@@ -92,7 +96,7 @@ export function getAvailableShopsForRespawn(state: GameState): PersistentShop[] 
  * คำนวณโอกาส re-spawn
  */
 export function calculateRespawnChance(shop: PersistentShop): number {
-  const baseChance = 0.3; // 30%
+  const baseChance = 0.8; // Increased to 80% for testing
   return baseChance / shop.timesEncountered;
 }
 
