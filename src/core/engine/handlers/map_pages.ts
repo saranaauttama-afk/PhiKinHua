@@ -242,6 +242,21 @@ export function choose(s: GameState, cmd: Extract<Command, { type: 'ChooseOffer'
     }
 
     case 'shop_card': {
+      // Check if this is a respawn shop
+      if (offer.respawnShopId) {
+        const shop = s.shopRegistry?.find(shop => shop.id === offer.respawnShopId);
+        if (shop) {
+          // Use existing shop inventory
+          s.shopStock = shop.inventory.map(item => ({ card: item.card, price: item.price }));
+          s.shopKind = 'card';
+          s.shopBoughtItems = []; // Reset bought items tracker
+          s.phase = 'shop';
+          mp._activeOfferIndex = ix; mp._shopUsed = false;
+          s.log.push(`ChooseOffer → respawn shop_card (${shop.inventory.length} items)`);
+          return { state: s, rng };
+        }
+      }
+      
       if (typeof ShopEv.openShopCard !== 'function') {
         s.log.push('openShopCard missing export in shops_events.ts');
         return { state: s, rng };
@@ -254,38 +269,79 @@ export function choose(s: GameState, cmd: Extract<Command, { type: 'ChooseOffer'
     }
 
     case 'shop_remove': {
-  if (typeof ShopEv.openShopRemove !== 'function') {
-    s.log.push('openShopRemove missing export in shops_events.ts');
-    return { state: s, rng };
-  }
-  const out = ShopEv.openShopRemove(s, rng);
-  s = out.state; rng = out.rng;
-  mp._activeOfferIndex = ix; mp._shopUsed = false;
-  s.log.push('ChooseOffer → shop_remove');
-  return { state: s, rng };
+      // Check if this is a respawn shop
+      if (offer.respawnShopId) {
+        const shop = s.shopRegistry?.find(shop => shop.id === offer.respawnShopId);
+        if (shop) {
+          s.shopKind = 'remove';
+          s.shopBoughtItems = []; // Reset bought items tracker
+          s.phase = 'shop';
+          mp._activeOfferIndex = ix; mp._shopUsed = false;
+          s.log.push(`ChooseOffer → respawn shop_remove`);
+          return { state: s, rng };
+        }
+      }
+      
+      if (typeof ShopEv.openShopRemove !== 'function') {
+        s.log.push('openShopRemove missing export in shops_events.ts');
+        return { state: s, rng };
+      }
+      const out = ShopEv.openShopRemove(s, rng);
+      s = out.state; rng = out.rng;
+      mp._activeOfferIndex = ix; mp._shopUsed = false;
+      s.log.push('ChooseOffer → shop_remove');
+      return { state: s, rng };
     }
 
     case 'shop_upgrade': {
-  if (typeof ShopEv.openShopUpgrade !== 'function') {
-    s.log.push('openShopUpgrade missing export in shops_events.ts');
-    return { state: s, rng };
-  }
-  const out = ShopEv.openShopUpgrade(s, rng);
-  s = out.state; rng = out.rng;
-  mp._activeOfferIndex = ix; mp._shopUsed = false;
-  s.log.push('ChooseOffer → shop_upgrade');
-  return { state: s, rng };
+      // Check if this is a respawn shop
+      if (offer.respawnShopId) {
+        const shop = s.shopRegistry?.find(shop => shop.id === offer.respawnShopId);
+        if (shop) {
+          s.shopKind = 'upgrade';
+          s.shopBoughtItems = []; // Reset bought items tracker
+          s.phase = 'shop';
+          mp._activeOfferIndex = ix; mp._shopUsed = false;
+          s.log.push(`ChooseOffer → respawn shop_upgrade`);
+          return { state: s, rng };
+        }
+      }
+      
+      if (typeof ShopEv.openShopUpgrade !== 'function') {
+        s.log.push('openShopUpgrade missing export in shops_events.ts');
+        return { state: s, rng };
+      }
+      const out = ShopEv.openShopUpgrade(s, rng);
+      s = out.state; rng = out.rng;
+      mp._activeOfferIndex = ix; mp._shopUsed = false;
+      s.log.push('ChooseOffer → shop_upgrade');
+      return { state: s, rng };
     }
 
     case 'shop_equipment': {
-  if (typeof ShopEv.openShopEquipment !== 'function') {
-    s.log.push('openShopEquipment missing export in shops_events.ts');
-    return { state: s, rng };
-  }
-  const out = ShopEv.openShopEquipment(s, rng);
-  s = out.state; rng = out.rng;
-  mp._activeOfferIndex = ix; mp._shopUsed = false;
-  s.log.push('ChooseOffer → shop_equipment');
+      // Check if this is a respawn shop
+      if (offer.respawnShopId) {
+        const shop = s.shopRegistry?.find(shop => shop.id === offer.respawnShopId);
+        if (shop) {
+          // Use existing shop inventory for equipment
+          s.shopStock = shop.inventory.map(item => ({ equipment: item.equipment, price: item.price }));
+          s.shopKind = 'equipment';
+          s.shopBoughtItems = []; // Reset bought items tracker
+          s.phase = 'shop';
+          mp._activeOfferIndex = ix; mp._shopUsed = false;
+          s.log.push(`ChooseOffer → respawn shop_equipment (${shop.inventory.length} items)`);
+          return { state: s, rng };
+        }
+      }
+      
+      if (typeof ShopEv.openShopEquipment !== 'function') {
+        s.log.push('openShopEquipment missing export in shops_events.ts');
+        return { state: s, rng };
+      }
+      const out = ShopEv.openShopEquipment(s, rng);
+      s = out.state; rng = out.rng;
+      mp._activeOfferIndex = ix; mp._shopUsed = false;
+      s.log.push('ChooseOffer → shop_equipment');
   return { state: s, rng };
     }
 
@@ -396,10 +452,24 @@ export function completeNode(s: GameState, _cmd: Extract<Command, { type: 'Compl
       removeTemporaryEquipment(s);
     }
     else if (s.phase === 'shop') {
-      // Leave Shop - ไม่ resolve shop, เพียงกลับไปแมพ
-      // Shop จะยังคงอยู่ใน map สำหรับการเข้าใหม่
+      // Leave Shop - save to registry for persistence
+      const offer = mp.current.offers[ix] as PageOffer;
+      
+      if (offer && 'respawnShopId' in offer && offer.respawnShopId) {
+        // Update existing registry shop
+        const { updateShopInRegistry } = require('../../shopRegistry');
+        const boughtItems = s.shopBoughtItems || [];
+        updateShopInRegistry(s, offer.respawnShopId, s.shopStock || [], boughtItems);
+      } else if (s.shopStock && s.shopKind && mp._shopUsed) {
+        // First time leaving shop that was used - add to registry
+        const { addShopToRegistry } = require('../../shopRegistry');
+        const boughtItems = s.shopBoughtItems || [];
+        addShopToRegistry(s, s.shopKind as any, s.shopStock, boughtItems);
+      }
+      
       s.shopStock = undefined;
       s.shopKind = undefined;
+      s.shopBoughtItems = undefined; // Clear bought items tracker
       s.phase = 'map';
     }
     else if (s.phase === 'event') {

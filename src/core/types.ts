@@ -182,6 +182,7 @@ export type GameState = {
   // Shop / Events
   shopKind?: ShopKind;
   shopStock?: ShopItem[];
+  shopBoughtItems?: ShopItem[]; // Track items bought in current shop session
   event?: EventState;
 
   // flags & counters

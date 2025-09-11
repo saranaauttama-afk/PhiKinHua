@@ -96,6 +96,11 @@ export function takeShop(s: GameState, cmd: Extract<Command, { type: 'TakeShop' 
   }
   s.player.gold -= item.price;
   s.masterDeck.push(JSON.parse(JSON.stringify(item.card)));
+  
+  // Track bought item for shop persistence
+  s.shopBoughtItems = s.shopBoughtItems || [];
+  s.shopBoughtItems.push(JSON.parse(JSON.stringify(item)));
+  
   s.shopStock.splice(i, 1);
   s.log.push(`Shop: bought ${item.card.name} for ${item.price}g`);
   // โหมด pages: ถือว่า "ใช้ร้าน" แล้ว (จะ resolve ตอนปิดร้าน)
@@ -226,16 +231,17 @@ export function eventTreasureOpen(s: GameState, _cmd: Extract<Command, { type: '
 export function openShopCard(s: GameState, r: RNG): { state: GameState; rng: RNG } {
   try {
     const { rollShopStock } = require('../../shop');
-    const out = rollShopStock(r, SHOP_STOCK_SIZE, SHOP_POWER_BIAS);
+    const out = rollShopStock(r, 3, SHOP_POWER_BIAS); // Limit to 3 cards
     r = out.rng;
     s.shopStock = out.items;
   } catch {
-    const fb = fallbackShopStock(r, SHOP_STOCK_SIZE);
+    const fb = fallbackShopStock(r, 3); // Limit to 3 cards
     r = fb.rng;
     s.shopStock = fb.items;
     s.log.push('Shop(card): fallback stock.');
   }
   s.shopKind = 'card';
+  s.shopBoughtItems = []; // Reset bought items tracker
   s.phase = 'shop';
   s.log.push(`Shop(card): ${s.shopStock?.length ?? 0} items`);
   return { state: s, rng: r };
@@ -243,6 +249,7 @@ export function openShopCard(s: GameState, r: RNG): { state: GameState; rng: RNG
 
 export function openShopRemove(s: GameState, r: RNG): { state: GameState; rng: RNG } {
   s.shopKind = 'remove';
+  s.shopBoughtItems = []; // Reset bought items tracker
   s.phase = 'shop';
   // ไม่จำเป็นต้องคำนวณราคา ณ จุดเปิดร้าน เพราะ UI อาจอ่านจาก removeCostForCount ตอนกดซื้อ
   s.log.push(`Shop(remove): cost now = ${removeCostForCount(s.runCounters?.removeShopCount ?? 0)}g`);
@@ -251,13 +258,14 @@ export function openShopRemove(s: GameState, r: RNG): { state: GameState; rng: R
 
 export function openShopUpgrade(s: GameState, r: RNG): { state: GameState; rng: RNG } {
   s.shopKind = 'upgrade';
+  s.shopBoughtItems = []; // Reset bought items tracker
   s.phase = 'shop';
   s.log.push(`Shop(upgrade): cost now = ${upgradeCostForCount(s.runCounters?.upgradeShopCount ?? 0)}g`);
   return { state: s, rng: r };
 }
 
 export function openShopEquipment(s: GameState, r: RNG): { state: GameState; rng: RNG } {
-  // สร้าง equipment shop stock
+  // สร้าง equipment shop stock (limit to 3 items)
   const equipmentBase = require('../../../data/packs/base/equipment.json');
   const arr: any[] = Array.isArray(equipmentBase) ? equipmentBase : [];
   const pool = arr.filter((e) => e && e.slotCost >= 0);
@@ -284,6 +292,7 @@ export function openShopEquipment(s: GameState, r: RNG): { state: GameState; rng
   
   s.shopStock = items as any;
   s.shopKind = 'equipment';
+  s.shopBoughtItems = []; // Reset bought items tracker
   s.phase = 'shop';
   s.log.push(`Shop(equipment): ${items.length} items`);
   return { state: s, rng: rr };
@@ -340,6 +349,11 @@ export function takeShopEquipment(s: GameState, cmd: Extract<Command, { type: 'T
   s.player.gold -= item.price;
   s.equipment = s.equipment || [];
   s.equipment.push(JSON.parse(JSON.stringify(item.equipment)));
+  
+  // Track bought item for shop persistence
+  s.shopBoughtItems = s.shopBoughtItems || [];
+  s.shopBoughtItems.push(JSON.parse(JSON.stringify(item)));
+  
   s.shopStock.splice(i, 1);
   s.log.push(`Equipment Shop: bought ${item.equipment.name} for ${item.price}g`);
   
