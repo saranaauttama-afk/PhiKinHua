@@ -242,9 +242,16 @@ export function choose(s: GameState, cmd: Extract<Command, { type: 'ChooseOffer'
     }
 
     case 'shop_card': {
+      console.log('🛒 Shop_card handler debug:', {
+        hasRespawnId: !!offer.respawnShopId,
+        respawnId: offer.respawnShopId,
+        registryLength: s.shopRegistry?.length || 0
+      });
+      
       // Check if this is a respawn shop
       if (offer.respawnShopId) {
         const shop = s.shopRegistry?.find(shop => shop.id === offer.respawnShopId);
+        console.log('🛒 Found respawn shop:', shop ? 'YES' : 'NO', shop?.inventory.length);
         if (shop) {
           // Use existing shop inventory
           s.shopStock = shop.inventory.map(item => ({ card: item.card, price: item.price }));
@@ -455,16 +462,30 @@ export function completeNode(s: GameState, _cmd: Extract<Command, { type: 'Compl
       // Leave Shop - save to registry for persistence
       const offer = mp.current.offers[ix] as PageOffer;
       
+      console.log('🛒 Leave shop debug:', {
+        hasOffer: !!offer,
+        hasRespawnId: offer && 'respawnShopId' in offer && !!offer.respawnShopId,
+        respawnId: offer && 'respawnShopId' in offer ? offer.respawnShopId : null,
+        shopUsed: mp._shopUsed,
+        shopKind: s.shopKind,
+        stockCount: s.shopStock?.length || 0,
+        boughtCount: s.shopBoughtItems?.length || 0
+      });
+      
       if (offer && 'respawnShopId' in offer && offer.respawnShopId) {
         // Update existing registry shop
         const { updateShopInRegistry } = require('../../shopRegistry');
         const boughtItems = s.shopBoughtItems || [];
         updateShopInRegistry(s, offer.respawnShopId, s.shopStock || [], boughtItems);
+        console.log('🛒 Updated existing shop in registry');
       } else if (s.shopStock && s.shopKind && mp._shopUsed) {
         // First time leaving shop that was used - add to registry
         const { addShopToRegistry } = require('../../shopRegistry');
         const boughtItems = s.shopBoughtItems || [];
         addShopToRegistry(s, s.shopKind as any, s.shopStock, boughtItems);
+        console.log('🛒 Added new shop to registry');
+      } else {
+        console.log('🛒 Shop not saved to registry (not used or missing data)');
       }
       
       s.shopStock = undefined;

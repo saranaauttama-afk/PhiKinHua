@@ -71,6 +71,12 @@ export function rollPageOffers(mp: MapStatePages, r: RNG, s: GameState): { offer
     r = rollOut.rng;
     return rollOut.value / 1000;
   });
+  
+  console.log('🛒 Shop respawn debug:', {
+    registryLength: s.shopRegistry?.length || 0,
+    respawnShopsCount: respawnShops.length,
+    respawnShops: respawnShops.map(shop => ({ id: shop.id, kind: shop.kind, inventoryCount: shop.inventory.length }))
+  });
 
   const monsLeft = monstersLeft(mp);
   const pLeft    = pagesLeft(mp);
